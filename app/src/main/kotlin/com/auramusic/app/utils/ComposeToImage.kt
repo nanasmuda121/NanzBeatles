@@ -601,7 +601,7 @@ object ComposeToImage {
             val uri = context.contentResolver.insert(
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                 contentValues
-            ) ?: throw IllegalStateException("Failed to create new MediaStore record")
+            ) ?: throw IllegalStateException("Gagal membuat rekaman MediaStore baru")
 
             context.contentResolver.openOutputStream(uri)?.use { outputStream ->
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)

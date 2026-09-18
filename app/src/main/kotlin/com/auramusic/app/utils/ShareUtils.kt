@@ -43,7 +43,7 @@ object ShareUtils {
         TELEGRAM("Telegram", "org.telegram.messenger"),
         SNAPCHAT("Snapchat", "com.snapchat.android"),
         TIKTOK("TikTok", "com.zhiliaoapp.musically"),
-        GENERIC("More Apps", null)
+        GENERIC("Aplikasi Lainnya", null)
     }
 
     suspend fun generateShareCard(
@@ -161,10 +161,10 @@ object ShareUtils {
                 shader = LinearGradient(
                     140f, brandingY - 20, 420f, brandingY - 20,
                     intArrayOf(
-                        Color.parseColor("#F59E0B"),
-                        Color.parseColor("#F97316"),
-                        Color.parseColor("#EC4899"),
-                        Color.parseColor("#8B5CF6")
+                        Color.parseColor("#FFFFFF"),
+                        Color.parseColor("#E0E0E0"),
+                        Color.parseColor("#CCCCCC"),
+                        Color.parseColor("#B0B0B0")
                     ),
                     null,
                     Shader.TileMode.CLAMP
@@ -212,7 +212,7 @@ object ShareUtils {
                 typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
                 isAntiAlias = true
             }
-            val badgeText = "♪ Listen To"
+            val badgeText = "♪ Dengarkan"
             val badgeTextWidth = badgeTextPaint.measureText(badgeText)
             canvas.drawText(badgeText, badgeX + (badgeWidth - badgeTextWidth)/2, badgeY - badgeHeight/2 + 8, badgeTextPaint)
 
@@ -279,7 +279,7 @@ object ShareUtils {
                 typeface = Typeface.create("sans-serif", Typeface.NORMAL)
                 isAntiAlias = true
             }
-            val footerText = "Tap to listen on NanzBeatles"
+            val footerText = "Ketuk untuk mendengarkan di NanzBeatles"
             val footerTextWidth = footerPaint.measureText(footerText)
             canvas.drawText(footerText, ((cardWidth.toFloat() - footerTextWidth)/2), footerY.toFloat() + 15f, footerPaint)
 
@@ -317,7 +317,7 @@ object ShareUtils {
 
         val shareText = buildString {
             append("🎵 ${songData.title} - ${songData.artist}\n")
-            append("Tap to play in NanzBeatles: $deepLink")
+            append("Ketuk untuk memutar di NanzBeatles: $deepLink")
         }
 
         val intent = Intent().apply {
@@ -345,7 +345,7 @@ object ShareUtils {
 
         try {
             if (platform == SharePlatform.GENERIC) {
-                context.startActivity(Intent.createChooser(intent, "Share via"))
+                context.startActivity(Intent.createChooser(intent, "Bagikan lewat"))
             } else {
                 context.startActivity(intent)
             }
@@ -362,7 +362,7 @@ object ShareUtils {
         cardFile: File? = null
     ) {
         val shareLink = "https://www.auramusic.site/play/${songData.id}"
-        val shareText = "🎵 ${songData.title} - ${songData.artist}\nTap to play in NanzBeatles: $shareLink"
+        val shareText = "🎵 ${songData.title} - ${songData.artist}\nKetuk untuk memutar di NanzBeatles: $shareLink"
 
         val intent = Intent().apply {
             action = Intent.ACTION_SEND
@@ -380,7 +380,7 @@ object ShareUtils {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
 
-        context.startActivity(Intent.createChooser(intent, "Share song via"))
+        context.startActivity(Intent.createChooser(intent, "Bagikan lagu lewat"))
     }
 
     private fun darkenColor(color: Int, factor: Float): Int {

@@ -614,7 +614,7 @@ fun BottomSheetPlayer(
                                     playerConnection.service.sleepTimer.start(minutes)
                                 },
                             ) {
-                                Text("${minutes}m")
+                                Text("${minutes} mnt")
                             }
                         }
                     }
@@ -2354,7 +2354,7 @@ private fun AnimatedGradientBackground(
 ) {
     if (colors.isEmpty()) return
 
-    val baseColor = Color(0xFF0A0C10)
+    val baseColor = Color(0xFF0C0C0C)
     val c0 = colors.getOrNull(0) ?: baseColor
     val c1 = colors.getOrNull(1) ?: c0
     val c2 = colors.getOrNull(2) ?: c1

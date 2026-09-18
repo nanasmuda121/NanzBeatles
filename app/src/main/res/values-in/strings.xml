@@ -208,7 +208,7 @@
     <string name="leave_room">Tinggalkan Ruangan</string>
     <string name="kick_user">Tendang pengguna</string>
     <string name="permanently_kick_user">Tendang pengguna secara permanen</string>
-    <string name="transfer_ownership">OF THE APARTMEN UNIT</string>
+    <string name="transfer_ownership">Transfer Kepemilikan</string>
     <string name="unblock">Berhenti Blokir</string>
     <string name="copy">Salin</string>
     <string name="copy_link">Salin tautan</string>
@@ -428,7 +428,7 @@
     <string name="center">Pusat</string>
     <string name="right">Kanan</string>
     <string name="player_slider_style">Gaya slider pemain</string>
-    <string name="default_">Default</string>
+    <string name="default_">Bawaan</string>
     <string name="squiggly">Berlekuk - lekuk</string>
     <string name="wavy">Gelombang</string>
     <string name="slim">Langsing</string>
@@ -469,7 +469,7 @@
     <string name="crop_album_art">Pangkas sampul album</string>
     <string name="crop_album_art_desc">Pangkas sampul album agar pas dengan layar pemutar</string>
     <string name="player_buttons_style">Gaya tombol pemutar</string>
-    <string name="default_style">Default</string>
+    <string name="default_style">Bawaan</string>
     <string name="primary_color_style">Warna utama</string>
     <string name="tertiary_color_style">Warna tersier</string>
     <string name="enable_swipe_thumbnail">Aktifkan gambar mini geser</string>
@@ -518,7 +518,7 @@
     <string name="new_mini_player_design">Desain pemutar mini baru</string>
     <string name="pure_black_mini_player">Mini player hitam murni</string>
     <string name="new_player_design">Desain pemain baru</string>
-    <string name="default_lib_chips">Chip pustaka default</string>
+    <string name="default_lib_chips">Chip pustaka bawaan</string>
     <string name="swipe_song_to_add">Geser ke kanan untuk menambahkan ke daftar putar</string>
     <string name="swipe_song_to_remove">Geser ke kiri untuk menghapus dari daftar putar</string>
     <string name="slim_navbar">Bilah navigasi ramping</string>
@@ -548,7 +548,7 @@
     <string name="more_content">Tampilkan lebih banyak konten</string>
     <string name="yt_sync">Sinkronisasi YouTube</string>
     <string name="integrations">Integrasi</string>
-    <string name="default_links">Tautan default</string>
+    <string name="default_links">Tautan bawaan</string>
     <string name="open_app_settings_error">Tidak dapat membuka pengaturan aplikasi</string>
     <string name="new_version_available">Versi baru tersedia</string>
     <string name="hide_explicit">Konten Eksplisit</string>
@@ -558,7 +558,7 @@
     <string name="show_artist_subscriber_count">Tampilkan jumlah pelanggan</string>
     <string name="show_artist_monthly_listeners">Tampilkan pendengar bulanan</string>
     <string name="app_language">Bahasa aplikasi</string>
-    <string name="content_language">Bahasa konten default</string>
+    <string name="content_language">Bahasa konten bawaan</string>
     <string name="content_country">Negara konten</string>
     <string name="system_default">Bawaan sistem</string>
     <string name="enable_proxy">Aktifkan proxy</string>
@@ -1098,7 +1098,7 @@
     <string name="video_player_remove_from_queue">Hapus dari antrean</string>
     <string name="video_player_queue_loading">Memuat daftar putar Anda…</string>
     <string name="video_player_queue_empty">Tidak ada daftar putar yang ditemukan</string>
-    <string name="video_player_brightness">Brightness</string>
+    <string name="video_player_brightness">Kecerahan</string>
     <string name="video_player_volume">Volume</string>
     <!-- Music Alarm -->
     <string name="alarm_title">Alarm musik</string>

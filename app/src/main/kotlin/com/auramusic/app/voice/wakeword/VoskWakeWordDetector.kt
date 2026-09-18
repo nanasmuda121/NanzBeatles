@@ -89,7 +89,7 @@ class VoskWakeWordDetector @Inject constructor(
                         "Failed to load Vosk native library (JNA incompatible with this device/OS). " +
                         "Wake word detection is unavailable.", e)
                     withContext(Dispatchers.Main) {
-                        showToast("Wake word not supported on this device")
+                        showToast("Kata aktivasi tidak didukung di perangkat ini")
                     }
                     isRunning.set(false)
                     return@launch
@@ -102,7 +102,7 @@ class VoskWakeWordDetector @Inject constructor(
             } catch (e: Exception) {
                 android.util.Log.e("VoskWakeWordDetector", "Failed to start", e)
                 withContext(Dispatchers.Main) {
-                    showToast("Wake word failed: ${e.message}")
+                    showToast("Kata aktivasi gagal: ${e.message}")
                 }
                 isRunning.set(false)
             }
@@ -135,7 +135,7 @@ class VoskWakeWordDetector @Inject constructor(
             }
             
             withContext(Dispatchers.Main) {
-                showToast("Unpacking wake word model...")
+                showToast("Mengekstrak model kata aktivasi...")
             }
             
             unzip(zipFile, filesDir)
@@ -452,7 +452,7 @@ class VoskWakeWordDetector @Inject constructor(
                                 }
                                 
                                 withContext(Dispatchers.Main) {
-                                    showToast("Wake word detected!")
+                                    showToast("Kata aktivasi terdeteksi!")
                                 }
                                 triggerWakeWord()
                                 continue

@@ -204,7 +204,7 @@ class HomeViewModel @Inject constructor(
                 .maxByOrNull { it.resumePositionMs }
         }.stateIn(viewModelScope, SharingStarted.Lazily, null)
 
-    val accountName = MutableStateFlow("Guest")
+    val accountName = MutableStateFlow("Tamu")
     val accountImageUrl = MutableStateFlow<String?>(null)
 
 	val showWrappedCard: StateFlow<Boolean> = context.dataStore.data.map { prefs ->
@@ -675,7 +675,7 @@ fun markWrappedAsSeen() {
                 .collectLatest { (cookie, visitorData, dataSyncId) ->
                     val isLoggedIn = cookie?.let { "SAPISID" in parseCookieString(it) } == true
                     if (!isLoggedIn) {
-                        accountName.value = "Guest"
+                        accountName.value = "Tamu"
                         accountImageUrl.value = null
                         accountPlaylists.value = null
                         return@collectLatest
@@ -685,8 +685,8 @@ fun markWrappedAsSeen() {
                     // this hydration every ViewModel recreation incorrectly displayed "Guest".
                     accountName.value = context.dataStore.get(AccountNameKey, "")
                         .takeIf { it.isNotBlank() }
-                        ?: accountName.value.takeUnless { it == "Guest" }
-                        ?: "Signed in"
+                        ?: accountName.value.takeUnless { it == "Guest" || it == "Tamu" }
+                        ?: "Telah Masuk"
 
                     YouTube.cookie = cookie
                     YouTube.visitorData = visitorData?.takeIf { it.isNotBlank() }

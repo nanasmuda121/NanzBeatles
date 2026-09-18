@@ -169,7 +169,7 @@ fun ListenTogetherScreen(
                 is ListenTogetherEvent.RoomCreated -> {
                     isCreatingRoom = false
                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                    val clip = android.content.ClipData.newPlainText("ListenTogetherRoom", event.roomCode)
+                    val clip = android.content.ClipData.newPlainText("RuangListenTogether", event.roomCode)
                     clipboard.setPrimaryClip(clip)
                 }
                 else -> {}
@@ -186,7 +186,7 @@ fun ListenTogetherScreen(
             username = selectedUsername ?: "",
             onKick = {
                 selectedUserForMenu?.let {
-                    listenTogetherManager.kickUser(it, "Removed by host")
+                    listenTogetherManager.kickUser(it, "Dikeluarkan oleh tuan rumah")
                 }
                 selectedUserForMenu = null
                 selectedUsername = null
@@ -195,7 +195,7 @@ fun ListenTogetherScreen(
                 selectedUserForMenu?.let { userId ->
                     selectedUsername?.let { username ->
                         listenTogetherManager.blockUser(username)
-                        listenTogetherManager.kickUser(userId, R.string.user_blocked_by_host.toString())
+                        listenTogetherManager.kickUser(userId, "Diblokir oleh tuan rumah")
                     }
                 }
                 selectedUserForMenu = null
@@ -303,7 +303,7 @@ fun ListenTogetherScreen(
                         PendingJoinRequestsSection(
                             requests = pendingJoinRequests,
                             onApprove = { listenTogetherManager.approveJoin(it) },
-                            onReject = { listenTogetherManager.rejectJoin(it, "Rejected by host") }
+                            onReject = { listenTogetherManager.rejectJoin(it, "Ditolak oleh tuan rumah") }
                         )
                     }
                 }
@@ -314,7 +314,7 @@ fun ListenTogetherScreen(
                         PendingSuggestionsSection(
                             suggestions = pendingSuggestions,
                             onApprove = { listenTogetherManager.approveSuggestion(it) },
-                            onReject = { listenTogetherManager.rejectSuggestion(it, "Rejected by host") }
+                            onReject = { listenTogetherManager.rejectSuggestion(it, "Ditolak oleh tuan rumah") }
                         )
                     }
                 }
@@ -648,7 +648,7 @@ private fun ConnectionStatusCard(
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Reconnect", fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.reconnect), fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -714,7 +714,7 @@ private fun RoomStatusCard(
                     FilledTonalButton(
                         onClick = {
                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                            val clip = android.content.ClipData.newPlainText("Listen Together Link", inviteLink)
+                            val clip = android.content.ClipData.newPlainText("Tautan Dengarkan Bersama", inviteLink)
                             clipboard.setPrimaryClip(clip)
                             Toast.makeText(context, R.string.copied_to_clipboard, Toast.LENGTH_SHORT).show()
                         },
@@ -732,7 +732,7 @@ private fun RoomStatusCard(
                     FilledTonalButton(
                         onClick = {
                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                            val clip = android.content.ClipData.newPlainText("Room Code", roomCode)
+                            val clip = android.content.ClipData.newPlainText("Kode Ruang", roomCode)
                             clipboard.setPrimaryClip(clip)
                             Toast.makeText(context, R.string.copied_to_clipboard, Toast.LENGTH_SHORT).show()
                         },
@@ -1297,7 +1297,7 @@ private fun CollaborativePlaylistSection(
                 TextButton(
                     onClick = {
                         val name = playlistNameInput.trim().ifBlank {
-                            "Listen Together Session"
+                            "Sesi Dengarkan Bersama"
                         }
                         onStartPlaylist(name)
                         showNameDialog = false

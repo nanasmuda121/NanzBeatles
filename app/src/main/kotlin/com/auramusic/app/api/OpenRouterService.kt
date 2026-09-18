@@ -38,7 +38,7 @@ object OpenRouterService {
         
         // Validate input
         if (text.isBlank()) {
-            return@withContext Result.failure(Exception("Input text is empty"))
+            return@withContext Result.failure(Exception("Teks input kosong"))
         }
         
         val lines = text.lines()
@@ -166,7 +166,7 @@ Output MUST be a JSON array with EXACTLY $lineCount strings."""
                     } catch (e: Exception) {
                         "HTTP ${response.code}: ${response.message}"
                     }
-                    return@withContext Result.failure(Exception("Translation failed: $errorMsg"))
+                    return@withContext Result.failure(Exception("Penerjemahan gagal: $errorMsg"))
                 }
 
                 if (responseBody == null) {
@@ -241,6 +241,6 @@ Output MUST be a JSON array with EXACTLY $lineCount strings."""
             currentAttempt++
             kotlinx.coroutines.delay(1000L * currentAttempt)
         }
-        return@withContext Result.failure(Exception("Max retries exceeded"))
+        return@withContext Result.failure(Exception("Batas percobaan maksimum terlampaui"))
     }
 }

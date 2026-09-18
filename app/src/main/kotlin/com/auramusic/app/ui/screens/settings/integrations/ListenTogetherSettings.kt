@@ -137,22 +137,22 @@ fun ListenTogetherSettings(
                     // Room created toast is shown globally by the client
                 }
                 is ListenTogetherEvent.JoinApproved -> {
-                    Toast.makeText(context, "Joined room: ${event.roomCode}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Bergabung ke ruang: ${event.roomCode}", Toast.LENGTH_SHORT).show()
                 }
                 is ListenTogetherEvent.JoinRejected -> {
-                    Toast.makeText(context, "Join rejected: ${event.reason}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Permintaan gabung ditolak: ${event.reason}", Toast.LENGTH_SHORT).show()
                 }
                 is ListenTogetherEvent.JoinRequestReceived -> {
-                    Toast.makeText(context, "${event.username} wants to join", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "${event.username} ingin bergabung", Toast.LENGTH_SHORT).show()
                 }
                 is ListenTogetherEvent.Kicked -> {
-                    Toast.makeText(context, "Kicked: ${event.reason}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Dikeluarkan: ${event.reason}", Toast.LENGTH_SHORT).show()
                 }
                 is ListenTogetherEvent.ConnectionError -> {
-                    Toast.makeText(context, "Connection error: ${event.error}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Kesalahan koneksi: ${event.error}", Toast.LENGTH_SHORT).show()
                 }
                 is ListenTogetherEvent.ServerError -> {
-                    Toast.makeText(context, "Error: ${event.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Kesalahan: ${event.message}", Toast.LENGTH_SHORT).show()
                 }
                 else -> {}
             }
@@ -510,7 +510,7 @@ fun ListenTogetherSettings(
                         IconButton(
                             onClick = {
                                 val cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                val clip = android.content.ClipData.newPlainText("Room Code", state.roomCode)
+                                val clip = android.content.ClipData.newPlainText("Kode Ruang", state.roomCode)
                                 cm.setPrimaryClip(clip)
                                 Toast.makeText(context, R.string.copied_to_clipboard, Toast.LENGTH_SHORT).show()
                             },
@@ -1034,7 +1034,7 @@ fun LogEntryItem(log: LogEntry) {
                 shape = RoundedCornerShape(8.dp),
                 color = when (log.level) {
                     LogLevel.ERROR -> MaterialTheme.colorScheme.errorContainer
-                    LogLevel.WARNING -> Color(0xFFFFF3CD)
+                    LogLevel.WARNING -> MaterialTheme.colorScheme.surfaceContainerHighest
                     LogLevel.DEBUG -> MaterialTheme.colorScheme.surfaceVariant
                     LogLevel.INFO -> MaterialTheme.colorScheme.primaryContainer
                 }
@@ -1045,7 +1045,7 @@ fun LogEntryItem(log: LogEntry) {
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
                     color = when (log.level) {
                         LogLevel.ERROR -> MaterialTheme.colorScheme.onErrorContainer
-                        LogLevel.WARNING -> Color(0xFF856404)
+                        LogLevel.WARNING -> MaterialTheme.colorScheme.onSurface
                         LogLevel.DEBUG -> MaterialTheme.colorScheme.onSurfaceVariant
                         LogLevel.INFO -> MaterialTheme.colorScheme.onPrimaryContainer
                     }

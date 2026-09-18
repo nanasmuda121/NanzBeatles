@@ -24,7 +24,7 @@ class WakeWordService : Service() {
     companion object {
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "wake_word_channel"
-        private const val CHANNEL_NAME = "Wake Word Detection"
+        private const val CHANNEL_NAME = "Deteksi Kata Aktivasi"
         
         // Progress notification constants
         private const val PROGRESS_NOTIFICATION_ID = 1002

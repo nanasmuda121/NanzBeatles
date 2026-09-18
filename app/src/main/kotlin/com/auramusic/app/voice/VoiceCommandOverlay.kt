@@ -99,12 +99,12 @@ fun VoiceCommandOverlay(
                 // Status text
                 Text(
                     text = when (state.phase) {
-                        VoicePhase.GREETING -> state.feedbackText.ifEmpty { "Hello! How can I help you today?" }
-                        VoicePhase.LISTENING -> "Listening..."
-                        VoicePhase.PROCESSING -> "Processing..."
+                        VoicePhase.GREETING -> state.feedbackText.ifEmpty { "Halo! Ada yang bisa saya bantu hari ini?" }
+                        VoicePhase.LISTENING -> "Mendengarkan..."
+                        VoicePhase.PROCESSING -> "Memproses..."
                         VoicePhase.FEEDBACK -> ""
-                        VoicePhase.ERROR -> state.errorMessage ?: "Something went wrong"
-                        VoicePhase.IDLE -> "Say something..."
+                        VoicePhase.ERROR -> state.errorMessage ?: "Terjadi kesalahan"
+                        VoicePhase.IDLE -> "Katakan sesuatu..."
                     },
                     color = Color.White.copy(alpha = 0.7f),
                     fontSize = 13.sp,
@@ -120,7 +120,7 @@ fun VoiceCommandOverlay(
                     exit = fadeOut(tween(150))
                 ) {
                     Text(
-                        text = "Try: \"Play\" · \"Next\" · \"Search songs\" · \"Volume up\"",
+                        text = "Coba: \"Putar\" · \"Berikutnya\" · \"Cari lagu\" · \"Naikkan volume\"",
                         color = Color.White.copy(alpha = 0.4f),
                         fontSize = 11.sp,
                         textAlign = TextAlign.Center,

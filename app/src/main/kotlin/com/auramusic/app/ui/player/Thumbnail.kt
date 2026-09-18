@@ -1001,7 +1001,7 @@ private fun ThumbnailImage(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Loading artwork...",
+                                text = "Memuat sampul...",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                             )
@@ -1095,7 +1095,7 @@ private fun VideoSettingsButton(
         ) {
             Icon(
                 painter = painterResource(R.drawable.settings),
-                contentDescription = "Video settings",
+                contentDescription = "Pengaturan video",
                 tint = Color.White,
                 modifier = Modifier.size(20.dp)
             )
@@ -1122,7 +1122,7 @@ private fun VideoSettingsButton(
                                     modifier = Modifier.size(24.dp).padding(end = 12.dp),
                                     tint = Color.White
                                 )
-                                Text("Quality")
+                                Text("Kualitas")
                             }
                             Text(
                                 text = when (videoQuality) {
@@ -1186,13 +1186,13 @@ onClick = {
                                     modifier = Modifier.size(24.dp).padding(end = 12.dp),
                                     tint = Color.White
                                 )
-                                Text("Video fit")
+                                Text("Kesesuaian video")
                             }
                             Text(
                                 text = when (resizeMode) {
-                                    AspectRatioFrameLayout.RESIZE_MODE_FILL -> "Stretch"
-                                    AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH -> "Fixed"
-                                    else -> "Fixed"
+                                    AspectRatioFrameLayout.RESIZE_MODE_FILL -> "Regangkan"
+                                    AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH -> "Tetap"
+                                    else -> "Tetap"
                                 },
                                 color = Color.Gray,
                                 fontSize = 13.sp
@@ -1229,7 +1229,7 @@ onClick = {
                                 modifier = Modifier.size(24.dp).padding(end = 12.dp),
                                 tint = Color.White
                             )
-                            Text("Quality")
+                            Text("Kualitas")
                         }
                     },
                     onClick = {
@@ -1466,7 +1466,7 @@ private fun VideoLyricsOverlay(
                     }
                 } else {
                     timber.log.Timber.d("VideoLyricsOverlay: No caption tracks available, trying transcript fallback")
-                    captionError = "No caption tracks available"
+                    captionError = "Trek teks tidak tersedia"
                 }
                 
                 // Fallback to transcript API if caption tracks didn't work
@@ -1492,9 +1492,9 @@ private fun VideoLyricsOverlay(
                 withContext(Dispatchers.Main) {
                     if (transcriptText != null && transcriptText!!.isNotEmpty()) {
                         playerConnection.captionCache[videoId] = transcriptText!!
-                        Toast.makeText(context, "Captions loaded successfully", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Teks berhasil dimuat", Toast.LENGTH_SHORT).show()
                     } else if (captionError != null) {
-                        Toast.makeText(context, "Captions failed: $captionError", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, "Gagal memuat teks: $captionError", Toast.LENGTH_LONG).show()
                     }
                 }
             }

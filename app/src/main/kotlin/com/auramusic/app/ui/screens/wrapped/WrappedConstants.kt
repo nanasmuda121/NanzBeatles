@@ -20,17 +20,17 @@ object WrappedConstants {
     val previousMonth: LocalDate
         get() = LocalDate.now().minusMonths(1)
     
-    // Format for display: "March 2026"
+    // Format for display: "Maret 2026"
     val displayMonthYear: String
         get() {
-            val formatter = DateTimeFormatter.ofPattern("MMMM yyyy")
+            val formatter = DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale("id"))
             return previousMonth.format(formatter)
         }
     
     // Format for short display: "Mar 2026"  
     val shortDisplayMonthYear: String
         get() {
-            val formatter = DateTimeFormatter.ofPattern("MMM yyyy")
+            val formatter = DateTimeFormatter.ofPattern("MMM yyyy", java.util.Locale("id"))
             return previousMonth.format(formatter)
         }
     

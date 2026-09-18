@@ -86,7 +86,7 @@ fun WrappedShareCardScreen(
                 enter = fadeIn(animationSpec = tween(1000, delayMillis = 200)) + slideInVertically(animationSpec = tween(1000, delayMillis = 200))
             ) {
                 Text(
-                    text = "Share Your Stats",
+                    text = "Bagikan Statistik Anda",
                     style = TextStyle(
                         fontFamily = bbh_bartle,
                         fontSize = 40.sp,
@@ -104,7 +104,7 @@ fun WrappedShareCardScreen(
                 enter = fadeIn(animationSpec = tween(1000, delayMillis = 400)) + slideInVertically(animationSpec = tween(1000, delayMillis = 400))
             ) {
                 Text(
-                    text = "Show the world your music taste",
+                    text = "Tunjukkan selera musikmu kepada dunia",
                     style = androidx.compose.material3.MaterialTheme.typography.bodyLarge.copy(
                         color = Color.White.copy(alpha = 0.8f),
                         textAlign = TextAlign.Center
@@ -135,7 +135,7 @@ fun WrappedShareCardScreen(
                     )
                     Spacer(modifier = Modifier.padding(8.dp))
                     Text(
-                        text = "Generate & Share",
+                        text = "Buat & Bagikan",
                         style = TextStyle(
                             color = Color.Black,
                             fontWeight = FontWeight.Bold,
@@ -158,9 +158,9 @@ private fun generateShareCardBitmap(context: Context, state: WrappedState): Bitm
     val gradient = LinearGradient(
         0f, 0f, 0f, height.toFloat(),
         intArrayOf(
-            android.graphics.Color.parseColor("#1a1a2e"),
-            android.graphics.Color.parseColor("#16213e"),
-            android.graphics.Color.parseColor("#0f3460")
+            android.graphics.Color.parseColor("#121212"),
+            android.graphics.Color.parseColor("#1e1e1e"),
+            android.graphics.Color.parseColor("#2a2a2a")
         ),
         null,
         Shader.TileMode.CLAMP
@@ -206,17 +206,17 @@ private fun generateShareCardBitmap(context: Context, state: WrappedState): Bitm
 
     // Total minutes
     canvas.drawText("${state.totalMinutes}", width / 2f, yPos, statValuePaint)
-    canvas.drawText("minutes listened", width / 2f, yPos + 50f, statLabelPaint)
+    canvas.drawText("menit didengarkan", width / 2f, yPos + 50f, statLabelPaint)
     yPos += 200f
 
     // Unique songs
     canvas.drawText("${state.uniqueSongCount}", width / 2f, yPos, statValuePaint)
-    canvas.drawText("unique songs", width / 2f, yPos + 50f, statLabelPaint)
+    canvas.drawText("lagu unik", width / 2f, yPos + 50f, statLabelPaint)
     yPos += 200f
 
     // Top song
     state.topSongs.firstOrNull()?.let { topSong ->
-        canvas.drawText("TOP SONG", width / 2f, yPos, statLabelPaint)
+        canvas.drawText("LAGU TERATAS", width / 2f, yPos, statLabelPaint)
         yPos += 50f
         val songTitlePaint = Paint().apply {
             color = android.graphics.Color.WHITE
@@ -234,7 +234,7 @@ private fun generateShareCardBitmap(context: Context, state: WrappedState): Bitm
 
     // Top artist
     state.topArtists.firstOrNull()?.let { topArtist ->
-        canvas.drawText("TOP ARTIST", width / 2f, yPos, statLabelPaint)
+        canvas.drawText("ARTIS TERATAS", width / 2f, yPos, statLabelPaint)
         yPos += 50f
         val artistNamePaint = Paint().apply {
             color = android.graphics.Color.WHITE
@@ -243,7 +243,7 @@ private fun generateShareCardBitmap(context: Context, state: WrappedState): Bitm
             textAlign = Paint.Align.CENTER
             isAntiAlias = true
         }
-        val artistName = topArtist.artist?.name ?: "Unknown"
+        val artistName = topArtist.artist?.name ?: "Tidak Diketahui"
         canvas.drawText(artistName, width / 2f, yPos + 40f, artistNamePaint)
     }
 
@@ -254,7 +254,7 @@ private fun generateShareCardBitmap(context: Context, state: WrappedState): Bitm
         textAlign = Paint.Align.CENTER
         isAntiAlias = true
     }
-    canvas.drawText("Made with NanzBeatles", width / 2f, height - 100f, footerPaint)
+    canvas.drawText("Dibuat dengan NanzBeatles", width / 2f, height - 100f, footerPaint)
 
     return bitmap
 }
@@ -278,7 +278,7 @@ private fun saveAndShareBitmap(context: Context, bitmap: Bitmap) {
         type = "image/png"
         putExtra(Intent.EXTRA_STREAM, uri)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        putExtra(Intent.EXTRA_TEXT, "Check out my ${WrappedConstants.displayMonthYear} music stats on NanzBeatles!")
+        putExtra(Intent.EXTRA_TEXT, "Lihat statistik musik ${WrappedConstants.displayMonthYear} saya di NanzBeatles!")
     }
-    context.startActivity(Intent.createChooser(shareIntent, "Share Wrapped Stats"))
+    context.startActivity(Intent.createChooser(shareIntent, "Bagikan Statistik Kilas Balik"))
 }

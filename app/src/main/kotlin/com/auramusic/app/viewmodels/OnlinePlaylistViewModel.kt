@@ -79,7 +79,7 @@ class OnlinePlaylistViewModel @Inject constructor(
                         startProactiveBackgroundLoading()
                     }
                 }.onFailure { throwable ->
-                    _error.value = throwable.message ?: "Failed to load playlist"
+                    _error.value = throwable.message ?: "Gagal memuat daftar putar"
                     _isLoading.value = false
                     reportException(throwable)
                 }

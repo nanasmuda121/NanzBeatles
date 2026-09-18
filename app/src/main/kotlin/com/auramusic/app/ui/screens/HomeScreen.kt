@@ -1943,7 +1943,7 @@ fun CommunityPlaylistCard(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = item.playlist.author?.name ?: "Unknown",
+                        text = item.playlist.author?.name ?: "Tidak Diketahui",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.secondary,
                         maxLines = 1,
@@ -1951,7 +1951,7 @@ fun CommunityPlaylistCard(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = item.playlist.songCountText ?: "${item.songs.size} songs",
+                        text = item.playlist.songCountText ?: "${item.songs.size} lagu",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.secondary,
                     )

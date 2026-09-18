@@ -198,9 +198,9 @@ private fun SearchBarInputField(
                     }
                 }
                 .semantics {
-                    contentDescription = "Search"
+                    contentDescription = "Cari"
                     if (active) {
-                        stateDescription = "Suggestions available"
+                        stateDescription = "Saran tersedia"
                     }
                 }
                 .onKeyEvent {

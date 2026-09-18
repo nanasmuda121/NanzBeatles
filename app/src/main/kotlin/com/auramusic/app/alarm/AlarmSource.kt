@@ -6,9 +6,9 @@ package com.auramusic.app.alarm
 
 /** Source pool the alarm picks songs from. */
 enum class AlarmSource(val displayName: String) {
-    DOWNLOADS("Downloaded"),
-    CACHED("Cached"),
-    PLAYLIST("Playlist"),
+    DOWNLOADS("Unduhan"),
+    CACHED("Cache"),
+    PLAYLIST("Daftar Putar"),
     ;
 
     companion object {

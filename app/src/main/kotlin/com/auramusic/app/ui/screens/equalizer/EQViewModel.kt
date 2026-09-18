@@ -73,7 +73,7 @@ class EQViewModel @Inject constructor(
                     result.onSuccess {
                         eqProfileRepository.setActiveProfile(profileId)
                     }.onFailure { e ->
-                        _state.update { it.copy(error = e.message ?: "Unknown error") }
+                        _state.update { it.copy(error = e.message ?: "Kesalahan tidak diketahui") }
                     }
                 }
             }
@@ -117,7 +117,7 @@ class EQViewModel @Inject constructor(
                 // Validate the parsed EQ
                 val validationErrors = ParametricEQParser.validate(parametricEQ)
                 if (validationErrors.isNotEmpty()) {
-                    onError(Exception("Invalid EQ file: ${validationErrors.first()}"))
+                    onError(Exception("File EQ tidak valid: ${validationErrors.first()}"))
                     return@launch
                 }
 
@@ -127,10 +127,10 @@ class EQViewModel @Inject constructor(
                 // Import the profile
                 eqProfileRepository.importCustomProfile(profileName, parametricEQ)
 
-                _state.update { it.copy(importStatus = "Successfully imported $profileName") }
+                _state.update { it.copy(importStatus = "Berhasil mengimpor $profileName") }
                 onSuccess()
             } catch (e: Exception) {
-                onError(Exception("Failed to import EQ profile: ${e.message}"))
+                onError(Exception("Gagal mengimpor profil EQ: ${e.message}"))
             }
         }
     }

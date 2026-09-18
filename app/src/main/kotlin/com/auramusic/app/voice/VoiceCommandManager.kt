@@ -60,7 +60,7 @@ class VoiceCommandManager @Inject constructor(
 
 fun startListening(mode: RecognitionMode) {
         if (!isAvailable()) {
-            _events.tryEmit(VoiceRecognitionEvent.Error(-1, "Speech recognition not available", false))
+            _events.tryEmit(VoiceRecognitionEvent.Error(-1, "Pengenalan suara tidak tersedia", false))
             return
         }
 
@@ -109,7 +109,7 @@ fun startListening(mode: RecognitionMode) {
                 _isListening.value = true
             } catch (e: Exception) {
                 android.util.Log.e("VoiceCommandManager", "Failed to start listening", e)
-                _events.tryEmit(VoiceRecognitionEvent.Error(-1, "Failed to start: ${e.message}", true))
+                _events.tryEmit(VoiceRecognitionEvent.Error(-1, "Gagal memulai: ${e.message}", true))
                 _isListening.value = false
             }
         }, 150)
@@ -197,16 +197,16 @@ fun startListening(mode: RecognitionMode) {
                 SpeechRecognizer.ERROR_CLIENT
             )
             val message = when (error) {
-                SpeechRecognizer.ERROR_AUDIO -> "Audio recording error"
-                SpeechRecognizer.ERROR_CLIENT -> "Client error"
-                SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Insufficient permissions"
-                SpeechRecognizer.ERROR_NETWORK -> "Network error"
-                SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Network timeout"
-                SpeechRecognizer.ERROR_NO_MATCH -> "No speech recognized"
-                SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Recognition service busy"
-                SpeechRecognizer.ERROR_SERVER -> "Server error"
-                SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "No speech input"
-                else -> "Unknown error"
+                SpeechRecognizer.ERROR_AUDIO -> "Kesalahan perekaman audio"
+                SpeechRecognizer.ERROR_CLIENT -> "Kesalahan klien"
+                SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Izin tidak mencukupi"
+                SpeechRecognizer.ERROR_NETWORK -> "Kesalahan jaringan"
+                SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Batas waktu jaringan habis"
+                SpeechRecognizer.ERROR_NO_MATCH -> "Suara tidak dikenali"
+                SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Layanan pengenalan sedang sibuk"
+                SpeechRecognizer.ERROR_SERVER -> "Kesalahan server"
+                SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Tidak ada masukan suara"
+                else -> "Kesalahan tidak diketahui"
             }
             _events.tryEmit(VoiceRecognitionEvent.Error(error, message, recoverable))
         }

@@ -32,12 +32,12 @@ object VoiceCommandActionExecutor {
         when (command) {
             is VoiceCommand.Search -> {
                 onSearch(command.query)
-                "Searching for \"${command.query}\""
+                "Mencari \"${command.query}\""
             }
-            is VoiceCommand.WakeWordDetected -> "Listening..."
-            is VoiceCommand.Unknown -> "I didn't understand that"
+            is VoiceCommand.WakeWordDetected -> "Mendengarkan..."
+            is VoiceCommand.Unknown -> "Saya tidak mengerti itu"
             is VoiceCommand.PlaySearch -> {
-                val conn = playerConnection ?: return@withContext "No player connected"
+                val conn = playerConnection ?: return@withContext "Tidak ada pemutar terhubung"
                 val result = withContext(Dispatchers.IO) {
                     YouTube.search(command.query, YouTube.SearchFilter.FILTER_SONG).getOrNull()
                 }
@@ -45,22 +45,22 @@ object VoiceCommandActionExecutor {
                 if (firstSong != null) {
                     val metadata = firstSong.toMediaMetadata()
                     conn.playQueue(YouTubeQueue.radio(metadata))
-                    "Playing ${firstSong.title}"
+                    "Memutar ${firstSong.title}"
                 } else {
-                    "No results found for \"${command.query}\""
+                    "Tidak ada hasil untuk \"${command.query}\""
                 }
             }
 
             // Navigation
-            is VoiceCommand.ShowQueue -> { onNavigate("queue"); "Opening queue" }
-            is VoiceCommand.OpenHome -> { onNavigate("home"); "Opening home" }
-            is VoiceCommand.OpenLibrary -> { onNavigate("library"); "Opening library" }
-            is VoiceCommand.OpenSearch -> { onNavigate("search"); "Opening search" }
-            is VoiceCommand.OpenSettings -> { onNavigate("settings"); "Opening settings" }
+            is VoiceCommand.ShowQueue -> { onNavigate("queue"); "Membuka antrean" }
+            is VoiceCommand.OpenHome -> { onNavigate("home"); "Membuka beranda" }
+            is VoiceCommand.OpenLibrary -> { onNavigate("library"); "Membuka pustaka" }
+            is VoiceCommand.OpenSearch -> { onNavigate("search"); "Membuka pencarian" }
+            is VoiceCommand.OpenSettings -> { onNavigate("settings"); "Membuka pengaturan" }
             
             // Playback commands
             else -> {
-                val conn = playerConnection ?: return@withContext "No player connected"
+                val conn = playerConnection ?: return@withContext "Tidak ada pemutar terhubung"
                 executePlaybackCommand(command, conn)
             }
         }
@@ -71,37 +71,37 @@ object VoiceCommandActionExecutor {
         conn: PlayerConnection,
     ): String {
         val player = conn.player
-        val context = conn.service as? Context ?: return "Error"
+        val context = conn.service as? Context ?: return "Kesalahan"
 
         return when (command) {
             is VoiceCommand.Play -> {
                 if (player.playbackState == ExoPlayer.STATE_IDLE) player.prepare()
                 player.playWhenReady = true
-                "Playing"
+                "Memutar"
             }
             is VoiceCommand.Pause -> {
                 player.playWhenReady = false
-                "Paused"
+                "Dijeda"
             }
             is VoiceCommand.TogglePlayPause -> {
                 if (player.isPlaying) {
                     player.playWhenReady = false
-                    "Paused"
+                    "Dijeda"
                 } else {
                     if (player.playbackState == ExoPlayer.STATE_IDLE) player.prepare()
                     player.playWhenReady = true
-                    "Playing"
+                    "Memutar"
                 }
             }
-            is VoiceCommand.Next -> { conn.seekToNext(); "Next track" }
-            is VoiceCommand.Previous -> { conn.seekToPrevious(); "Previous track" }
+            is VoiceCommand.Next -> { conn.seekToNext(); "Lagu berikutnya" }
+            is VoiceCommand.Previous -> { conn.seekToPrevious(); "Lagu sebelumnya" }
             is VoiceCommand.Shuffle -> {
                 val current = conn.shuffleModeEnabled.value
                 player.shuffleModeEnabled = !current
-                if (!current) "Shuffle on" else "Shuffle off"
+                if (!current) "Acak aktif" else "Acak nonaktif"
             }
-            is VoiceCommand.ShuffleOn -> { player.shuffleModeEnabled = true; "Shuffle on" }
-            is VoiceCommand.ShuffleOff -> { player.shuffleModeEnabled = false; "Shuffle off" }
+            is VoiceCommand.ShuffleOn -> { player.shuffleModeEnabled = true; "Acak aktif" }
+            is VoiceCommand.ShuffleOff -> { player.shuffleModeEnabled = false; "Acak nonaktif" }
             is VoiceCommand.Repeat -> {
                 player.repeatMode = when (player.repeatMode) {
                     ExoPlayer.REPEAT_MODE_OFF -> ExoPlayer.REPEAT_MODE_ALL
@@ -109,23 +109,23 @@ object VoiceCommandActionExecutor {
                     else -> ExoPlayer.REPEAT_MODE_OFF
                 }
                 when (player.repeatMode) {
-                    ExoPlayer.REPEAT_MODE_ONE -> "Repeat one"
-                    ExoPlayer.REPEAT_MODE_ALL -> "Repeat all"
-                    else -> "Repeat off"
+                    ExoPlayer.REPEAT_MODE_ONE -> "Ulangi satu"
+                    ExoPlayer.REPEAT_MODE_ALL -> "Ulangi semua"
+                    else -> "Ulangi nonaktif"
                 }
             }
-            is VoiceCommand.RepeatOne -> { player.repeatMode = ExoPlayer.REPEAT_MODE_ONE; "Repeat one" }
-            is VoiceCommand.RepeatAll -> { player.repeatMode = ExoPlayer.REPEAT_MODE_ALL; "Repeat all" }
-            is VoiceCommand.RepeatOff -> { player.repeatMode = ExoPlayer.REPEAT_MODE_OFF; "Repeat off" }
+            is VoiceCommand.RepeatOne -> { player.repeatMode = ExoPlayer.REPEAT_MODE_ONE; "Ulangi satu" }
+            is VoiceCommand.RepeatAll -> { player.repeatMode = ExoPlayer.REPEAT_MODE_ALL; "Ulangi semua" }
+            is VoiceCommand.RepeatOff -> { player.repeatMode = ExoPlayer.REPEAT_MODE_OFF; "Ulangi nonaktif" }
             is VoiceCommand.SeekForward -> {
                 val newPos = (player.currentPosition + command.milliseconds).coerceAtMost(player.duration)
                 player.seekTo(newPos)
-                "Skipped forward"
+                "Maju cepat"
             }
             is VoiceCommand.SeekBackward -> {
                 val newPos = (player.currentPosition - command.milliseconds).coerceAtLeast(0)
                 player.seekTo(newPos)
-                "Skipped backward"
+                "Mundur cepat"
             }
             is VoiceCommand.VolumeUp -> {
                 try {
@@ -134,7 +134,7 @@ object VoiceCommandActionExecutor {
                 } catch (_: Exception) {
                     player.volume = (player.volume + 0.1f).coerceAtMost(1f)
                 }
-                "Volume up"
+                "Volume naik"
             }
             is VoiceCommand.VolumeDown -> {
                 try {
@@ -143,24 +143,24 @@ object VoiceCommandActionExecutor {
                 } catch (_: Exception) {
                     player.volume = (player.volume - 0.1f).coerceAtLeast(0f)
                 }
-                "Volume down"
+                "Volume turun"
             }
-            is VoiceCommand.Mute -> { conn.setMuted(true); "Muted" }
-            is VoiceCommand.Unmute -> { conn.setMuted(false); "Unmuted" }
+            is VoiceCommand.Mute -> { conn.setMuted(true); "Dibisukan" }
+            is VoiceCommand.Unmute -> { conn.setMuted(false); "Batal bisu" }
             is VoiceCommand.SpeedUp -> {
                 val newSpeed = (player.playbackParameters.speed * 1.25f).coerceAtMost(2.0f)
                 player.setPlaybackSpeed(newSpeed)
-                "Speed up"
+                "Percepat"
             }
             is VoiceCommand.SlowDown -> {
                 val newSpeed = (player.playbackParameters.speed * 0.75f).coerceAtLeast(0.5f)
                 player.setPlaybackSpeed(newSpeed)
-                "Slow down"
+                "Perlambat"
             }
-            is VoiceCommand.ResetSpeed -> { player.setPlaybackSpeed(1.0f); "Normal speed" }
-            is VoiceCommand.ToggleLike -> { conn.toggleLike(); "Toggled like" }
-            is VoiceCommand.ClearQueue -> { player.clearMediaItems(); "Queue cleared" }
-            is VoiceCommand.AddToQueue -> "Added to queue"
+            is VoiceCommand.ResetSpeed -> { player.setPlaybackSpeed(1.0f); "Kecepatan normal" }
+            is VoiceCommand.ToggleLike -> { conn.toggleLike(); "Suka diubah" }
+            is VoiceCommand.ClearQueue -> { player.clearMediaItems(); "Antrean dibersihkan" }
+            is VoiceCommand.AddToQueue -> "Ditambahkan ke antrean"
             
             // Settings
             is VoiceCommand.SetDarkMode -> {
@@ -168,7 +168,7 @@ object VoiceCommandActionExecutor {
                 context.dataStore.edit { prefs ->
                     prefs[darkModeKey] = if (command.enabled) "ON" else "OFF"
                 }
-                if (command.enabled) "Dark mode on" else "Light mode on"
+                if (command.enabled) "Mode gelap aktif" else "Mode terang aktif"
             }
             is VoiceCommand.ToggleTheme -> {
                 val darkModeKey = stringPreferencesKey("darkMode")
@@ -180,41 +180,41 @@ object VoiceCommandActionExecutor {
                     else -> "AUTO"
                 }
                 context.dataStore.edit { prefs -> prefs[darkModeKey] = newMode }
-                "Theme toggled"
+                "Tema diubah"
             }
             is VoiceCommand.ShowLyrics -> {
                 val key = booleanPreferencesKey("showLyrics")
                 context.dataStore.edit { it[key] = true }
-                "Lyrics shown"
+                "Lirik ditampilkan"
             }
             is VoiceCommand.HideLyrics -> {
                 val key = booleanPreferencesKey("showLyrics")
                 context.dataStore.edit { it[key] = false }
-                "Lyrics hidden"
+                "Lirik disembunyikan"
             }
             is VoiceCommand.ToggleLyrics -> {
                 val key = booleanPreferencesKey("showLyrics")
                 val current = context.dataStore.data.map { it[key] ?: false }.first()
                 context.dataStore.edit { it[key] = !current }
-                "Lyrics toggled"
+                "Lirik diubah"
             }
-            is VoiceCommand.EnableVideo -> { conn.toggleVideoMode(); "Video on" }
-            is VoiceCommand.DisableVideo -> { conn.toggleVideoMode(); "Video off" }
-            is VoiceCommand.ToggleVideo -> { conn.toggleVideoMode(); "Video toggled" }
+            is VoiceCommand.EnableVideo -> { conn.toggleVideoMode(); "Video aktif" }
+            is VoiceCommand.DisableVideo -> { conn.toggleVideoMode(); "Video nonaktif" }
+            is VoiceCommand.ToggleVideo -> { conn.toggleVideoMode(); "Video diubah" }
 
             // Download commands
             is VoiceCommand.DownloadCurrentSong -> {
                 val service = conn.service
                 val mediaMetadata = service.currentMediaMetadata.value
                 if (mediaMetadata == null) {
-                    "No song is currently playing"
+                    "Tidak ada lagu yang sedang diputar"
                 } else {
                     val songId = mediaMetadata.id
                     val isDownloaded = withContext(Dispatchers.IO) {
                         service.database.song(songId).first()?.song?.isDownloaded ?: false
                     }
                     if (isDownloaded) {
-                        "This song is already downloaded"
+                        "Lagu ini sudah diunduh"
                     } else {
                         val downloadRequest = DownloadRequest.Builder(songId, songId.toUri())
                             .setCustomCacheKey(songId)
@@ -226,7 +226,7 @@ object VoiceCommandActionExecutor {
                             downloadRequest,
                             false,
                         )
-                        "Downloading \"${mediaMetadata.title}\""
+                        "Mengunduh \"${mediaMetadata.title}\""
                     }
                 }
             }
@@ -238,7 +238,7 @@ object VoiceCommandActionExecutor {
                     mediaItems.add(player.getMediaItemAt(i))
                 }
                 if (mediaItems.size <= 1) {
-                    return "The queue is empty or has only one song"
+                    return "Antrean kosong atau hanya memiliki satu lagu"
                 }
                 var downloadCount = 0
                 val skippedList = mutableListOf<String>()
@@ -266,22 +266,22 @@ object VoiceCommandActionExecutor {
                 }
                 val skipped = skippedList.size
                 when {
-                    downloadCount > 0 -> "Downloading $downloadCount songs to queue" + if (skipped > 0) " ($skipped already downloaded)" else ""
-                    skipped == mediaItems.size -> "All songs already downloaded"
-                    else -> "No songs to download"
+                    downloadCount > 0 -> "Mengunduh $downloadCount lagu antrean" + if (skipped > 0) " ($skipped sudah diunduh)" else ""
+                    skipped == mediaItems.size -> "Semua lagu sudah diunduh"
+                    else -> "Tidak ada lagu untuk diunduh"
                 }
             }
             is VoiceCommand.DownloadCurrentAlbum -> {
                 val service = conn.service
                 val mediaMetadata = service.currentMediaMetadata.value
                 if (mediaMetadata?.album == null) {
-                    return "Current song has no album information"
+                    return "Lagu saat ini tidak memiliki informasi album"
                 }
                 val albumId = mediaMetadata.album.id
                 val albumSongsFlow = service.database.albumSongs(albumId)
                 val albumSongs = albumSongsFlow.first()
                 if (albumSongs.isEmpty()) {
-                    return "No songs found in album"
+                    return "Tidak ada lagu di dalam album"
                 }
                 var downloadCount = 0
                 albumSongs.forEach { song ->
@@ -306,12 +306,12 @@ object VoiceCommandActionExecutor {
                 val total = albumSongs.size
                 val already = total - downloadCount
                 when {
-                    downloadCount > 0 -> "Downloading album \"${mediaMetadata.album.title}\": $downloadCount songs" + if (already > 0) " ($already already downloaded)" else ""
-                    else -> "All songs in this album already downloaded"
+                    downloadCount > 0 -> "Mengunduh album \"${mediaMetadata.album.title}\": $downloadCount lagu" + if (already > 0) " ($already sudah diunduh)" else ""
+                    else -> "Semua lagu di album ini sudah diunduh"
                 }
             }
 
-            else -> "Done"
+            else -> "Selesai"
         }
     }
 }

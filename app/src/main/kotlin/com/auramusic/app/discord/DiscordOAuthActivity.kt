@@ -54,7 +54,7 @@ class DiscordOAuthActivity : Activity() {
 
         val uri = intent?.data ?: run {
             Timber.tag(TAG).w("OAuthActivity: no URI in intent")
-            Toast.makeText(this, "Discord Error: No URI in callback", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Kesalahan Discord: Tidak ada URI dalam callback", Toast.LENGTH_LONG).show()
             deferred?.completeExceptionally(
                 DiscordAuthException.InvalidGrant("No URI in callback intent")
             )
@@ -70,7 +70,7 @@ class DiscordOAuthActivity : Activity() {
 
         if (error != null) {
             Timber.tag(TAG).w("OAuthActivity: error=%s", error)
-            Toast.makeText(this, "Discord Error: $error", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Kesalahan Discord: $error", Toast.LENGTH_LONG).show()
             deferred?.completeExceptionally(
                 DiscordAuthException.UserCancelled("Authorization denied: $error")
             )
@@ -80,7 +80,7 @@ class DiscordOAuthActivity : Activity() {
 
         if (code == null) {
             Timber.tag(TAG).w("OAuthActivity: missing code in URI=%s", uri)
-            Toast.makeText(this, "Discord Error: No auth code received", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Kesalahan Discord: Tidak ada kode autentikasi yang diterima", Toast.LENGTH_LONG).show()
             deferred?.completeExceptionally(
                 DiscordAuthException.InvalidGrant("Missing authorization code")
             )
@@ -89,11 +89,11 @@ class DiscordOAuthActivity : Activity() {
         }
 
         Timber.tag(TAG).i("OAuthActivity: received code (length=%d) state=%s", code.length, state?.take(8) ?: "null")
-        Toast.makeText(this, "Discord: Code received, exchanging for token...", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Discord: Kode diterima, menukarkan dengan token...", Toast.LENGTH_SHORT).show()
         deferred?.complete(AuthCodeResult(code = code, state = state ?: ""))
             ?: run {
                 Timber.tag(TAG).e("OAuthActivity: deferred is NULL")
-                Toast.makeText(this, "Discord Error: Auth flow not running", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Kesalahan Discord: Proses autentikasi tidak berjalan", Toast.LENGTH_LONG).show()
             }
         finish()
     }

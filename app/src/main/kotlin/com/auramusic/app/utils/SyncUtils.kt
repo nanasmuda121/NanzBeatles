@@ -358,7 +358,7 @@ class SyncUtils @Inject constructor(
             return@withContext
         }
 
-        updateState { copy(overallStatus = SyncStatus.Syncing, currentOperation = "Starting full sync") }
+        updateState { copy(overallStatus = SyncStatus.Syncing, currentOperation = "Memulai sinkronisasi penuh") }
 
         try {
             // Sync in sequence to avoid overwhelming the API and database
@@ -393,7 +393,7 @@ class SyncUtils @Inject constructor(
             throw e
         } catch (e: Exception) {
             Timber.e(e, "Error during full sync")
-            updateState { copy(overallStatus = SyncStatus.Error(e.message ?: "Unknown error"), currentOperation = "") }
+            updateState { copy(overallStatus = SyncStatus.Error(e.message ?: "Kesalahan tidak diketahui"), currentOperation = "") }
         }
     }
 
@@ -429,7 +429,7 @@ class SyncUtils @Inject constructor(
             return@withContext
         }
 
-        updateState { copy(likedSongs = SyncStatus.Syncing, currentOperation = "Syncing liked songs") }
+        updateState { copy(likedSongs = SyncStatus.Syncing, currentOperation = "Menyinkronkan lagu disukai") }
 
         withRetry {
             YouTube.playlist("LM").completed()
@@ -477,15 +477,15 @@ class SyncUtils @Inject constructor(
                     Timber.d("Synced ${remoteSongs.size} liked songs")
                 } catch (e: Exception) {
                     Timber.e(e, "Error processing liked songs")
-                    updateState { copy(likedSongs = SyncStatus.Error(e.message ?: "Unknown error")) }
+                    updateState { copy(likedSongs = SyncStatus.Error(e.message ?: "Kesalahan tidak diketahui")) }
                 }
             }.onFailure { e ->
                 Timber.e(e, "Failed to fetch liked songs from YouTube")
-                updateState { copy(likedSongs = SyncStatus.Error(e.message ?: "Unknown error")) }
+                updateState { copy(likedSongs = SyncStatus.Error(e.message ?: "Kesalahan tidak diketahui")) }
             }
         }.onFailure { e ->
             Timber.e(e, "Failed to sync liked songs after retries")
-            updateState { copy(likedSongs = SyncStatus.Error(e.message ?: "Unknown error")) }
+            updateState { copy(likedSongs = SyncStatus.Error(e.message ?: "Kesalahan tidak diketahui")) }
         }
     }
 
@@ -495,7 +495,7 @@ class SyncUtils @Inject constructor(
             return@withContext
         }
 
-        updateState { copy(librarySongs = SyncStatus.Syncing, currentOperation = "Syncing library songs") }
+        updateState { copy(librarySongs = SyncStatus.Syncing, currentOperation = "Menyinkronkan lagu pustaka") }
 
         withRetry {
             YouTube.library("FEmusic_liked_videos").completed()
@@ -535,15 +535,15 @@ class SyncUtils @Inject constructor(
                     Timber.d("Synced ${remoteSongs.size} library songs")
                 } catch (e: Exception) {
                     Timber.e(e, "Error processing library songs")
-                    updateState { copy(librarySongs = SyncStatus.Error(e.message ?: "Unknown error")) }
+                    updateState { copy(librarySongs = SyncStatus.Error(e.message ?: "Kesalahan tidak diketahui")) }
                 }
             }.onFailure { e ->
                 Timber.e(e, "Failed to fetch library songs from YouTube")
-                updateState { copy(librarySongs = SyncStatus.Error(e.message ?: "Unknown error")) }
+                updateState { copy(librarySongs = SyncStatus.Error(e.message ?: "Kesalahan tidak diketahui")) }
             }
         }.onFailure { e ->
             Timber.e(e, "Failed to sync library songs after retries")
-            updateState { copy(librarySongs = SyncStatus.Error(e.message ?: "Unknown error")) }
+            updateState { copy(librarySongs = SyncStatus.Error(e.message ?: "Kesalahan tidak diketahui")) }
         }
     }
 
@@ -553,7 +553,7 @@ class SyncUtils @Inject constructor(
             return@withContext
         }
 
-        updateState { copy(uploadedSongs = SyncStatus.Syncing, currentOperation = "Syncing uploaded songs") }
+        updateState { copy(uploadedSongs = SyncStatus.Syncing, currentOperation = "Menyinkronkan lagu yang diunggah") }
 
         withRetry {
             YouTube.library("FEmusic_library_privately_owned_tracks").completed()
@@ -593,15 +593,15 @@ class SyncUtils @Inject constructor(
                     Timber.d("Synced ${remoteSongs.size} uploaded songs")
                 } catch (e: Exception) {
                     Timber.e(e, "Error processing uploaded songs")
-                    updateState { copy(uploadedSongs = SyncStatus.Error(e.message ?: "Unknown error")) }
+                    updateState { copy(uploadedSongs = SyncStatus.Error(e.message ?: "Kesalahan tidak diketahui")) }
                 }
             }.onFailure { e ->
                 Timber.e(e, "Failed to fetch uploaded songs from YouTube")
-                updateState { copy(uploadedSongs = SyncStatus.Error(e.message ?: "Unknown error")) }
+                updateState { copy(uploadedSongs = SyncStatus.Error(e.message ?: "Kesalahan tidak diketahui")) }
             }
         }.onFailure { e ->
             Timber.e(e, "Failed to sync uploaded songs after retries")
-            updateState { copy(uploadedSongs = SyncStatus.Error(e.message ?: "Unknown error")) }
+            updateState { copy(uploadedSongs = SyncStatus.Error(e.message ?: "Kesalahan tidak diketahui")) }
         }
     }
 
@@ -611,7 +611,7 @@ class SyncUtils @Inject constructor(
             return@withContext
         }
 
-        updateState { copy(likedAlbums = SyncStatus.Syncing, currentOperation = "Syncing liked albums") }
+        updateState { copy(likedAlbums = SyncStatus.Syncing, currentOperation = "Menyinkronkan album disukai") }
 
         withRetry {
             YouTube.library("FEmusic_liked_albums").completed()
@@ -654,15 +654,15 @@ class SyncUtils @Inject constructor(
                     Timber.d("Synced ${remoteAlbums.size} liked albums")
                 } catch (e: Exception) {
                     Timber.e(e, "Error processing liked albums")
-                    updateState { copy(likedAlbums = SyncStatus.Error(e.message ?: "Unknown error")) }
+                    updateState { copy(likedAlbums = SyncStatus.Error(e.message ?: "Kesalahan tidak diketahui")) }
                 }
             }.onFailure { e ->
                 Timber.e(e, "Failed to fetch liked albums from YouTube")
-                updateState { copy(likedAlbums = SyncStatus.Error(e.message ?: "Unknown error")) }
+                updateState { copy(likedAlbums = SyncStatus.Error(e.message ?: "Kesalahan tidak diketahui")) }
             }
         }.onFailure { e ->
             Timber.e(e, "Failed to sync liked albums after retries")
-            updateState { copy(likedAlbums = SyncStatus.Error(e.message ?: "Unknown error")) }
+            updateState { copy(likedAlbums = SyncStatus.Error(e.message ?: "Kesalahan tidak diketahui")) }
         }
     }
 
@@ -672,7 +672,7 @@ class SyncUtils @Inject constructor(
             return@withContext
         }
 
-        updateState { copy(uploadedAlbums = SyncStatus.Syncing, currentOperation = "Syncing uploaded albums") }
+        updateState { copy(uploadedAlbums = SyncStatus.Syncing, currentOperation = "Menyinkronkan album yang diunggah") }
 
         withRetry {
             YouTube.library("FEmusic_library_privately_owned_releases").completed()
@@ -715,15 +715,15 @@ class SyncUtils @Inject constructor(
                     Timber.d("Synced ${remoteAlbums.size} uploaded albums")
                 } catch (e: Exception) {
                     Timber.e(e, "Error processing uploaded albums")
-                    updateState { copy(uploadedAlbums = SyncStatus.Error(e.message ?: "Unknown error")) }
+                    updateState { copy(uploadedAlbums = SyncStatus.Error(e.message ?: "Kesalahan tidak diketahui")) }
                 }
             }.onFailure { e ->
                 Timber.e(e, "Failed to fetch uploaded albums from YouTube")
-                updateState { copy(uploadedAlbums = SyncStatus.Error(e.message ?: "Unknown error")) }
+                updateState { copy(uploadedAlbums = SyncStatus.Error(e.message ?: "Kesalahan tidak diketahui")) }
             }
         }.onFailure { e ->
             Timber.e(e, "Failed to sync uploaded albums after retries")
-            updateState { copy(uploadedAlbums = SyncStatus.Error(e.message ?: "Unknown error")) }
+            updateState { copy(uploadedAlbums = SyncStatus.Error(e.message ?: "Kesalahan tidak diketahui")) }
         }
     }
 
@@ -733,7 +733,7 @@ class SyncUtils @Inject constructor(
             return@withContext
         }
 
-        updateState { copy(artists = SyncStatus.Syncing, currentOperation = "Syncing artist subscriptions") }
+        updateState { copy(artists = SyncStatus.Syncing, currentOperation = "Menyinkronkan langganan artis") }
 
         withRetry {
             YouTube.library("FEmusic_library_corpus_artists").completed()
@@ -802,15 +802,15 @@ class SyncUtils @Inject constructor(
                     Timber.d("Synced ${remoteArtists.size} artist subscriptions")
                 } catch (e: Exception) {
                     Timber.e(e, "Error processing artist subscriptions")
-                    updateState { copy(artists = SyncStatus.Error(e.message ?: "Unknown error")) }
+                    updateState { copy(artists = SyncStatus.Error(e.message ?: "Kesalahan tidak diketahui")) }
                 }
             }.onFailure { e ->
                 Timber.e(e, "Failed to fetch artist subscriptions from YouTube")
-                updateState { copy(artists = SyncStatus.Error(e.message ?: "Unknown error")) }
+                updateState { copy(artists = SyncStatus.Error(e.message ?: "Kesalahan tidak diketahui")) }
             }
         }.onFailure { e ->
             Timber.e(e, "Failed to sync artist subscriptions after retries")
-            updateState { copy(artists = SyncStatus.Error(e.message ?: "Unknown error")) }
+            updateState { copy(artists = SyncStatus.Error(e.message ?: "Kesalahan tidak diketahui")) }
         }
     }
 
@@ -820,7 +820,7 @@ class SyncUtils @Inject constructor(
             return@withContext
         }
 
-        updateState { copy(playlists = SyncStatus.Syncing, currentOperation = "Syncing saved playlists") }
+        updateState { copy(playlists = SyncStatus.Syncing, currentOperation = "Menyinkronkan daftar putar tersimpan") }
 
         withRetry {
             YouTube.library("FEmusic_liked_playlists").completed()
@@ -880,15 +880,15 @@ class SyncUtils @Inject constructor(
                     Timber.d("Synced ${remotePlaylists.size} saved playlists")
                 } catch (e: Exception) {
                     Timber.e(e, "Error processing saved playlists")
-                    updateState { copy(playlists = SyncStatus.Error(e.message ?: "Unknown error")) }
+                    updateState { copy(playlists = SyncStatus.Error(e.message ?: "Kesalahan tidak diketahui")) }
                 }
             }.onFailure { e ->
                 Timber.e(e, "syncSavedPlaylists: Failed to fetch playlists from YouTube")
-                updateState { copy(playlists = SyncStatus.Error(e.message ?: "Unknown error")) }
+                updateState { copy(playlists = SyncStatus.Error(e.message ?: "Kesalahan tidak diketahui")) }
             }
         }.onFailure { e ->
             Timber.e(e, "Failed to sync saved playlists after retries")
-            updateState { copy(playlists = SyncStatus.Error(e.message ?: "Unknown error")) }
+            updateState { copy(playlists = SyncStatus.Error(e.message ?: "Kesalahan tidak diketahui")) }
         }
     }
 
@@ -1008,7 +1008,7 @@ class SyncUtils @Inject constructor(
     private suspend fun executeClearAllSyncedContent() = withContext(Dispatchers.IO) {
         Timber.d("clearAllSyncedContent: Starting cleanup")
 
-        updateState { copy(overallStatus = SyncStatus.Syncing, currentOperation = "Clearing synced content") }
+        updateState { copy(overallStatus = SyncStatus.Syncing, currentOperation = "Menghapus konten yang disinkronkan") }
 
         try {
             database.withTransaction {
@@ -1069,7 +1069,7 @@ class SyncUtils @Inject constructor(
             Timber.d("clearAllSyncedContent: Cleanup completed successfully")
         } catch (e: Exception) {
             Timber.e(e, "clearAllSyncedContent: Error during cleanup")
-            updateState { copy(overallStatus = SyncStatus.Error(e.message ?: "Unknown error"), currentOperation = "") }
+            updateState { copy(overallStatus = SyncStatus.Error(e.message ?: "Kesalahan tidak diketahui"), currentOperation = "") }
         }
     }
 

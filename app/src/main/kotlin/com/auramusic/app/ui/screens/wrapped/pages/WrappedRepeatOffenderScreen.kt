@@ -74,7 +74,7 @@ fun WrappedRepeatOffenderScreen(
                 enter = fadeIn(animationSpec = tween(1000, delayMillis = 200)) + slideInVertically(animationSpec = tween(1000, delayMillis = 200))
             ) {
                 Text(
-                    text = "Repeat Offender",
+                    text = "Diputar Berulang Kali",
                     style = TextStyle(
                         fontFamily = bbh_bartle,
                         fontSize = 40.sp,
@@ -92,7 +92,7 @@ fun WrappedRepeatOffenderScreen(
                 enter = fadeIn(animationSpec = tween(1000, delayMillis = 400)) + slideInVertically(animationSpec = tween(1000, delayMillis = 400))
             ) {
                 Text(
-                    text = "You couldn't stop replaying this song",
+                    text = "Lagu yang tak bisa berhenti Anda putar",
                     style = MaterialTheme.typography.bodyLarge.copy(
                         color = Color.White.copy(alpha = 0.8f),
                         textAlign = TextAlign.Center
@@ -153,7 +153,7 @@ fun WrappedRepeatOffenderScreen(
             ) {
                 val playCount = repeatOffenderSong?.songCountListened ?: 0
                 Text(
-                    text = "Played $playCount times this month",
+                    text = "Diputar $playCount kali bulan ini",
                     fontSize = 16.sp,
                     color = Color.White.copy(alpha = 0.6f),
                     textAlign = TextAlign.Center

@@ -198,7 +198,7 @@ fun HardwareIntegrationDialog(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                text = "Audio devices",
+                text = "Perangkat audio",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -234,7 +234,7 @@ fun HardwareIntegrationDialog(
                             ),
                         )
                     },
-                    label = { Text("Grant Bluetooth permission") },
+                    label = { Text("Berikan izin Bluetooth") },
                     leadingIcon = {
                         Icon(
                             painter = painterResource(R.drawable.bluetooth),
@@ -247,7 +247,7 @@ fun HardwareIntegrationDialog(
 
             if (outputs.isEmpty()) {
                 Text(
-                    "No audio devices detected.",
+                    "Tidak ada perangkat audio yang terdeteksi.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -360,7 +360,7 @@ private fun AudioOutputRow(device: AudioOutput) {
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = if (device.isConnected) "Connected" else "Available",
+                    text = if (device.isConnected) "Terhubung" else "Tersedia",
                     style = MaterialTheme.typography.labelMedium,
                     color = onContainer.copy(alpha = 0.7f),
                 )
@@ -408,13 +408,13 @@ private fun CarIntegrationSection(manager: HardwareIntegrationManager) {
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Car Integration",
+                        text = "Integrasi Mobil",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Medium,
                     )
                     Text(
                         text = info?.let { "${it.name} (${it.source})" }
-                            ?: if (isConnected) "Connected" else "Not connected",
+                            ?: if (isConnected) "Terhubung" else "Tidak terhubung",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -425,12 +425,12 @@ private fun CarIntegrationSection(manager: HardwareIntegrationManager) {
                 )
             }
             ToggleRow(
-                label = "Steering wheel controls",
+                label = "Kontrol setir kemudi",
                 checked = steering,
                 onCheckedChange = { manager.car.setSteeringWheelControlsEnabled(it) },
             )
             ToggleRow(
-                label = "Auto-play on connect",
+                label = "Putar otomatis saat terhubung",
                 checked = autoPlay,
                 onCheckedChange = { manager.car.setAutoPlayOnConnect(it) },
             )
@@ -476,13 +476,13 @@ private fun loadAudioOutputs(audioManager: AudioManager): List<AudioOutput> {
         } else ""
         val name = nameSource.toString().ifBlank {
             when (type) {
-                AudioOutputType.PHONE_SPEAKER -> "This phone"
-                AudioOutputType.BLUETOOTH -> "Bluetooth Device"
-                AudioOutputType.WIRED_HEADPHONES -> "Wired Headphones"
-                AudioOutputType.USB_HEADSET -> "USB Audio"
+                AudioOutputType.PHONE_SPEAKER -> "Ponsel ini"
+                AudioOutputType.BLUETOOTH -> "Perangkat Bluetooth"
+                AudioOutputType.WIRED_HEADPHONES -> "Headphone Berkabel"
+                AudioOutputType.USB_HEADSET -> "Audio USB"
                 AudioOutputType.HDMI -> "HDMI"
-                AudioOutputType.DOCK -> "Dock"
-                AudioOutputType.OTHER -> "Audio Device"
+                AudioOutputType.DOCK -> "Dok"
+                AudioOutputType.OTHER -> "Perangkat Audio"
             }
         }
         AudioOutput(

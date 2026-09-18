@@ -716,7 +716,7 @@ fun AppearanceSettings(
             values = AppFont.values().toList(),
             valueText = {
                 when (it) {
-                    AppFont.DEFAULT -> "Default"
+                    AppFont.DEFAULT -> stringResource(R.string.default_)
                     AppFont.OUTFIT -> "Outfit"
                     AppFont.MANROPE -> "Manrope"
                     AppFont.SPACE_GROTESK -> "Space Grotesk"
@@ -2365,7 +2365,7 @@ fun AppearanceSettings(
                     description = {
                         Text(
                             when (selectedFont) {
-                                AppFont.DEFAULT -> "Default"
+                                AppFont.DEFAULT -> stringResource(R.string.default_)
                                 AppFont.OUTFIT -> "Outfit"
                                 AppFont.MANROPE -> "Manrope"
                                 AppFont.SPACE_GROTESK -> "Space Grotesk"

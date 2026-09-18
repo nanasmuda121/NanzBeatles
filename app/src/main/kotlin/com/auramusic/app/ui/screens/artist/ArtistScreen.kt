@@ -332,7 +332,7 @@ fun ArtistScreen(
                             ) {
                                 // Artist Name
                                 Text(
-                                    text = artistName ?: "Unknown",
+                                    text = artistName ?: "Tidak Diketahui",
                                     style = MaterialTheme.typography.headlineLarge,
                                     fontWeight = FontWeight.Bold,
                                     maxLines = 1,
@@ -430,7 +430,7 @@ fun ArtistScreen(
                                                 ) {
                                                     Icon(
                                                         painter = painterResource(R.drawable.shuffle),
-                                                        contentDescription = "Shuffle",
+                                                        contentDescription = stringResource(R.string.shuffle),
                                                         tint = MaterialTheme.colorScheme.onPrimary,
                                                         modifier = Modifier.size(20.dp)
                                                     )
@@ -443,7 +443,7 @@ fun ArtistScreen(
                                                     if (shuffledSongs.isNotEmpty()) {
                                                         playerConnection.playQueue(
                                                             ListQueue(
-                                                                title = libraryArtist?.artist?.name ?: "Unknown Artist",
+                                                                title = libraryArtist?.artist?.name ?: "Artis Tidak Diketahui",
                                                                 items = shuffledSongs.map { it.toMediaItem() }
                                                             )
                                                         )
@@ -458,7 +458,7 @@ fun ArtistScreen(
                                             ) {
                                                 Icon(
                                                     painter = painterResource(R.drawable.shuffle),
-                                                    contentDescription = "Shuffle",
+                                                    contentDescription = stringResource(R.string.shuffle),
                                                     tint = MaterialTheme.colorScheme.onPrimary,
                                                     modifier = Modifier.size(20.dp)
                                                 )
@@ -587,7 +587,7 @@ fun ArtistScreen(
                                             } else {
                                                 playerConnection.playQueue(
                                                     ListQueue(
-                                                        title = libraryArtist?.artist?.name ?: "Unknown Artist",
+                                                        title = libraryArtist?.artist?.name ?: "Artis Tidak Diketahui",
                                                         items = librarySongs.map { it.toMediaItem() },
                                                         startIndex = index
                                                     )
@@ -873,7 +873,7 @@ fun ArtistScreen(
                          if (librarySongs.isNotEmpty()) {
                             playerConnection.playQueue(
                                 ListQueue(
-                                    title = libraryArtist?.artist?.name ?: "Unknown Artist",
+                                    title = libraryArtist?.artist?.name ?: "Artis Tidak Diketahui",
                                     items = librarySongs.map { it.toMediaItem() }
                                 )
                             )
@@ -945,7 +945,7 @@ fun ArtistScreen(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.play),
-                            contentDescription = "Play All",
+                            contentDescription = "Putar Semua",
                         )
                     }
                 } else {
@@ -955,7 +955,7 @@ fun ArtistScreen(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.play),
-                            contentDescription = "Play All",
+                            contentDescription = "Putar Semua",
                             modifier = Modifier.size(32.dp)
                         )
                     }
@@ -990,7 +990,7 @@ fun ArtistScreen(
                 onClick = {
                     viewModel.artistPage?.artist?.shareLink?.let { link ->
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        val clip = ClipData.newPlainText("Artist Link", link)
+                        val clip = ClipData.newPlainText("Tautan Artis", link)
                         clipboard.setPrimaryClip(clip)
                         Toast.makeText(context, R.string.link_copied, Toast.LENGTH_SHORT).show()
                     }

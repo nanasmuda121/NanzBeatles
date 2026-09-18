@@ -1272,7 +1272,7 @@ fun PlayerSettings(
                     icon = painterResource(R.drawable.mic),
                     title = { Text(stringResource(R.string.assistant_voice)) },
                     description = {
-                        Text(voiceFeedbackViewModel.selectedVoice.value?.locale?.displayName ?: "Default")
+                        Text(voiceFeedbackViewModel.selectedVoice.value?.locale?.displayName ?: stringResource(R.string.default_))
                     },
                     onClick = { showVoiceDialog = true }
                 ),
@@ -1342,13 +1342,13 @@ fun PlayerSettings(
                     )
                     
                     Text(
-                        text = "Current: $tempWakeWord",
+                        text = "Saat ini: $tempWakeWord",
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     
                     Text(
-                        text = "Say \"OK Aura\", \"Hey Aura\", or \"Hello Aura\" to activate",
+                        text = "Ucapkan \"OK Aura\", \"Hey Aura\", atau \"Halo Aura\" untuk mengaktifkan",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -1378,7 +1378,7 @@ fun PlayerSettings(
                     onDismiss = { showVoiceDialog = false },
                     buttons = {}
                 ) {
-                    Text(text = "No TTS voices installed. Install a TTS engine from Play Store.")
+                    Text(text = "Tidak ada suara TTS yang terpasang. Pasang mesin TTS dari Play Store.")
                 }
             }
         }

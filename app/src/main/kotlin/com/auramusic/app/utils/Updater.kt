@@ -215,7 +215,7 @@ object Updater {
                     }
                 }
                 
-                releaseInfo ?: throw Exception("GitHub API rate limited. Please try again later.")
+                releaseInfo ?: throw Exception("Batas permintaan API GitHub tercapai. Silakan coba lagi nanti.")
             }.also { result ->
                 if (result.isSuccess) {
                     cachedReleaseInfo = result.getOrNull()
@@ -340,7 +340,7 @@ object Updater {
                     )
                     releaseInfo to hasUpdate
                 } else {
-                    throw result.exceptionOrNull() ?: Exception("Unknown error")
+                    throw result.exceptionOrNull() ?: Exception("Kesalahan tidak diketahui")
                 }
             }
         }

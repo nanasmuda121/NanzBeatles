@@ -70,12 +70,12 @@ fun WrappedComparisonScreen(
     val isUp = monthOverMonthChange >= 0
     val changeText = if (isUp) "+${String.format("%.0f", monthOverMonthChange)}%" else "${String.format("%.0f", monthOverMonthChange)}%"
     val verdict = when {
-        monthOverMonthChange >= 50 -> "Your music listening exploded!"
-        monthOverMonthChange >= 20 -> "You've been vibing more this month"
-        monthOverMonthChange >= 5 -> "Steady and growing"
-        monthOverMonthChange >= -5 -> "Consistent as always"
-        monthOverMonthChange >= -20 -> "Taking it a bit easier this month"
-        else -> "A quieter month for music"
+        monthOverMonthChange >= 50 -> "Waktu mendengarkan Anda melonjak!"
+        monthOverMonthChange >= 20 -> "Anda mendengarkan lebih banyak musik bulan ini"
+        monthOverMonthChange >= 5 -> "Stabil dan terus bertumbuh"
+        monthOverMonthChange >= -5 -> "Konsisten seperti biasa"
+        monthOverMonthChange >= -20 -> "Mendengarkan sedikit lebih santai bulan ini"
+        else -> "Bulan yang lebih tenang untuk musik"
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -92,7 +92,7 @@ fun WrappedComparisonScreen(
                 enter = fadeIn(animationSpec = tween(1000, delayMillis = 200)) + slideInVertically(animationSpec = tween(1000, delayMillis = 200))
             ) {
                 Text(
-                    text = "Month over Month",
+                    text = "Perbandingan Bulanan",
                     style = TextStyle(
                         fontFamily = bbh_bartle,
                         fontSize = 40.sp,
@@ -129,7 +129,7 @@ fun WrappedComparisonScreen(
                     style = TextStyle(
                         fontFamily = bbh_bartle,
                         fontSize = 80.sp,
-                        color = if (isUp) Color(0xFF4CAF50) else Color(0xFFFF5252),
+                        color = if (isUp) Color.White else Color(0xFFB0B0B0),
                         textAlign = TextAlign.Center
                     )
                 )
@@ -155,21 +155,21 @@ fun WrappedComparisonScreen(
             // Comparison rows
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 ComparisonRow(
-                    label = "Listening Time",
-                    current = "${currentMinutes} min",
-                    previous = "${previousMonthMinutes} min",
+                    label = "Waktu Mendengarkan",
+                    current = "${currentMinutes} mnt",
+                    previous = "${previousMonthMinutes} mnt",
                     isVisible = visible,
                     delayMs = 1000
                 )
                 ComparisonRow(
-                    label = "Unique Songs",
+                    label = "Lagu Unik",
                     current = "$currentUniqueSongs",
                     previous = "$previousMonthUniqueSongs",
                     isVisible = visible,
                     delayMs = 1200
                 )
                 ComparisonRow(
-                    label = "Unique Artists",
+                    label = "Artis Unik",
                     current = "$currentUniqueArtists",
                     previous = "$previousMonthUniqueArtists",
                     isVisible = visible,
@@ -204,7 +204,7 @@ private fun ComparisonRow(
                     fontSize = 14.sp
                 )
                 Text(
-                    text = "This month",
+                    text = "Bulan ini",
                     color = Color.White,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
@@ -224,7 +224,7 @@ private fun ComparisonRow(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "Last month",
+                text = "Bulan lalu",
                 color = Color.White.copy(alpha = 0.5f),
                 fontSize = 14.sp
             )

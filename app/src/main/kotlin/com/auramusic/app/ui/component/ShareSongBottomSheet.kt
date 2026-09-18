@@ -71,14 +71,15 @@ fun ShareSongBottomSheet(
         isGenerating = false
     }
 
+    val monoColor = MaterialTheme.colorScheme.onSurfaceVariant
     val platforms = listOf(
-        SharePlatformItem(ShareUtils.SharePlatform.INSTAGRAM, R.drawable.instagram, Color(0xFFE4405F)),
-        SharePlatformItem(ShareUtils.SharePlatform.FACEBOOK, R.drawable.facebook, Color(0xFF1877F2)),
-        SharePlatformItem(ShareUtils.SharePlatform.WHATSAPP, R.drawable.whatsapp, Color(0xFF25D366)),
-        SharePlatformItem(ShareUtils.SharePlatform.X, R.drawable.x_logo, Color(0xFF000000)),
-        SharePlatformItem(ShareUtils.SharePlatform.TELEGRAM, R.drawable.telegram, Color(0xFF0088CC)),
-        SharePlatformItem(ShareUtils.SharePlatform.SNAPCHAT, R.drawable.snapchat, Color(0xFFFFFC00)),
-        SharePlatformItem(ShareUtils.SharePlatform.TIKTOK, R.drawable.tiktok, Color(0xFFEE1D52)),
+        SharePlatformItem(ShareUtils.SharePlatform.INSTAGRAM, R.drawable.instagram, monoColor),
+        SharePlatformItem(ShareUtils.SharePlatform.FACEBOOK, R.drawable.facebook, monoColor),
+        SharePlatformItem(ShareUtils.SharePlatform.WHATSAPP, R.drawable.whatsapp, monoColor),
+        SharePlatformItem(ShareUtils.SharePlatform.X, R.drawable.x_logo, monoColor),
+        SharePlatformItem(ShareUtils.SharePlatform.TELEGRAM, R.drawable.telegram, monoColor),
+        SharePlatformItem(ShareUtils.SharePlatform.SNAPCHAT, R.drawable.snapchat, monoColor),
+        SharePlatformItem(ShareUtils.SharePlatform.TIKTOK, R.drawable.tiktok, monoColor),
         SharePlatformItem(ShareUtils.SharePlatform.GENERIC, R.drawable.share, MaterialTheme.colorScheme.primary)
     )
 
@@ -218,7 +219,7 @@ fun ShareSongBottomSheet(
                             .padding(horizontal = 24.dp, vertical = 16.dp)
                     ) {
                         Text(
-                            "Share to",
+                            "Bagikan ke",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -304,7 +305,7 @@ fun SharePlatformButton(
                     painter = painterResource(platformItem.iconRes),
                     contentDescription = platformItem.platform.displayName,
                     modifier = Modifier.size(32.dp),
-                    colorFilter = if (platformItem.platform == ShareUtils.SharePlatform.SNAPCHAT) null else ColorFilter.tint(Color.White)
+                    colorFilter = ColorFilter.tint(Color.White)
                 )
             }
         }

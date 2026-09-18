@@ -563,7 +563,7 @@ fun AboutScreen(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(10.dp),
-                            color = Color(0xFFF6C915),
+                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
                             modifier = Modifier.size(44.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
@@ -603,7 +603,7 @@ fun AboutScreen(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(10.dp),
-                            color = Color(0xFF632D91),
+                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
                             modifier = Modifier.size(44.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {

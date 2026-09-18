@@ -588,10 +588,10 @@ class MusicService :
                 nm?.createNotificationChannel(
                     NotificationChannel(
                         TV_CHANNEL_ID,
-                        "Now Playing",
+                        "Sedang Diputar",
                         NotificationManager.IMPORTANCE_DEFAULT
                     ).apply {
-                        description = "Shows currently playing music on the TV launcher"
+                        description = "Menampilkan musik yang sedang diputar di peluncur TV"
                         setShowBadge(false)
                     }
                 )
@@ -2740,9 +2740,9 @@ class MusicService :
             Timber.tag(TAG).d("Video mode error - switching back to audio")
             currentVideoSourceMediaId?.let { videoSearchCache.remove(it) }
             _videoModeMessage.value = if (error.message?.contains("inappropriate", ignoreCase = true) == true) {
-                "Video is restricted, playing audio instead"
+                "Video dibatasi, memutar audio saja"
             } else {
-                "Video failed, playing audio instead"
+                "Video gagal dimuat, memutar audio saja"
             }
             scope.launch {
                 switchToAudioMode()
@@ -4249,8 +4249,8 @@ class MusicService :
 
                                 if (primaryVideoUrl.isBlank() || streamSource == null) {
                                     Timber.e("setVideoMode: Video URL is blank after parsing")
-                                    _videoFetchError.value = "Video URL is empty - This song may not have a video available"
-                                    _videoModeMessage.value = "No video available for this song"
+                                    _videoFetchError.value = "URL video kosong - Lagu ini mungkin tidak memiliki video"
+                                    _videoModeMessage.value = "Tidak ada video yang tersedia untuk lagu ini"
                                     restoreTvPlaybackIfPaused(wasPlaying)
                                     resetVideoMode()
                                     return@launch
@@ -4361,22 +4361,22 @@ class MusicService :
                                 android.util.Log.d("MusicService", ">>> SUCCESS - Video mode enabled for: ${videoData.title}")
                             } else {
                                 Timber.e("setVideoMode: Failed to get stream URL from search result")
-                                _videoFetchError.value = "Failed to load video stream"
-                                _videoModeMessage.value = "Could not load video"
+                                _videoFetchError.value = "Gagal memuat streaming video"
+                                _videoModeMessage.value = "Tidak dapat memuat video"
                                 restoreTvPlaybackIfPaused(wasPlaying)
                                 resetVideoMode()
                             }
                         } else {
-                            _videoFetchError.value = "No video found for this song"
-                            _videoModeMessage.value = "No video available for this song"
+                            _videoFetchError.value = "Video tidak ditemukan untuk lagu ini"
+                            _videoModeMessage.value = "Tidak ada video yang tersedia untuk lagu ini"
                             restoreTvPlaybackIfPaused(wasPlaying)
                             resetVideoMode()
                         }
                     } else {
-                        val errorMsg = searchResult.exceptionOrNull()?.message ?: "Unknown error"
+                        val errorMsg = searchResult.exceptionOrNull()?.message ?: "Kesalahan tidak diketahui"
                         Timber.e("setVideoMode: Fallback search failed: $errorMsg")
-                        _videoFetchError.value = "No video available: $errorMsg"
-                        _videoModeMessage.value = "No video found for this song"
+                        _videoFetchError.value = "Tidak ada video yang tersedia: $errorMsg"
+                        _videoModeMessage.value = "Video tidak ditemukan untuk lagu ini"
                         restoreTvPlaybackIfPaused(wasPlaying)
                         resetVideoMode()
                     }

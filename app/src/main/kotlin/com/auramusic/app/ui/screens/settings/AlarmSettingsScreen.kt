@@ -180,8 +180,8 @@ fun AlarmSettingsScreen(
                 Text(
                     text = if (alarmEnabled) {
                         val target = AlarmScheduler.computeNextTrigger(alarmHour, alarmMinute)
-                        "Rings " + relativeTime(target)
-                    } else "Tap to edit time",
+                        "Berdering " + relativeTime(target)
+                    } else "Ketuk untuk atur waktu",
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Spacer(Modifier.height(16.dp))
@@ -189,7 +189,7 @@ fun AlarmSettingsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text("Enable alarm", style = MaterialTheme.typography.titleMedium)
+                    Text("Aktifkan alarm", style = MaterialTheme.typography.titleMedium)
                     Switch(
                         checked = alarmEnabled,
                         onCheckedChange = { enabled ->
@@ -227,7 +227,7 @@ fun AlarmSettingsScreen(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text("Wake up to", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
+                Text("Bangun dengan", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth(),
@@ -252,8 +252,8 @@ fun AlarmSettingsScreen(
                     Icon(painterResource(R.drawable.queue_music), null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        if (selectedSongIds.isEmpty()) "Choose songs"
-                        else "${selectedSongIds.size} song(s) selected",
+                        if (selectedSongIds.isEmpty()) "Pilih lagu"
+                        else "${selectedSongIds.size} lagu dipilih",
                     )
                 }
             }
@@ -270,11 +270,11 @@ fun AlarmSettingsScreen(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text("Behaviour", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
-                ToggleRow(label = "Repeat daily", checked = repeatDaily, onCheckedChange = onRepeatDailyChange)
-                ToggleRow(label = "Shuffle songs", checked = shuffle, onCheckedChange = onShuffleChange)
-                ToggleRow(label = "Vibrate", checked = vibrate, onCheckedChange = onVibrateChange)
-                ToggleRow(label = "Fade-in volume", checked = fadeIn, onCheckedChange = onFadeInChange)
+                Text("Perilaku", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
+                ToggleRow(label = "Ulangi setiap hari", checked = repeatDaily, onCheckedChange = onRepeatDailyChange)
+                ToggleRow(label = "Acak lagu", checked = shuffle, onCheckedChange = onShuffleChange)
+                ToggleRow(label = "Getar", checked = vibrate, onCheckedChange = onVibrateChange)
+                ToggleRow(label = "Volume memudar masuk (fade-in)", checked = fadeIn, onCheckedChange = onFadeInChange)
             }
         }
 
@@ -290,9 +290,9 @@ fun AlarmSettingsScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text("Volume", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
-                Text("Alarm volume: ${(volume * 100).toInt()}%", style = MaterialTheme.typography.bodyMedium)
+                Text("Volume alarm: ${(volume * 100).toInt()}%", style = MaterialTheme.typography.bodyMedium)
                 Slider(value = volume, onValueChange = onVolumeChange, valueRange = 0.1f..1f)
-                Text("Snooze duration: $snoozeMinutes min", style = MaterialTheme.typography.bodyMedium)
+                Text("Durasi tunda: $snoozeMinutes mnt", style = MaterialTheme.typography.bodyMedium)
                 Slider(
                     value = snoozeMinutes.toFloat(),
                     onValueChange = { onSnoozeMinutesChange(it.toInt()) },
@@ -312,7 +312,7 @@ fun AlarmSettingsScreen(
         )
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
-            title = { Text("Alarm time") },
+            title = { Text("Waktu alarm") },
             text = {
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     TimePicker(state = pickerState)
@@ -329,10 +329,10 @@ fun AlarmSettingsScreen(
                             AlarmScheduler.computeNextTrigger(pickerState.hour, pickerState.minute),
                         )
                     }
-                }) { Text("Set") }
+                }) { Text("Atur") }
             },
             dismissButton = {
-                TextButton(onClick = { showTimePicker = false }) { Text("Cancel") }
+                TextButton(onClick = { showTimePicker = false }) { Text("Batal") }
             },
         )
     }
@@ -403,14 +403,14 @@ private fun AlarmSongPickerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Pick songs (${selected.size})") },
+        title = { Text("Pilih lagu (${selected.size})") },
         text = {
             if (songs.isEmpty()) {
                 Text(
                     when (source) {
-                        AlarmSource.DOWNLOADS -> "No downloaded songs."
-                        AlarmSource.CACHED -> "No cached songs."
-                        AlarmSource.PLAYLIST -> "No songs in your playlists."
+                        AlarmSource.DOWNLOADS -> "Tidak ada lagu yang diunduh."
+                        AlarmSource.CACHED -> "Tidak ada lagu di cache."
+                        AlarmSource.PLAYLIST -> "Tidak ada lagu di daftar putar Anda."
                     },
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -484,11 +484,11 @@ private fun relativeTime(targetMillis: Long): String {
     val hours = totalMin / 60
     val minutes = totalMin % 60
     return when {
-        hours == 0L && minutes <= 1L -> "in a moment"
-        hours == 0L -> "in $minutes min"
-        hours < 24 && minutes == 0L -> "in ${hours}h"
-        hours < 24 -> "in ${hours}h ${minutes}m"
-        else -> "tomorrow"
+        hours == 0L && minutes <= 1L -> "sebentar lagi"
+        hours == 0L -> "dalam $minutes mnt"
+        hours < 24 && minutes == 0L -> "dalam ${hours}j"
+        hours < 24 -> "dalam ${hours}j ${minutes}m"
+        else -> "besok"
     }
 }
 

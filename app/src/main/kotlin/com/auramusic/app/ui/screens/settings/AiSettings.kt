@@ -172,7 +172,7 @@ fun AiSettings(
             title = stringResource(R.string.ai_provider),
             current = aiProvider,
             values = aiProviders.keys.toList(),
-            valueText = { it }
+            valueText = { if (it == "Custom") "Kustom" else it }
         )
     }
 
@@ -253,7 +253,7 @@ fun AiSettings(
             current = if (openRouterModel in commonModels) openRouterModel else "custom_input",
             values = commonModels + "custom_input",
             valueText = { 
-                if (it == "custom_input") "Custom" else it
+                if (it == "custom_input") "Kustom" else it
             }
         )
     }
@@ -294,7 +294,7 @@ fun AiSettings(
                     Material3SettingsItem(
                         icon = painterResource(R.drawable.explore_outlined),
                         title = { Text(stringResource(R.string.ai_provider)) },
-                        description = { Text(aiProvider) },
+                        description = { Text(if (aiProvider == "Custom") "Kustom" else aiProvider) },
                         onClick = { showProviderDialog = true }
                     ),
                     if (aiProvider == "Custom") {

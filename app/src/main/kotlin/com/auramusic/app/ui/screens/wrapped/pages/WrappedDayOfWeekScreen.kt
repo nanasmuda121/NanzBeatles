@@ -57,7 +57,7 @@ fun WrappedDayOfWeekScreen(
         }
     }
 
-    val dayNames = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    val dayNames = listOf("Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min")
     val maxMinutes = listeningByDayOfWeek.values.maxOrNull()?.coerceAtLeast(1) ?: 1
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -74,7 +74,7 @@ fun WrappedDayOfWeekScreen(
                 enter = fadeIn(animationSpec = tween(1000, delayMillis = 200)) + slideInVertically(animationSpec = tween(1000, delayMillis = 200))
             ) {
                 Text(
-                    text = "Your Week in Music",
+                    text = "Pekan Musik Anda",
                     style = TextStyle(
                         fontFamily = bbh_bartle,
                         fontSize = 40.sp,
@@ -96,7 +96,7 @@ fun WrappedDayOfWeekScreen(
                 enter = fadeIn(animationSpec = tween(1000, delayMillis = 400)) + slideInVertically(animationSpec = tween(1000, delayMillis = 400))
             ) {
                 Text(
-                    text = "$peakDay was your music day",
+                    text = "$peakDay adalah hari musik Anda",
                     style = MaterialTheme.typography.titleLarge.copy(
                         color = Color.White,
                         textAlign = TextAlign.Center
@@ -135,7 +135,7 @@ fun WrappedDayOfWeekScreen(
                                 trackColor = Color.White.copy(alpha = 0.2f),
                             )
                             Text(
-                                text = "${minutes}m",
+                                text = "${minutes} mnt",
                                 color = Color.White.copy(alpha = 0.8f),
                                 fontSize = 12.sp,
                                 modifier = Modifier.width(48.dp),

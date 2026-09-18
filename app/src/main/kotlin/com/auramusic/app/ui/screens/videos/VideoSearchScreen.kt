@@ -1172,7 +1172,7 @@ private fun SearchHeroVideoCard(
                         .align(Alignment.BottomStart)
                         .padding(8.dp)
                         .clip(RoundedCornerShape(6.dp))
-                        .background(Color(0xFFE53935))
+                        .background(Color(0xFF222222))
                         .padding(horizontal = 6.dp, vertical = 2.dp)
                 ) {
                     Text(

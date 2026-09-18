@@ -1037,8 +1037,8 @@ private fun ThumbnailWithBadge(
         )
         when {
             isLive -> TextBadge(
-                text = "LIVE",
-                containerColor = Color(0xFFE53935),
+                text = stringResource(R.string.live),
+                containerColor = Color(0xFF222222),
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(6.dp),

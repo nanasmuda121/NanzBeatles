@@ -894,7 +894,7 @@ internal fun FeedVideoGridCard(
                         .align(Alignment.BottomStart)
                         .padding(8.dp)
                         .clip(RoundedCornerShape(6.dp))
-                        .background(Color(0xFFE53935))
+                        .background(Color(0xFF222222))
                         .padding(horizontal = 7.dp, vertical = 3.dp)
                 ) {
                     Box(
@@ -1033,7 +1033,7 @@ internal fun FeedVideoListRow(
                         .align(Alignment.BottomStart)
                         .padding(6.dp)
                         .clip(RoundedCornerShape(5.dp))
-                        .background(Color(0xFFE53935))
+                        .background(Color(0xFF222222))
                         .padding(horizontal = 5.dp, vertical = 1.dp)
                 ) {
                     Text(

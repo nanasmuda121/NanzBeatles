@@ -95,7 +95,7 @@ class NewReleasesViewModel @Inject constructor() : ViewModel() {
                         Timber.e(throwable, "Failed to load new releases browse")
                     }
             } catch (e: Exception) {
-                _error.value = e.message ?: "Unknown error"
+                _error.value = e.message ?: "Kesalahan tidak diketahui"
                 Timber.e(e, "Error loading new releases")
             } finally {
                 _isLoading.value = false

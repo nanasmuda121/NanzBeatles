@@ -326,7 +326,7 @@ fun PlayerMenu(
                         text = stringResource(R.string.copy_link),
                         onClick = {
                             val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                            val clip = android.content.ClipData.newPlainText("Song Link", "https://music.youtube.com/watch?v=${mediaMetadata.id}")
+                            val clip = android.content.ClipData.newPlainText("Tautan Lagu", "https://music.youtube.com/watch?v=${mediaMetadata.id}")
                             clipboard.setPrimaryClip(clip)
                             android.widget.Toast.makeText(context, R.string.link_copied, android.widget.Toast.LENGTH_SHORT).show()
                             onDismiss()
@@ -1057,7 +1057,7 @@ fun ListenTogetherDialog(
                     isCreatingRoom = false
                     val clipboard =
                         context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                    val clip = android.content.ClipData.newPlainText("ListenTogetherRoom", event.roomCode)
+                    val clip = android.content.ClipData.newPlainText("RuangListenTogether", event.roomCode)
                     clipboard.setPrimaryClip(clip)
                 }
 
@@ -1261,7 +1261,7 @@ fun ListenTogetherDialog(
                                     FilledTonalButton(
                                         onClick = {
                                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                            val clip = android.content.ClipData.newPlainText("Listen Together Link", inviteLink)
+                                            val clip = android.content.ClipData.newPlainText("Tautan Dengarkan Bersama", inviteLink)
                                             clipboard.setPrimaryClip(clip)
                                             Toast.makeText(context, R.string.copied_to_clipboard, Toast.LENGTH_SHORT).show()
                                         }
@@ -1280,7 +1280,7 @@ fun ListenTogetherDialog(
                                     FilledTonalButton(
                                         onClick = {
                                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                            val clip = android.content.ClipData.newPlainText("Room Code", room.roomCode)
+                                            val clip = android.content.ClipData.newPlainText("Kode Ruang", room.roomCode)
                                             clipboard.setPrimaryClip(clip)
                                             Toast.makeText(context, R.string.copied_to_clipboard, Toast.LENGTH_SHORT).show()
                                         }

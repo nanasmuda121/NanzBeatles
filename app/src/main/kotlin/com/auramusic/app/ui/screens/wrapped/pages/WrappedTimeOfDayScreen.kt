@@ -58,14 +58,21 @@ fun WrappedTimeOfDayScreen(
         "Night" to "\u2B50"
     )
 
+    val timeLabels = mapOf(
+        "Morning" to "Pagi",
+        "Afternoon" to "Siang",
+        "Evening" to "Sore",
+        "Night" to "Malam"
+    )
+
     val peakTime = listeningByTimeOfDay.maxByOrNull { it.value }?.key ?: "Night"
 
     val subtitle = when (peakTime) {
-        "Morning" -> "You're an early bird who starts the day with music"
-        "Afternoon" -> "Afternoons are your musical sweet spot"
-        "Evening" -> "Evenings set the perfect mood for your tunes"
-        "Night" -> "Night owl detected - music fuels your late hours"
-        else -> "You have unique listening habits"
+        "Morning" -> "Anda bangun pagi dan menyambut hari dengan musik"
+        "Afternoon" -> "Siang hari adalah waktu terbaik Anda untuk musik"
+        "Evening" -> "Sore hari menjadi suasana sempurna untuk alunan lagu Anda"
+        "Night" -> "Pendengar larut malam - musik menemani malam hening Anda"
+        else -> "Anda memiliki kebiasaan mendengarkan yang unik"
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -82,7 +89,7 @@ fun WrappedTimeOfDayScreen(
                 enter = fadeIn(animationSpec = tween(1000, delayMillis = 200)) + slideInVertically(animationSpec = tween(1000, delayMillis = 200))
             ) {
                 Text(
-                    text = "When You Listen",
+                    text = "Waktu Mendengarkan Anda",
                     style = TextStyle(
                         fontFamily = bbh_bartle,
                         fontSize = 40.sp,
@@ -100,7 +107,7 @@ fun WrappedTimeOfDayScreen(
                 enter = fadeIn(animationSpec = tween(1000, delayMillis = 400)) + slideInVertically(animationSpec = tween(1000, delayMillis = 400))
             ) {
                 Text(
-                    text = "${timeEmojis[peakTime]} $peakTime Listener",
+                    text = "${timeEmojis[peakTime]} Pendengar ${timeLabels[peakTime] ?: peakTime}",
                     style = MaterialTheme.typography.headlineMedium.copy(
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
@@ -143,7 +150,7 @@ fun WrappedTimeOfDayScreen(
                                 fontSize = 32.sp
                             )
                             Text(
-                                text = timeOfDay,
+                                text = timeLabels[timeOfDay] ?: timeOfDay,
                                 color = Color.White.copy(alpha = 0.8f),
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Medium
@@ -156,7 +163,7 @@ fun WrappedTimeOfDayScreen(
                                 fontFamily = bbh_bartle
                             )
                             Text(
-                                text = "${minutes} min",
+                                text = "${minutes} mnt",
                                 color = Color.White.copy(alpha = 0.6f),
                                 fontSize = 12.sp
                             )

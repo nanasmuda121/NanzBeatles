@@ -299,7 +299,7 @@ fun CachePlaylistScreen(
                                     } else {
                                         playerConnection.playQueue(
                                             ListQueue(
-                                                title = "Cache Songs",
+                                                title = "Lagu Cache",
                                                 items = cachedSongs.map { it.toMediaItem() },
                                                 startIndex = cachedSongs.indexOfFirst { it.id == song.id }
                                             )
@@ -517,7 +517,7 @@ private fun CachePlaylistHeader(
                 onClick = {
                     playerConnection.playQueue(
                         ListQueue(
-                            title = "Cache Songs",
+                            title = "Lagu Cache",
                             items = songs.shuffled().map { it.toMediaItem() },
                         )
                     )
@@ -543,7 +543,7 @@ private fun CachePlaylistHeader(
                 onClick = {
                     playerConnection.playQueue(
                         ListQueue(
-                            title = "Cache Songs",
+                            title = "Lagu Cache",
                             items = songs.map { it.toMediaItem() },
                         )
                     )

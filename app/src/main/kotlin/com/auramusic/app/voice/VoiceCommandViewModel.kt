@@ -102,7 +102,7 @@ import javax.inject.Inject
         if (voiceEnabled && wakeWordEnabled && hasMicPermission && isAppInForeground) {
             WakeWordService.stop(context)
         }
-        val greetingText = "Hello! How can I help you today?"
+        val greetingText = "Halo! Ada yang bisa saya bantu hari ini?"
         _uiState.update {
             VoiceUiState(
                 isVisible = true,
@@ -246,7 +246,7 @@ import javax.inject.Inject
                         android.util.Log.d("VoiceCommandViewModel", "WakeWordDetected received, showing overlay")
                         stopEverything()
                         consecutiveErrors = 0
-                        val greetingText = "Hello! How can I help you today?"
+                        val greetingText = "Halo! Ada yang bisa saya bantu hari ini?"
                         _uiState.update {
                             VoiceUiState(
                                 isVisible = true,
@@ -295,7 +295,7 @@ import javax.inject.Inject
             processCommand(remainingText)
         } else {
             // Greet user and wait for command
-            val greetingText = "Hello! How can I help you today?"
+            val greetingText = "Halo! Ada yang bisa saya bantu hari ini?"
             _uiState.update {
                 VoiceUiState(
                     isVisible = true,
@@ -352,7 +352,7 @@ import javax.inject.Inject
                     _uiState.update {
                         it.copy(
                             phase = VoicePhase.ERROR,
-                            errorMessage = "I didn't catch that"
+                            errorMessage = "Saya kurang mendengar itu"
                         )
                     }
                     scheduleOverlayDismiss()
@@ -415,7 +415,7 @@ import javax.inject.Inject
             val command = VoiceCommandParser.parseCommand(text, customWakeWord)
             when (command) {
                 is VoiceCommand.WakeWordDetected -> {
-                    val greetingText = "Hello! How can I help you today?"
+                    val greetingText = "Halo! Ada yang bisa saya bantu hari ini?"
                     _uiState.update {
                         it.copy(
                             mode = VoiceMode.COMMAND,
@@ -440,7 +440,7 @@ import javax.inject.Inject
                 }
 
                 is VoiceCommand.Unknown -> {
-                    val feedback = "I didn't understand that"
+                    val feedback = "Saya tidak memahami perintah tersebut"
                     _uiState.update {
                         it.copy(
                             phase = VoicePhase.FEEDBACK,

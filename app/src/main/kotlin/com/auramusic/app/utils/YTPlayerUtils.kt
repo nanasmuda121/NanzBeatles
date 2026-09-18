@@ -179,7 +179,7 @@ object YTPlayerUtils {
         if (mainPlayerResponse?.playabilityStatus?.status != "OK" && errorReason != null) {
             throw PlaybackException(errorReason, null, PlaybackException.ERROR_CODE_REMOTE_ERROR)
         }
-        throw Exception("Could not find stream url")
+        throw Exception("Tidak dapat menemukan URL streaming")
     }
 
     private suspend fun buildPlaybackData(
@@ -373,7 +373,7 @@ return format
             }
         }
 
-        throw Exception("No video stream available for videoId: $videoId")
+        throw Exception("Tidak ada streaming video yang tersedia untuk ID video: $videoId")
     }
 
     /**

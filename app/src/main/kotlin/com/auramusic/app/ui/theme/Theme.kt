@@ -58,12 +58,36 @@ fun NanzBeatlesTheme(
         style = PaletteStyle.Monochrome
     )
 
-    // Apply pureBlack modification if needed
+    // Apply pureBlack modification and ensure maximum contrast (black text on white cards, etc.)
     val colorScheme = remember(baseColorScheme, pureBlack, darkTheme) {
-        if (darkTheme && pureBlack) {
+        val scheme = if (darkTheme && pureBlack) {
             baseColorScheme.pureBlack(true)
         } else {
             baseColorScheme
+        }
+        if (!darkTheme) {
+            scheme.copy(
+                onPrimary = if (scheme.primary.luminance() > 0.5f) Color.Black else Color.White,
+                onPrimaryContainer = if (scheme.primaryContainer.luminance() > 0.5f) Color.Black else Color.White,
+                onSecondary = if (scheme.secondary.luminance() > 0.5f) Color.Black else Color.White,
+                onSecondaryContainer = if (scheme.secondaryContainer.luminance() > 0.5f) Color.Black else Color.White,
+                onTertiary = if (scheme.tertiary.luminance() > 0.5f) Color.Black else Color.White,
+                onTertiaryContainer = if (scheme.tertiaryContainer.luminance() > 0.5f) Color.Black else Color.White,
+                onSurface = Color.Black,
+                onSurfaceVariant = Color(0xFF2B2B2B),
+                onBackground = Color.Black,
+            )
+        } else {
+            scheme.copy(
+                onPrimary = if (scheme.primary.luminance() > 0.5f) Color.Black else Color.White,
+                onPrimaryContainer = if (scheme.primaryContainer.luminance() > 0.5f) Color.Black else Color.White,
+                onSecondary = if (scheme.secondary.luminance() > 0.5f) Color.Black else Color.White,
+                onSecondaryContainer = if (scheme.secondaryContainer.luminance() > 0.5f) Color.Black else Color.White,
+                onTertiary = if (scheme.tertiary.luminance() > 0.5f) Color.Black else Color.White,
+                onTertiaryContainer = if (scheme.tertiaryContainer.luminance() > 0.5f) Color.Black else Color.White,
+                onSurface = Color(0xFFEEEEEE),
+                onSurfaceVariant = Color(0xFFBDBDBD),
+            )
         }
     }
 

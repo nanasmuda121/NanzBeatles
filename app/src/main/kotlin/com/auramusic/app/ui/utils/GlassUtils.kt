@@ -43,22 +43,23 @@ import com.auramusic.app.utils.rememberPreference
 fun Modifier.liquidGlass(
     enabled: Boolean,
     cornerRadius: Dp = 18.dp,
-    alpha: Float = 0.20f,
+    alpha: Float = 0.85f,
     blurRadius: Dp = 35.dp
 ): Modifier {
     return this.then(
         if (enabled) {
             val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-            val glassBaseAlpha = if (isDark) alpha.coerceAtLeast(0.35f) else alpha.coerceAtLeast(0.25f)
+            val glassBaseAlpha = if (isDark) 0.88f else 0.92f
+            val baseColor = if (isDark) Color(0xFF161616) else Color(0xFFF6F6F6)
             val borderBrush = Brush.verticalGradient(
                 listOf(
-                    if (isDark) Color.White.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.45f),
-                    if (isDark) Color.White.copy(alpha = 0.05f) else Color.White.copy(alpha = 0.12f)
+                    if (isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.14f),
+                    if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.04f)
                 )
             )
             val highlightBrush = Brush.verticalGradient(
                 listOf(
-                    if (isDark) Color.White.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.20f),
+                    if (isDark) Color.White.copy(alpha = 0.09f) else Color.White.copy(alpha = 0.45f),
                     Color.Transparent
                 )
             )
@@ -70,7 +71,7 @@ fun Modifier.liquidGlass(
                     shape = RoundedCornerShape(cornerRadius)
                 )
                 .background(
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = glassBaseAlpha),
+                    color = baseColor.copy(alpha = glassBaseAlpha),
                     shape = RoundedCornerShape(cornerRadius)
                 )
                 .background(
@@ -97,16 +98,17 @@ fun LiquidGlassContainer(
 ) {
     if (enabled) {
         val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-        val baseAlpha = if (isDark) 0.65f else 0.45f
+        val baseAlpha = if (isDark) 0.88f else 0.92f
+        val baseColor = if (isDark) Color(0xFF141414) else Color(0xFFF7F7F7)
         val borderBrush = Brush.verticalGradient(
             listOf(
-                Color.White.copy(alpha = 0.22f),
-                Color.White.copy(alpha = 0.05f)
+                if (isDark) Color.White.copy(alpha = 0.22f) else Color.Black.copy(alpha = 0.12f),
+                if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.04f)
             )
         )
         val highlightBrush = Brush.verticalGradient(
             listOf(
-                Color.White.copy(alpha = 0.12f),
+                if (isDark) Color.White.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.40f),
                 Color.Transparent
             )
         )
@@ -119,24 +121,25 @@ fun LiquidGlassContainer(
                     shape = RoundedCornerShape(cornerRadius)
                 )
         ) {
-            // Backdrop blurred layer (Android 12+)
+            // Backdrop blurred frosted layer (Android 12+ hardware blur + frosted scrim)
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .background(
-                        color = Color(0xFF121212).copy(alpha = baseAlpha),
-                        shape = RoundedCornerShape(cornerRadius)
-                    )
-                    .background(
-                        brush = highlightBrush,
-                        shape = RoundedCornerShape(cornerRadius)
-                    )
+                    .clip(RoundedCornerShape(cornerRadius))
                     .then(
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                             Modifier.blur(blurRadius)
                         } else {
                             Modifier
                         }
+                    )
+                    .background(
+                        color = baseColor.copy(alpha = baseAlpha),
+                        shape = RoundedCornerShape(cornerRadius)
+                    )
+                    .background(
+                        brush = highlightBrush,
+                        shape = RoundedCornerShape(cornerRadius)
                     )
             )
             // Crisp foreground content layer

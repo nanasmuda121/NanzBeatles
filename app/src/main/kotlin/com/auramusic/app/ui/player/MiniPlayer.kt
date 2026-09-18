@@ -8,6 +8,9 @@
 package com.auramusic.app.ui.player
 
 import android.content.res.Configuration
+import android.os.Build
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -238,26 +241,9 @@ private fun NewMiniPlayer(
     val showSubscribe by rememberPreference(MiniPlayerShowSubscribeKey, defaultValue = true)
     val showHardware by rememberPreference(MiniPlayerShowHardwareKey, defaultValue = true)
 
-    val backgroundColor = when {
-        // Liquid glass effect - works in all theme modes including pure black
-        liquidGlassEnabled -> {
-            val isDark = useDarkTheme
-            val adjustedOpacity = if (isDark) liquidGlassOpacity.coerceAtLeast(0.3f) else liquidGlassOpacity
-            if (isDark && pureBlack) {
-                Color(0xFF1A1A1A).copy(alpha = 0.6f)
-            } else if (isDark) {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = adjustedOpacity + 0.25f)
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = adjustedOpacity + 0.1f)
-            }
-        }
-        // Pure black mode - solid black when liquid glass is off
-        pureBlack && useDarkTheme -> Color.Black
-        else -> MaterialTheme.colorScheme.surfaceContainer
-    }
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val outlineColor = MaterialTheme.colorScheme.outline
-    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+    val primaryColor = if (useDarkTheme) Color.White else Color.Black
+    val outlineColor = if (useDarkTheme) MaterialTheme.colorScheme.outline else Color(0x33000000)
+    val onSurfaceColor = if (useDarkTheme) Color.White else Color.Black
     val errorColor = MaterialTheme.colorScheme.error
 
     Box(
@@ -332,22 +318,69 @@ private fun NewMiniPlayer(
                 .height(miniPlayerHeight.dp)
                 .offset { IntOffset(offsetXAnimatable.value.roundToInt(), 0) }
                 .clip(RoundedCornerShape(miniPlayerCornerRadius.dp))
-                .background(color = backgroundColor)
+                .let { base ->
+                    if (!liquidGlassEnabled) {
+                        base.background(
+                            color = if (pureBlack && useDarkTheme) Color.Black else MaterialTheme.colorScheme.surfaceContainer
+                        )
+                    } else base
+                }
                 .border(
                     width = 1.dp,
                     brush = if (liquidGlassEnabled) {
-                        androidx.compose.ui.graphics.Brush.verticalGradient(
-                            listOf(
-                                Color.White.copy(alpha = 0.28f),
-                                Color.White.copy(alpha = 0.06f)
+                        if (useDarkTheme) {
+                            androidx.compose.ui.graphics.Brush.verticalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = 0.25f),
+                                    Color.White.copy(alpha = 0.05f)
+                                )
                             )
-                        )
+                        } else {
+                            androidx.compose.ui.graphics.Brush.verticalGradient(
+                                listOf(
+                                    Color.Black.copy(alpha = 0.15f),
+                                    Color.Black.copy(alpha = 0.04f)
+                                )
+                            )
+                        }
                     } else {
                         androidx.compose.ui.graphics.SolidColor(outlineColor.copy(alpha = 0.3f))
                     },
                     shape = RoundedCornerShape(miniPlayerCornerRadius.dp)
                 )
         ) {
+            if (liquidGlassEnabled) {
+                // Frosted glass blurred backdrop (hardware blur on Android 12+ and frosted scrim)
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .then(
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                Modifier.blur(liquidGlassBlurRadius.dp)
+                            } else {
+                                Modifier
+                            }
+                        )
+                        .background(
+                            color = if (useDarkTheme) {
+                                if (pureBlack) Color(0xFF0A0A0A).copy(alpha = 0.94f)
+                                else Color(0xFF141414).copy(alpha = 0.90f)
+                            } else {
+                                Color(0xFFF7F7F7).copy(alpha = 0.94f)
+                            },
+                            shape = RoundedCornerShape(miniPlayerCornerRadius.dp)
+                        )
+                        .background(
+                            brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                                listOf(
+                                    if (useDarkTheme) Color.White.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.45f),
+                                    Color.Transparent
+                                )
+                            ),
+                            shape = RoundedCornerShape(miniPlayerCornerRadius.dp)
+                        )
+                )
+            }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 8.dp),
@@ -600,6 +633,13 @@ private fun LegacyMiniPlayer(
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val pureBlack by rememberPreference(PureBlackMiniPlayerKey, defaultValue = false)
+    val isSystemInDarkTheme = isSystemInDarkTheme()
+    val darkTheme by rememberEnumPreference(DarkModeKey, defaultValue = DarkMode.AUTO)
+    val useDarkTheme = remember(darkTheme, isSystemInDarkTheme) {
+        if (darkTheme == DarkMode.AUTO) isSystemInDarkTheme else darkTheme == DarkMode.ON
+    }
+    val liquidGlassEnabled by rememberPreference(LiquidGlassEffectKey, defaultValue = true)
+    val liquidGlassBlurRadius by rememberPreference(LiquidGlassBlurRadiusKey, defaultValue = 35f)
     
     val playbackState by playerConnection.playbackState.collectAsState()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
@@ -643,8 +683,9 @@ private fun LegacyMiniPlayer(
         (600 / (1f + kotlin.math.exp(-(-11.44748 * swipeSensitivity + 9.04945)))).roundToInt()
     }
     
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val trackColor = MaterialTheme.colorScheme.surfaceVariant
+    val isDark = useDarkTheme
+    val primaryColor = if (isDark) Color.White else Color.Black
+    val trackColor = if (isDark) Color.White.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.15f)
 
     Box(
         modifier = modifier
@@ -652,10 +693,28 @@ private fun LegacyMiniPlayer(
             .height(MiniPlayerHeight)
             .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal))
             .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-            .background(
-                if (pureBlack && isSystemInDarkTheme()) Color.Black
-                else MaterialTheme.colorScheme.surfaceContainer
-            )
+            .let { base ->
+                if (!liquidGlassEnabled) {
+                    base.background(
+                        if (pureBlack && isDark) Color.Black
+                        else MaterialTheme.colorScheme.surfaceContainer
+                    )
+                } else {
+                    base.border(
+                        width = 1.dp,
+                        brush = if (isDark) {
+                            androidx.compose.ui.graphics.Brush.verticalGradient(
+                                listOf(Color.White.copy(alpha = 0.20f), Color.Transparent)
+                            )
+                        } else {
+                            androidx.compose.ui.graphics.Brush.verticalGradient(
+                                listOf(Color.Black.copy(alpha = 0.12f), Color.Transparent)
+                            )
+                        },
+                        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                    )
+                }
+            }
             .let { baseModifier ->
                 if (swipeThumbnail) {
                     baseModifier.pointerInput(Unit) {
@@ -712,6 +771,36 @@ private fun LegacyMiniPlayer(
                 } else baseModifier
             }
     ) {
+        if (liquidGlassEnabled) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .then(
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            Modifier.blur(liquidGlassBlurRadius.dp)
+                        } else {
+                            Modifier
+                        }
+                    )
+                    .background(
+                        color = if (isDark) {
+                            if (pureBlack) Color(0xFF0A0A0A).copy(alpha = 0.94f)
+                            else Color(0xFF141414).copy(alpha = 0.90f)
+                        } else {
+                            Color(0xFFF7F7F7).copy(alpha = 0.94f)
+                        }
+                    )
+                    .background(
+                        brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                            listOf(
+                                if (isDark) Color.White.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.40f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+            )
+        }
+
         // Progress bar - uses drawWithContent to avoid recomposition
         Box(
             modifier = Modifier
@@ -754,7 +843,11 @@ private fun LegacyMiniPlayer(
                     enabled = canSkipNext && !isListenTogetherGuest,
                     onClick = if (isListenTogetherGuest) ({}) else ({ playerConnection.seekToNext() }),
             ) {
-                Icon(painter = painterResource(R.drawable.skip_next), contentDescription = null)
+                Icon(
+                    painter = painterResource(R.drawable.skip_next),
+                    contentDescription = null,
+                    tint = if (isDark) Color.White else Color.Black
+                )
             }
         }
 
@@ -821,6 +914,7 @@ private fun LegacyPlayPauseButton(
                 }
             ),
             contentDescription = null,
+            tint = if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) Color.White else Color.Black,
         )
     }
 }
@@ -886,9 +980,10 @@ private fun LegacyMiniMediaInfo(
                 .weight(1f)
                 .padding(horizontal = 6.dp),
         ) {
+            val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
             Text(
                 text = mediaMetadata.title,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = if (isDark) Color.White else Color.Black,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
@@ -899,7 +994,7 @@ private fun LegacyMiniMediaInfo(
             if (mediaMetadata.artists.any { it.name.isNotBlank() }) {
                 Text(
                     text = mediaMetadata.artists.joinToString { it.name },
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (isDark) Color(0xFFCCCCCC) else Color(0xFF333333),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
@@ -923,9 +1018,10 @@ private fun SubscribeButton(
     val libraryArtist by database.artist(artistId).collectAsState(initial = null)
     val isSubscribed = libraryArtist?.artist?.bookmarkedAt != null
     
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val outlineColor = MaterialTheme.colorScheme.outline
-    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val primaryColor = if (isDark) Color.White else Color.Black
+    val outlineColor = if (isDark) MaterialTheme.colorScheme.outline else Color(0x33000000)
+    val onSurfaceColor = if (isDark) Color.White else Color.Black
 
     Box(
         contentAlignment = Alignment.Center,
@@ -974,9 +1070,10 @@ private fun SubscribeButton(
 private fun HardwareIntegrationButton(
     onClick: (() -> Unit)?
 ) {
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val outlineColor = MaterialTheme.colorScheme.outline
-    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val primaryColor = if (isDark) Color.White else Color.Black
+    val outlineColor = if (isDark) MaterialTheme.colorScheme.outline else Color(0x33000000)
+    val onSurfaceColor = if (isDark) Color.White else Color.Black
 
     val hardwareManager = LocalHardwareIntegrationManager.current
     val active by hardwareManager?.activeHardware?.collectAsState()
@@ -1022,9 +1119,10 @@ private fun FavoriteButton(songId: String) {
     val librarySong by database.song(songId).collectAsState(initial = null)
     val isLiked = librarySong?.song?.liked == true
 
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val errorColor = MaterialTheme.colorScheme.error
-    val outlineColor = MaterialTheme.colorScheme.outline
-    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+    val outlineColor = if (isDark) MaterialTheme.colorScheme.outline else Color(0x33000000)
+    val onSurfaceColor = if (isDark) Color.White else Color.Black
 
     Box(
         contentAlignment = Alignment.Center,

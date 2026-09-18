@@ -128,7 +128,7 @@ fun SpeedDialGridItem(
                     Icon(
                         painter = painterResource(R.drawable.ic_push_pin),
                         contentDescription = "Pinned",
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(10.dp)
                     )
                 }

@@ -65,7 +65,7 @@
     <string name="search_failed">Pencarian gagal</string>
     <!-- Top bar -->
     <plurals name="n_selected">
-        <item quantity="other">__ PH_0 __ dipilih</item>
+        <item quantity="other">%d dipilih</item>
     </plurals>
     <!-- Home -->
     <string name="history">Riwayat</string>
@@ -135,7 +135,7 @@
     <string name="remove_from_audiobooks">Hapus dari buku audio</string>
     <string name="clear_resume_position">Hapus posisi resume</string>
     <string name="resume_playback">Lanjutkan Memutar</string>
-    <string name="resume_at">Lanjutkan di __ PH_0__ dari __PH_1 __</string>
+    <string name="resume_at">Lanjutkan di %1$s dari %2$s</string>
     <string name="filter_community_playlists">Daftar putar komunitas</string>
     <string name="filter_featured_playlists">Daftar putar unggulan</string>
     <string name="filter_bookmarked">Ditandai</string>
@@ -157,8 +157,8 @@
     <string name="liked_songs">Lagu yang disukai</string>
     <string name="downloaded_songs">Lagu yang diunduh</string>
     <string name="playlist_is_empty">Daftar putar kosong</string>
-    <string name="remove_download_playlist_confirm">Apakah Anda benar - benar ingin menghapus semua lagu daftar putar \" __ PH_0 __ \" dari penyimpanan Lagu yang Diunduh?</string>
-    <string name="delete_playlist_confirm">Anda yakin ingin menghapus daftar putar \" __PH_0 __ \"?</string>
+    <string name="remove_download_playlist_confirm">Apakah Anda benar-benar ingin menghapus semua lagu daftar putar \"%s\" dari penyimpanan Lagu yang Diunduh?</string>
+    <string name="delete_playlist_confirm">Anda yakin ingin menghapus daftar putar \"%s\"?</string>
     <string name="my_top">Puncak Saya</string>
     <string name="cached_playlist">Disinggahkan: </string>
     <string name="uploaded_playlist">Telah diunggah</string>
@@ -295,55 +295,55 @@
     <string name="skip_duplicates">Lewati duplikat</string>
     <string name="add_anyway">Tambahkan saja</string>
     <string name="duplicates_description_single">Lagu sudah ada di daftar putar Anda</string>
-    <string name="duplicates_description_multiple">__PH_0 __ lagu sudah ada di daftar putar Anda</string>
+    <string name="duplicates_description_multiple">%d lagu sudah ada di daftar putar Anda</string>
     <!-- Noun -->
     <plurals name="n_song">
-        <item quantity="one">__ PH_0 __ lagu</item>
-        <item quantity="other">__ PH_0 __ lagu</item>
+        <item quantity="one">%d lagu</item>
+        <item quantity="other">%d lagu</item>
     </plurals>
     <plurals name="n_artist">
-        <item quantity="one">__ PH_0 __ artis</item>
-        <item quantity="other">__ PH_0 __ seniman</item>
+        <item quantity="one">%d artis</item>
+        <item quantity="other">%d seniman</item>
     </plurals>
     <plurals name="n_album">
-        <item quantity="one">__ PH_0 __ album</item>
-        <item quantity="other">__ PH_0 __ album</item>
+        <item quantity="one">%d album</item>
+        <item quantity="other">%d album</item>
     </plurals>
     <plurals name="n_playlist">
-        <item quantity="one">__PH_0 __ daftar putar</item>
-        <item quantity="other">__PH_0 __ daftar putar</item>
+        <item quantity="one">%d daftar putar</item>
+        <item quantity="other">%d daftar putar</item>
     </plurals>
     <plurals name="n_audiobook">
-        <item quantity="one">__PH_0 __ buku audio</item>
-        <item quantity="other">__PH_0 __ buku audio</item>
+        <item quantity="one">%d buku audio</item>
+        <item quantity="other">%d buku audio</item>
     </plurals>
     <plurals name="n_week">
-        <item quantity="one">__ PH_0 __ minggu</item>
-        <item quantity="other">__ PH_0 __ minggu</item>
+        <item quantity="one">%d minggu</item>
+        <item quantity="other">%d minggu</item>
     </plurals>
     <plurals name="n_month">
-        <item quantity="one">__ PH_0 __ bulan</item>
-        <item quantity="other">__ PH_0 __ bulan</item>
+        <item quantity="one">%d bulan</item>
+        <item quantity="other">%d bulan</item>
     </plurals>
     <plurals name="n_year">
-        <item quantity="one">__ PH_0 __ tahun</item>
-        <item quantity="other">__ PH_0 __ tahun</item>
+        <item quantity="one">%d tahun</item>
+        <item quantity="other">%d tahun</item>
     </plurals>
     <plurals name="n_minute">
         <item quantity="one">1 menit</item>
-        <item quantity="other">__ PH_0 __ menit</item>
+        <item quantity="other">%d menit</item>
     </plurals>
     <plurals name="minute">
         <item quantity="one">1 menit</item>
-        <item quantity="other">__ PH_0 __ menit</item>
+        <item quantity="other">%d menit</item>
     </plurals>
     <plurals name="seconds">
         <item quantity="one">1 detik</item>
-        <item quantity="other">__ PH_0 __ detik</item>
+        <item quantity="other">%d detik</item>
     </plurals>
     <!-- Snackbar -->
     <string name="playlist_imported">Daftar putar diimpor</string>
-    <string name="removed_song_from_playlist">Menghapus \" __PH_0 __ \" dari daftar putar</string>
+    <string name="removed_song_from_playlist">Menghapus \"%s\" dari daftar putar</string>
     <string name="playlist_synced">Daftar putar disinkronkan</string>
     <string name="undo">Urungkan</string>
     <string name="already_in_playlist">Sudah ada dalam daftar putar</string>
@@ -474,14 +474,14 @@
     <string name="tertiary_color_style">Warna tersier</string>
     <string name="enable_swipe_thumbnail">Aktifkan gambar mini geser</string>
     <string name="swipe_sensitivity">Sensitivitas gesek</string>
-    <string name="sensitivity_percentage">__ PH_0____PH_1 __</string>
+    <string name="sensitivity_percentage">%d%%</string>
     <string name="lyrics">Lirik</string>
     <string name="lyrics_text_size">Ukuran teks lirik</string>
     <string name="lyrics_line_spacing">Jarak baris lirik</string>
     <string name="lyrics_animation_style">Animasi lirik</string>
     <plurals name="n_time">
-        <item quantity="one">__ PH_0 __ kali</item>
-        <item quantity="other">__ PH_0 __ kali</item>
+        <item quantity="one">%d kali</item>
+        <item quantity="other">%d kali</item>
     </plurals>
     <string name="none">Tidak ada</string>
     <string name="fade">Pudar</string>
@@ -501,7 +501,7 @@
     <string name="auto_scroll">Gulir otomatis</string>
     <string name="lyrics_offset">Offset lirik</string>
     <string name="lyrics_instrumental_indicator">Indikator instrumental</string>
-    <string name="lyrics_instrumental_indicator_desc">Tampilkan catatan musik &amp; kemajuan antar baris (gap ≥ __ PH_0__s)</string>
+    <string name="lyrics_instrumental_indicator_desc">Tampilkan catatan musik &amp; kemajuan antar baris (gap ≥ %1$ds)</string>
     <string name="lyrics_connected_lines">Saluran yang terhubung</string>
     <string name="lyrics_connected_lines_desc">Biarkan animasi sinkronisasi kata selesai bahkan ketika baris berikutnya dimulai (misalnya vokal latar belakang)</string>
     <string name="lyrics_custom_font">Font lirik</string>
@@ -607,12 +607,12 @@
     <string name="audio_quality">Kualitas audio</string>
     <string name="audio_quality_auto">Auto</string>
     <plurals name="profiles_count">
-        <item quantity="one">__ PH_0 __ profil</item>
-        <item quantity="other">__ PH_0 __ profil</item>
+        <item quantity="one">%d profil</item>
+        <item quantity="other">%d profil</item>
     </plurals>
     <plurals name="band_count">
-        <item quantity="one">__ PH_0 __ band</item>
-        <item quantity="other">__ PH_0 __ band</item>
+        <item quantity="one">%d band</item>
+        <item quantity="other">%d band</item>
     </plurals>
     <string name="audio_quality_high">Tinggi (256 kbps - YouTube Music HQ)</string>
     <string name="audio_quality_low">Rendah (64 kbps)</string>
@@ -690,7 +690,7 @@
     <string name="clear_image_cache">Hapus singgahan gambar</string>
     <string name="max_song_cache_size">Ukuran singgahan lagu maksimum</string>
     <string name="clear_song_cache">Hapus tembolok lagu</string>
-    <string name="size_used">__ PH_0 __ digunakan</string>
+    <string name="size_used">%s digunakan</string>
     <string name="clear_downloads_dialog">Anda yakin ingin menghapus semua lagu yang diunduh?</string>
     <string name="clear_song_cache_dialog">Anda yakin ingin menghapus cache lagu?</string>
     <string name="clear_image_cache_dialog">Anda yakin ingin menghapus singgahan gambar?</string>
@@ -722,7 +722,7 @@
     <string name="backup_create_failed">Tidak dapat membuat cadangan</string>
     <string name="restore_failed">Gagal memulihkan cadangan</string>
     <string name="importing_csv">Mengimpor lagu…</string>
-    <string name="percentage_format">__ PH_0____PH_1 __</string>
+    <string name="percentage_format">%d%%</string>
     <string name="recently_converted">Baru saja dikonversi</string>
     <!-- CSV import -->
     <string name="map_csv_columns">Petakan kolom CSV</string>
@@ -730,7 +730,7 @@
     <string name="artist_name_column">Kolom nama artis</string>
     <string name="song_title_column">Kolom judul lagu</string>
     <string name="youtube_url_column">Kolom URL YouTube</string>
-    <string name="column_label">Kolom __ PH_0 __</string>
+    <string name="column_label">Kolom %d</string>
     <!-- Discord -->
     <string name="discord_integration">Integrasi Discord</string>
     <string name="discord_information">NanzBeatles menggunakan pustaka KizzyRPC untuk mengatur status akun Discord Anda. Ini melibatkan penggunaan koneksi Discord Gateway, yang dapat dianggap sebagai pelanggaran terhadap tos Discord. Namun, tidak ada kasus yang diketahui dari akun pengguna yang ditangguhkan karena alasan ini. Gunakan dengan risiko Anda sendiri.\ nNanzBeatleshanya akan mengekstrak token Anda, dan semua yang lain disimpan secara lokal.</string>
@@ -768,7 +768,7 @@
     <string name="listen_together_room_code">Kode Ruang</string>
     <string name="listen_together_join_requests">Gabung Permintaan</string>
     <string name="listen_together_blocked_users">Tidak ada pengguna yang diblokir</string>
-    <string name="listen_together_blocked_users_count">__PH_0 __ pengguna yang diblokir</string>
+    <string name="listen_together_blocked_users_count">%d pengguna yang diblokir</string>
     <string name="listen_together_no_blocked_users">Tidak ada pengguna yang diblokir</string>
     <string name="listen_together_settings_desc">Konfigurasikan pengaturan Listen Together</string>
     <string name="listen_together_server_url">Alamat Server</string>
@@ -793,7 +793,7 @@
     <string name="listen_together_users">Pengguna</string>
     <string name="listen_together_suggestion_sent">Saran terkirim</string>
     <string name="listen_together_suggestion_received">Saran diterima</string>
-    <string name="listen_together_join_request_notification">__ PH_0 __ ingin bergabung</string>
+    <string name="listen_together_join_request_notification">%s ingin bergabung</string>
     <string name="listen_together_notification_channel_name">Dengarkan Bersama</string>
     <string name="listen_together_notification_channel_desc">Pemberitahuan untuk ruangan Listen Together</string>
     <string name="listen_together_room_created">Ruangan dibuat</string>
@@ -832,10 +832,10 @@
     <string name="collab_playlist_add_song">Lagu ditambahkan ke daftar putar kolaboratif</string>
     <string name="collab_playlist_remove_song">Lagu dihapus dari daftar putar kolaboratif</string>
     <string name="collab_playlist_badge">Kolaboratif</string>
-    <string name="collab_playlist_members">__ PH_0 __ anggota</string>
+    <string name="collab_playlist_members">%d anggota</string>
     <string name="add_to_collab_playlist">Tambahkan ke daftar putar kolaboratif</string>
     <string name="start_collab_playlist">Mulai Daftar Putar Kolaboratif</string>
-    <string name="collab_playlist_tracks">__ PH_0 __ trek</string>
+    <string name="collab_playlist_tracks">%d trek</string>
     <string name="collab_playlist_empty">Lagu yang diputar selama sesi ini akan muncul di sini</string>
     <string name="collab_playlist_saved">Daftar putar kolaboratif disimpan ke pustaka</string>
     <string name="save_to_library">Simpan ke Pustaka</string>
@@ -881,38 +881,38 @@
     <string name="delete_profile_desc">Hapus profil ini?</string>
     <string name="delete_profile_confirmation">Hapus profil</string>
     <!-- Wrapped -->
-    <string name="wrapped_ready_title">__PH_0 __Anda sudah siap!</string>
+    <string name="wrapped_ready_title">Wrapped %s Anda sudah siap!</string>
     <string name="wrapped_ready_subtitle">Lihat bulan Anda dalam musik</string>
     <string name="open">Terbuka</string>
-    <string name="wrapped_year">__ PH_0 __</string>
+    <string name="wrapped_year">%s</string>
     <string name="wrapped_intro_title">Bulan musik Anda</string>
     <string name="wrapped_intro_subtitle">Temukan lagu, artis, dan lainnya</string>
-    <string name="wrapped_intro_button">Lihat __PH_0 __ saya</string>
+    <string name="wrapped_intro_button">Lihat %s saya</string>
     <string name="wrapped_logo_content_description">NanzBeatles Dibungkus</string>
     <string name="wrapped_thank_you">Terima kasih sudah mendengarkan.</string>
     <string name="wrapped_special_thanks">Terima kasih khusus kepada Anda karena telah mendukung NanzBeatles!</string>
     <string name="wrapped_close">Tutup</string>
     <string name="wrapped_total_songs_title">Total lagu yang didengarkan</string>
-    <string name="wrapped_total_songs_subtitle">__ PH_0 __ lagu</string>
+    <string name="wrapped_total_songs_subtitle">%d lagu</string>
     <string name="wrapped_total_artists_title">Total artis</string>
-    <string name="wrapped_total_artists_subtitle">__ PH_0 __ seniman</string>
+    <string name="wrapped_total_artists_subtitle">%d seniman</string>
     <string name="wrapped_total_albums_title">Total album</string>
-    <string name="wrapped_total_albums_subtitle">__ PH_0 __ album</string>
+    <string name="wrapped_total_albums_subtitle">%d album</string>
     <string name="wrapped_top_song_title">Lagu teratas</string>
-    <string name="wrapped_top_song_listening_time">Waktu mendengarkan: __ PH_0__</string>
+    <string name="wrapped_top_song_listening_time">Waktu mendengarkan: %s</string>
     <string name="wrapped_top_song_album_art_content_description">Seni album untuk lagu top</string>
     <string name="wrapped_top_artist_title">Artis papan atas</string>
-    <string name="wrapped_top_artist_listening_time">Waktu mendengarkan: __ PH_0__</string>
+    <string name="wrapped_top_artist_listening_time">Waktu mendengarkan: %s</string>
     <string name="wrapped_top_artist_image_content_description">Gambar artis</string>
     <string name="wrapped_top_5_songs_title">5 lagu teratas</string>
     <string name="wrapped_top_5_artists_title">5 artis teratas</string>
     <string name="wrapped_top_artist_albums_title">Album Artis Teratas</string>
-    <string name="wrapped_album_listening_time">__ PH_0 __ waktu mendengarkan</string>
-    <string name="wrapped_album_listening_time_minutes">__ PH_0 __ menit</string>
+    <string name="wrapped_album_listening_time">Waktu mendengarkan %s</string>
+    <string name="wrapped_album_listening_time_minutes">%d menit</string>
     <string name="wrapped_playlist_ready">Daftar putar Anda sudah siap</string>
-    <string name="album_art_for">Seni album untuk __ PH_0__</string>
+    <string name="album_art_for">Seni album untuk %s</string>
     <string name="album_cover_desc">Sampul album</string>
-    <string name="wrapped_playlist_title">Daftar putar __ PH_0 __Anda yang dibungkus</string>
+    <string name="wrapped_playlist_title">Daftar putar Wrapped %s Anda</string>
     <string name="wrapped_create_playlist">Buat daftar putar</string>
     <string name="wrapped_playlist_saved">Daftar putar disimpan</string>
     <string name="wrapped_no_data">Data tidak tersedia</string>
@@ -1007,13 +1007,13 @@
     <string name="crash_close">Tutup Aplikasi</string>
     <string name="crash_share_logs">Bagikan log</string>
     <!-- Download descriptions -->
-    <string name="download_desc">Unduh __ PH_0 __</string>
+    <string name="download_desc">Unduh %s</string>
     <string name="download_playlist_desc">Unduh semua lagu di daftar putar</string>
     <string name="download_in_progress_desc">Pengunduhan sedang berlangsung</string>
     <string name="remove_download_playlist_desc">Hapus lagu yang diunduh</string>
-    <string name="edit_desc">Edit __ PH_0 __</string>
-    <string name="delete_desc">Hapus __ PH_0 __</string>
-    <string name="share_desc">Bagikan __ PH_0 __</string>
+    <string name="edit_desc">Edit %s</string>
+    <string name="delete_desc">Hapus %s</string>
+    <string name="share_desc">Bagikan %s</string>
     <string name="add_to_queue_desc">Tambahkan ke antrean</string>
     <string name="play_next_desc">Putar berikutnya</string>
     <string name="add_to_playlist_desc">Tambahkan ke daftar putar</string>
@@ -1032,7 +1032,7 @@
     <string name="generating_image">Membuat gambar…</string>
     <string name="please_wait">Harap tunggu…</string>
     <string name="max_selection_limit">Batas seleksi maksimum tercapai</string>
-    <string name="lyrics_from_provider">Lirik dari __ PH_0__</string>
+    <string name="lyrics_from_provider">Lirik dari %1$s</string>
     <!-- Seek bar -->
     <string name="seek_backward_dynamic">Cari Mundur</string>
     <string name="seek_forward_dynamic">Cari Maju</string>
@@ -1048,7 +1048,7 @@
     <string name="dislike_all">Tidak menyukai semua</string>
     <!-- Player details -->
     <string name="details_desc">Lihat detail lagu</string>
-    <string name="casting_to">Casting ke __ PH_0__</string>
+    <string name="casting_to">Casting ke %s</string>
     <string name="starting_radio">Memulai radio…</string>
     <string name="play_all">Putar semua</string>
     <!-- Video mode -->
@@ -1084,8 +1084,8 @@
     <string name="video_player_comments_unavailable">Komentar tidak tersedia untuk video ini</string>
     <string name="video_player_no_recommendations">Tidak ada rekomendasi yang tersedia</string>
     <string name="video_player_loading_recommendations">Memuat rekomendasi…</string>
-    <string name="video_player_subscribe_count">__ PH_0 __ pelanggan</string>
-    <string name="video_player_views">__ PH_0 __ penayangan</string>
+    <string name="video_player_subscribe_count">%s pelanggan</string>
+    <string name="video_player_views">%s penayangan</string>
     <string name="video_player_autoplay_next">Putar otomatis berikutnya</string>
     <string name="video_player_autoplay_next_desc">Putar video rekomendasi berikutnya secara otomatis</string>
     <string name="video_player_add_to_playlist">Tambahkan ke daftar putar</string>
@@ -1102,8 +1102,8 @@
     <string name="video_player_volume">Volume</string>
     <!-- Music Alarm -->
     <string name="alarm_title">Alarm musik</string>
-    <string name="alarm_subtitle">Alarm dijadwalkan untuk __ PH_0__</string>
-    <string name="alarm_snooze">Tunda __ PH_0 __ menit</string>
+    <string name="alarm_subtitle">Alarm dijadwalkan untuk %1$s</string>
+    <string name="alarm_snooze">Tunda %1$d menit</string>
     <string name="alarm_dismiss">Abaikan</string>
     <string name="alarm_channel_name">Alarm musik</string>
     <string name="alarm_channel_desc">Alarm bangun yang memutar lagu pilihan Anda.</string>

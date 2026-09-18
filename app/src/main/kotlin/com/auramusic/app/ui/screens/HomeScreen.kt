@@ -641,6 +641,13 @@ fun HomeScreen(
                             containerColor = if (glassApplyHomeCards) Color.Transparent else MaterialTheme.colorScheme.primaryContainer,
                         ),
                     ) {
+                        val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+                        val contentColor = if (glassApplyHomeCards) {
+                            if (isDark) Color.White else Color.Black
+                        } else {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        }
+
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -650,7 +657,7 @@ fun HomeScreen(
                             Icon(
                                 painter = painterResource(R.drawable.group),
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                tint = contentColor,
                                 modifier = Modifier.size(28.dp)
                             )
                             Spacer(modifier = Modifier.width(12.dp))
@@ -658,18 +665,18 @@ fun HomeScreen(
                                 Text(
                                     text = stringResource(R.string.listen_together),
                                     style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    color = contentColor
                                 )
                                 Text(
                                     text = if (isInRoom) stringResource(R.string.listen_together_in_room) else stringResource(R.string.listen_together_start_or_join),
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                    color = contentColor.copy(alpha = 0.7f)
                                 )
                             }
                             Icon(
                                 painter = painterResource(R.drawable.arrow_forward),
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                tint = contentColor
                             )
                         }
                     }
@@ -704,12 +711,19 @@ fun HomeScreen(
                                 containerColor = if (glassApplyHomeCards) Color.Transparent else MaterialTheme.colorScheme.secondaryContainer,
                             ),
                         ) {
+                            val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+                            val contentColor = if (glassApplyHomeCards) {
+                                if (isDark) Color.White else Color.Black
+                            } else {
+                                MaterialTheme.colorScheme.onSecondaryContainer
+                            }
+
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(
                                         painter = painterResource(R.drawable.library_music),
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        tint = contentColor,
                                         modifier = Modifier.size(28.dp)
                                     )
                                     Spacer(modifier = Modifier.width(12.dp))
@@ -717,12 +731,12 @@ fun HomeScreen(
                                         Text(
                                             text = stringResource(R.string.resume_playback),
                                             style = MaterialTheme.typography.labelLarge,
-                                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
+                                            color = contentColor.copy(alpha = 0.8f),
                                         )
                                         Text(
                                             text = song.song.title,
                                             style = MaterialTheme.typography.titleMedium,
-                                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                            color = contentColor,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
                                         )
@@ -733,13 +747,13 @@ fun HomeScreen(
                                                 makeTimeString(durationMs),
                                             ),
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                                            color = contentColor.copy(alpha = 0.7f),
                                         )
                                     }
                                     Icon(
                                         painter = painterResource(R.drawable.play),
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        tint = contentColor,
                                     )
                                 }
                                 if (durationMs > 0L) {
@@ -774,6 +788,13 @@ fun HomeScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (isWrappedDataReady) {
+                                    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+                                    val contentColor = if (glassApplyHomeCards) {
+                                        if (isDark) Color.White else Color.Black
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    }
+
                                     Column(
                                         modifier = Modifier.padding(16.dp),
                                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -789,14 +810,16 @@ fun HomeScreen(
                                             style = MaterialTheme.typography.headlineLarge.copy(
                                                 fontFamily = bbhFont,
                                                 textAlign = TextAlign.Center
-                                            )
+                                            ),
+                                            color = contentColor
                                         )
                                         Spacer(modifier = Modifier.height(8.dp))
                                         Text(
                                             text = stringResource(R.string.wrapped_ready_subtitle),
                                             style = MaterialTheme.typography.bodyLarge.copy(
                                                 textAlign = TextAlign.Center
-                                            )
+                                            ),
+                                            color = contentColor.copy(alpha = 0.8f)
                                         )
                                         Spacer(modifier = Modifier.height(16.dp))
                                         Button(onClick = {

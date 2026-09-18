@@ -346,8 +346,8 @@
     <string name="switch_to_audio">转至音频</string>
     <string name="enable_video_mode">录像</string>
     <string name="enable_video_mode_desc">录像歌曲的自动录像剪辑</string>
-    <string name="aura_canvas">AuraCanvas</string>
-    <string name="aura_canvas_desc">在社区表演中发现一对口的“AuraCanvas”录像带。 试验.</string>
+    <string name="aura_canvas">VideoCanvas</string>
+    <string name="aura_canvas_desc">在社区表演中发现一对口的“VideoCanvas”录像带。 试验.</string>
     <string name="closed_captions">封闭轨道</string>
     <string name="closed_captions_desc">录像剪辑期间的插栏</string>
     <string name="subtitle_font_size">分标题F</string>

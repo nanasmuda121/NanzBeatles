@@ -942,13 +942,13 @@
     <string name="alarm_channel_desc">Desperta la alarma que toca tus canciones seleccionadas.</string>
     <string name="experimental_style">Experimental (animado)</string>
     <string name="lyrics_from_provider">Letras de %1$s</string>
-    <string name="aura_canvas_desc">Mostrar bucles AuraCanvas videos detrás del arte del álbum cuando se encuentra un partido en el manifiesto comunitario. Experimental.</string>
+    <string name="aura_canvas_desc">Mostrar bucles VideoCanvas videos detrás del arte del álbum cuando se encuentra un partido en el manifiesto comunitario. Experimental.</string>
     <plurals name="seconds">
         <item quantity="one">1 segundo</item>
         <item quantity="many">%d segundos</item>
         <item quantity="other">%d segundos</item>
     </plurals>
-    <string name="aura_canvas">AuraCanvas</string>
+    <string name="aura_canvas">VideoCanvas</string>
     <string name="audiobooks">Audiolibros</string>
     <string name="audiobooks_desc">Las largas pistas de biblioteca aparecen aquí automáticamente. Pin todo lo que quieras mantener como audiolibro.</string>
     <string name="no_audiobooks_found">Todavía no hay audiolibros. Añadir largas pistas a tu biblioteca o pinchar una pista como audiolibro.</string>

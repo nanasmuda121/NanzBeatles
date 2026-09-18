@@ -225,7 +225,7 @@ fun PlayerSettings(
     )
     val (auraCanvasEnabled, onAuraCanvasEnabledChange) = rememberPreference(
         AuraCanvasEnabledKey,
-        defaultValue = false
+        defaultValue = true
     )
     val (subtitlesEnabled, onSubtitlesEnabledChange) = rememberPreference(
         SubtitlesEnabledKey,

@@ -978,7 +978,7 @@
     <string name="switch_to_audio">تحويل إلى الصوت</string>
     <string name="enable_video_mode">Video Mode</string>
     <string name="enable_video_mode_desc">عزف الفيديو التلقائي لأغاني الفيديو</string>
-    <string name="aura_canvas">AuraCanvas</string>
+    <string name="aura_canvas">VideoCanvas</string>
     <string name="aura_canvas_desc">(أظهروا حلقات فيديو لـ (أوراكانفاس خلف فن الألبوم عندما يوجد تطابق في بيان المجتمع تجريبي.</string>
     <string name="closed_captions">Captionsمغلقة</string>
     <string name="closed_captions_desc">عرض ترجمه خلال عزف الفيديو</string>

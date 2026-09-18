@@ -935,8 +935,8 @@
     <string name="switch_to_audio">ஆடியோவுக்கு மாறவும்</string>
     <string name="enable_video_mode">வீடியோ பயன்முறை</string>
     <string name="enable_video_mode_desc">வீடியோ பாடல்களுக்கு தானியங்கி வீடியோ பிளேபேக்கை இயக்கவும்</string>
-    <string name="aura_canvas">மற்றும் மூச்சு</string>
-    <string name="aura_canvas_desc">சமூக மேனிஃபெச்ட்டில் பொருத்தம் கண்டறியப்பட்டால், ஆல்பம் கலைக்குப் பின்னால் லூப்பிங் ஆராகான்வாச் வீடியோக்களைக் காட்டு. ஆய்வு.</string>
+    <string name="aura_canvas">VideoCanvas</string>
+    <string name="aura_canvas_desc">சமூக மேனிஃபெச்ட்டில் பொருத்தம் கண்டறியப்பட்டால், ஆல்பம் கலைக்குப் பின்னால் லூப்பிங் VideoCanvas வீடியோக்களைக் காட்டு. ஆய்வு.</string>
     <string name="closed_captions">மூடிய தலைப்புகள்</string>
     <string name="closed_captions_desc">வீடியோ பிளேபேக்கின் போது வசனங்களைக் காட்டு</string>
     <string name="subtitle_font_size">வசன எழுத்துரு அளவு</string>

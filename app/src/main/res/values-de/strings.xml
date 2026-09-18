@@ -933,8 +933,8 @@
         <item quantity="one">1 sekunde</item>
         <item quantity="other">%d Sekunden</item>
     </plurals>
-    <string name="aura_canvas_desc">Zeigen Sie Looping AuraCanvas Videos hinter Albumkunst, wenn ein Spiel in der Community Manifest gefunden wird. Experimental.</string>
-    <string name="aura_canvas">AuraCanvas</string>
+    <string name="aura_canvas_desc">Zeigen Sie Looping VideoCanvas Videos hinter Albumkunst, wenn ein Spiel in der Community Manifest gefunden wird. Experimental.</string>
+    <string name="aura_canvas">VideoCanvas</string>
     <string name="audiobooks">Hörbücher</string>
     <string name="audiobooks_desc">Lange Bibliothekstracks erscheinen hier automatisch. Pin alles, was Sie als Audiobuch halten möchten.</string>
     <string name="no_audiobooks_found">Noch keine Hörbücher. Fügen Sie lange Tracks zu Ihrer Bibliothek hinzu oder schreiben Sie einen Track als Audiobook.</string>

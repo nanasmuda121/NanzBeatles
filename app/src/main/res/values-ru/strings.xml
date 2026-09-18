@@ -751,8 +751,8 @@
     <string name="switch_to_audio">Переключить на аудио</string>
     <string name="enable_video_mode">Режим видео</string>
     <string name="enable_video_mode_desc">Включить автоматическое переключение на видео, если в песне есть видео</string>
-    <string name="aura_canvas">AuraCanvas</string>
-    <string name="aura_canvas_desc">Показывать повторяющиеся AuraCanvas позади обложки альбома, если есть совпадение в манифесте сообщества. Экспериментальная функция.</string>
+    <string name="aura_canvas">VideoCanvas</string>
+    <string name="aura_canvas_desc">Показывать повторяющиеся VideoCanvas позади обложки альбома, если есть совпадение в манифесте сообщества. Экспериментальная функция.</string>
     <string name="closed_captions">Субтитры</string>
     <string name="closed_captions_desc">Показывать субтитры во время проигрывания видео</string>
     <string name="subtitle_font_size">Размер субтитров</string>

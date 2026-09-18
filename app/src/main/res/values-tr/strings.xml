@@ -949,8 +949,8 @@
     <string name="switch_to_audio">Sese geç</string>
     <string name="enable_video_mode">Video Modu</string>
     <string name="enable_video_mode_desc">Videolu şarkılar için otomatik video oynatmayı etkinleştir</string>
-    <string name="aura_canvas">AuraCanvas</string>
-    <string name="aura_canvas_desc">Topluluk manifestosunda bir eşleşme bulunduğunda, albüm kapağının arkasında AuraCanvas videolarını döngüsel olarak göster. Deneysel.</string>
+    <string name="aura_canvas">VideoCanvas</string>
+    <string name="aura_canvas_desc">Topluluk manifestosunda bir eşleşme bulunduğunda, albüm kapağının arkasında VideoCanvas videolarını döngüsel olarak göster. Deneysel.</string>
     <string name="closed_captions">Kapalı Alt Yazılar</string>
     <string name="closed_captions_desc">Video oynatımı sırasında alt yazıları göster</string>
     <string name="subtitle_font_size">Alt Yazı Yazı Tipi Boyutu</string>

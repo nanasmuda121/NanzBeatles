@@ -734,7 +734,7 @@ fun BottomSheetPlayer(
     }
 
     val backgroundAlpha = state.progress.coerceIn(0f, 1f)
-    val auraCanvasEnabled by rememberPreference(AuraCanvasEnabledKey, false)
+    val auraCanvasEnabled by rememberPreference(AuraCanvasEnabledKey, true)
     var auraCanvasUrl by remember { mutableStateOf<String?>(null) }
     
     LaunchedEffect(auraCanvasEnabled, state.isExpanded, mediaMetadata) {

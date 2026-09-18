@@ -56,7 +56,7 @@ fun AuraCanvasImage(
     durationMs: Long? = null,
     @Suppress("UNUSED_PARAMETER") candidateTracks: List<String> = emptyList(),
 ) {
-    val (enabled, _) = rememberPreference(AuraCanvasEnabledKey, defaultValue = false)
+    val (enabled, _) = rememberPreference(AuraCanvasEnabledKey, defaultValue = true)
     var canvasUrl by remember(title, artist, album, durationMs) { mutableStateOf<String?>(null) }
 
     LaunchedEffect(title, artist, album, durationMs, enabled) {

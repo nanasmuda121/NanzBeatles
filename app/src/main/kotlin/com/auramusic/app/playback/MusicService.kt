@@ -208,7 +208,7 @@ import com.auramusic.app.utils.decodeAudiobookPositions
 import com.auramusic.app.utils.encodeAudiobookPositions
 import com.auramusic.app.utils.get
 import com.auramusic.app.utils.reportException
-import com.auramusic.app.widget.AuraMusicWidgetManager
+import com.auramusic.app.widget.NanzBeatlesWidgetManager
 import com.auramusic.app.widget.MusicWidgetReceiver
 import com.auramusic.app.widget.CompactSquareWidgetReceiver
 import com.auramusic.app.widget.CompactWideWidgetReceiver
@@ -297,7 +297,7 @@ class MusicService :
     lateinit var eqProfileRepository: EQProfileRepository
 
     @Inject
-    lateinit var widgetManager: AuraMusicWidgetManager
+    lateinit var widgetManager: NanzBeatlesWidgetManager
 
     @Inject
     lateinit var poTokenProvider: PoTokenProvider

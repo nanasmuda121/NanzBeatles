@@ -978,8 +978,8 @@
         <item quantity="one">%d segundos</item>
         <item quantity="other">%d segundos</item>
     </plurals>
-    <string name="aura_canvas">AuraCanvas</string>
-    <string name="aura_canvas_desc">Mostrar looping AuraCanvas vídeos por trás da arte do álbum quando uma partida é encontrada no manifesto da comunidade. Experimental.</string>
+    <string name="aura_canvas">VideoCanvas</string>
+    <string name="aura_canvas_desc">Mostrar looping VideoCanvas vídeos por trás da arte do álbum quando uma partida é encontrada no manifesto da comunidade. Experimental.</string>
     <string name="audiobooks">Livros de áudio</string>
     <string name="audiobooks_desc">Faixas de biblioteca longas aparecem aqui automaticamente. Pin qualquer coisa que você queira manter como um audiobook.</string>
     <string name="no_audiobooks_found">Ainda não há audiobooks. Adicione faixas longas à sua biblioteca ou pinte uma faixa como um audiobook.</string>

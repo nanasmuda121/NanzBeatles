@@ -720,7 +720,7 @@ enum class TvSection(val label: String) {
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    painterResource(R.drawable.ic_launcher_foreground),
+                    painterResource(R.mipmap.ic_launcher),
                     contentDescription = "NanzBeatles",
                     tint = Color.Unspecified,
                     modifier = Modifier.size(32.dp)
@@ -893,7 +893,7 @@ fun TvTopBar(
                  contentAlignment = Alignment.Center,
              ) {
                  Icon(
-                     painterResource(R.drawable.ic_launcher_foreground),
+                     painterResource(R.mipmap.ic_launcher),
                      contentDescription = "NanzBeatles",
                      tint = Color.Unspecified,
                      modifier = Modifier.size(26.dp)
@@ -1274,7 +1274,7 @@ fun TvFocusedDetailPanel(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Icon(
-                            painterResource(R.drawable.ic_launcher_foreground),
+                            painterResource(R.mipmap.ic_launcher),
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
                             modifier = Modifier.size(48.dp),

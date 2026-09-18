@@ -151,7 +151,7 @@ fun AboutScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(R.drawable.ic_launcher_foreground),
+                    painter = painterResource(R.mipmap.ic_launcher),
                     contentDescription = "NanzBeatles Logo",
                     modifier = Modifier
                         .size(if (isTablet) 140.dp else 100.dp)

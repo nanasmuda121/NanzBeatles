@@ -47,7 +47,7 @@ class TvRecommendationService : android.app.Service() {
 
         // Android 14 requires startForeground() within 5 seconds
         val notification: Notification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notification_icon)
             .setContentTitle("NanzBeatles")
             .setContentText("Updating recommendations...")
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -144,7 +144,7 @@ class TvRecommendationService : android.app.Service() {
 
         // Update the foreground notification with final info
         val notification: Notification = NotificationCompat.Builder(ctx, NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notification_icon)
             .setContentTitle("NanzBeatles")
             .setContentText("Continue Listening • $queueTitle")
             .setPriority(NotificationCompat.PRIORITY_LOW)

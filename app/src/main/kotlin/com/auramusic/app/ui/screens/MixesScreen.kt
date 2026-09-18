@@ -1,0 +1,104 @@
+/**
+ * Auramusic Project (C) 2026
+ * Licensed under GPL-3.0 | See git history for contributors
+ */
+
+package com.auramusic.app.ui.screens
+
+import android.content.Context
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
+import com.auramusic.app.R
+import com.auramusic.app.ui.component.YouTubeListItem
+import com.auramusic.innertube.YouTube
+import com.auramusic.innertube.MixesPage
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class MixesViewModel @Inject constructor(
+    @ApplicationContext val context: Context,
+) : ViewModel() {
+    val mixesPage = MutableStateFlow<MixesPage?>(null)
+    val isLoading = MutableStateFlow(true)
+
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            loadMixes()
+        }
+    }
+
+    private suspend fun loadMixes() {
+        isLoading.value = true
+        YouTube.mixes().onSuccess { page ->
+            mixesPage.value = page
+        }
+        isLoading.value = false
+    }
+
+    fun refresh() = viewModelScope.launch(Dispatchers.IO) { loadMixes() }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MixesScreen(
+    navController: NavController,
+    scrollBehavior: TopAppBarScrollBehavior?,
+    viewModel: MixesViewModel = hiltViewModel()
+) {
+    val mixesPage by viewModel.mixesPage.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        TopAppBar(
+            title = { Text(stringResource(R.string.mixes)) },
+            scrollBehavior = scrollBehavior
+        )
+
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            LazyColumn(
+                contentPadding = PaddingValues(vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                mixesPage?.mixes?.forEach { section ->
+                    item(key = section.title) {
+                        Text(
+                            text = section.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+                    items(section.items) { item ->
+                        YouTubeListItem(
+                            item = item,
+                            isActive = false,
+                            isPlaying = false
+                        )
+                    }
+                }
+            }
+        }
+    }
+}

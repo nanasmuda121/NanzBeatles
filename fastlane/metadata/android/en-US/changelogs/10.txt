@@ -1,0 +1,4 @@
+- Initial F-Droid release
+- Video playback support
+- Lyrics display and translation
+- Stream music from YouTube Music

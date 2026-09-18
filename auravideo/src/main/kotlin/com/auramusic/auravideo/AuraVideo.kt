@@ -1,0 +1,628 @@
+package com.auramusic.auravideo
+
+import android.util.Log
+import com.auramusic.innertube.NewPipeExtractor
+import com.auramusic.innertube.YouTube
+import com.auramusic.innertube.models.YouTubeClient.Companion.WEB_REMIX
+import com.auramusic.innertube.YouTube.SearchFilter
+import com.auramusic.innertube.models.SongItem
+import com.auramusic.innertube.models.YTItem
+
+object AuraVideo {
+    private const val TAG = "AuraVideo"
+    data class VideoStreamResult(
+        val url: String,
+        val mimeType: String
+    )
+
+    /**
+     * A richer description of how to play a video. YouTube only offers muxed
+     * (audio+video) streams up to 720p, so to reach 1080p or higher we must
+     * combine a video-only stream with a matching audio-only stream.
+     */
+    sealed class VideoStreamSource {
+        /** Single URL that contains both audio and video (muxed). */
+        data class Single(
+            val url: String,
+            val mimeType: String,
+        ) : VideoStreamSource()
+
+        /** Separate video and audio streams that must be merged for playback. */
+        data class Merged(
+            val videoUrl: String,
+            val videoMimeType: String,
+            val audioUrl: String,
+            val audioMimeType: String,
+            val height: Int,
+        ) : VideoStreamSource()
+    }
+
+    data class VideoSearchResult(
+        val videoId: String,
+        val title: String,
+        val channelName: String,
+        val thumbnailUrl: String
+    )
+
+    /**
+     * Available video quality options
+     */
+    enum class VideoQuality(val height: Int, val label: String) {
+        QUALITY_360P(360, "360p"),
+        QUALITY_480P(480, "480p"),
+        QUALITY_720P(720, "720p"),
+        QUALITY_1080P(1080, "1080p")
+    }
+
+    // Default preferred quality - 720p
+    var currentPreferredQuality: VideoQuality = VideoQuality.QUALITY_720P
+
+    /**
+     * Set preferred video quality
+     */
+    fun setPreferredVideoQuality(quality: VideoQuality) {
+        currentPreferredQuality = quality
+    }
+
+    /**
+     * Get all available qualities from a list of video streams
+     */
+    private fun getAvailableQualities(streams: List<org.schabi.newpipe.extractor.stream.VideoStream>): List<VideoQuality> {
+        val qualities = mutableSetOf<VideoQuality>()
+        for (stream in streams) {
+            val height = stream.height
+            when {
+                height >= 1080 -> qualities.add(VideoQuality.QUALITY_1080P)
+                height >= 720 -> qualities.add(VideoQuality.QUALITY_720P)
+                height >= 480 -> qualities.add(VideoQuality.QUALITY_480P)
+                height >= 360 -> qualities.add(VideoQuality.QUALITY_360P)
+            }
+        }
+        return qualities.sortedBy { it.height }
+    }
+
+    /**
+     * Find the best stream matching the preferred quality
+     * Falls back to lower quality if preferred not available
+     */
+    private fun findBestStream(
+        streams: List<org.schabi.newpipe.extractor.stream.VideoStream>,
+        requireAudio: Boolean
+    ): org.schabi.newpipe.extractor.stream.VideoStream? {
+        if (streams.isEmpty()) return null
+
+        // Filter streams based on whether we need audio
+        val filteredStreams = if (requireAudio) {
+            streams.filter { !it.isVideoOnly() }
+        } else {
+            streams
+        }
+
+        // Quality preference order: try exact match first, then fall back to lower qualities only
+        val qualityOrder = when (currentPreferredQuality) {
+            VideoQuality.QUALITY_1080P -> listOf(VideoQuality.QUALITY_1080P, VideoQuality.QUALITY_720P, VideoQuality.QUALITY_480P, VideoQuality.QUALITY_360P)
+            VideoQuality.QUALITY_720P -> listOf(VideoQuality.QUALITY_720P, VideoQuality.QUALITY_480P, VideoQuality.QUALITY_360P)
+            VideoQuality.QUALITY_480P -> listOf(VideoQuality.QUALITY_480P, VideoQuality.QUALITY_360P)
+            VideoQuality.QUALITY_360P -> listOf(VideoQuality.QUALITY_360P)
+        }
+
+        // First pass: try to find exact or closest match at or below preferred quality
+        for (quality in qualityOrder) {
+            // Find streams at exactly the preferred quality or lower (not higher)
+            val matching = filteredStreams.filter { stream ->
+                stream.height <= quality.height && stream.height > 0
+            }
+            if (matching.isNotEmpty()) {
+                // Return the highest quality that doesn't exceed preferred
+                return matching.maxByOrNull { it.height }
+            }
+        }
+
+        // Fallback: if no quality at or below preferred found, find any quality
+        return if (requireAudio && filteredStreams.isNotEmpty()) {
+            filteredStreams.maxByOrNull { it.height }
+        } else {
+            streams.maxByOrNull { it.height }
+        }
+    }
+
+    /**
+     * Search for an official music video for a song
+     */
+    suspend fun searchOfficialMusicVideo(songTitle: String, artistName: String): Result<VideoSearchResult> = runCatching {
+        val songTitleLower = songTitle.lowercase().trim()
+        val artistNameLower = artistName.lowercase().trim()
+        
+        // Normalize: strip bracketed/parenthesized content for comparison
+        val cleanSongTitle = songTitleLower.replace(Regex("\\(.*?\\)|\\[.*?\\]"), "").trim()
+        
+        // Keywords to exclude (lyrics videos, live performances, etc.)
+        val excludeKeywords = listOf(
+            "lyrics", "lyric video", "lyrical",
+            "live", "concert", "performance",
+            "reaction", "react", "cover",
+            "remix", "instrumental",
+            "visualizer", "audio",
+            "karaoke", "sped up", "slowed",
+            "nightcore", "behind the scenes",
+            "making of", "fan made", "shorts",
+            "teaser", "trailer"
+        )
+        
+        // Artist name tokens for matching
+        val artistTokens = artistNameLower.split(" ", ",", "&").map { it.trim() }
+            .filter { it.length > 2 && it !in listOf("the", "and", "feat", "ft", "with", "de", "la") }
+        
+        // Try multiple search queries and keep the best result across ALL queries
+        val searchQueries = listOf(
+            "$songTitle $artistName official music video",
+            "$songTitle $artistName music video",
+            "$songTitle $artistName"
+        )
+        
+        var overallBest: Pair<YTItem, Int>? = null
+        
+        for (searchQuery in searchQueries) {
+            Log.d(TAG, "searchOfficialMusicVideo: Searching with query: $searchQuery")
+            val searchResult = runCatching { YouTube.search(searchQuery, SearchFilter.FILTER_VIDEO).getOrThrow() }
+            
+            if (searchResult.isFailure) {
+                Log.d(TAG, "searchOfficialMusicVideo: Search failed for query: $searchQuery")
+                continue
+            }
+            
+            val items = searchResult.getOrNull()?.items ?: continue
+            if (items.isEmpty()) continue
+            
+            for (item in items) {
+                val title = item.title.lowercase()
+                val cleanTitle = title.replace(Regex("\\(.*?\\)|\\[.*?\\]"), "").trim()
+                val channelName = (item as? SongItem)?.artists?.firstOrNull()?.name?.lowercase() ?: ""
+                
+                var score = 0
+                
+                // Check if this is an actual video song (has video content)
+                val isActualVideoSong = item is SongItem && item.isVideoSong
+                if (isActualVideoSong) score += 30
+                
+                // Check for exclude keywords (lyrics, live, etc.)
+                val hasExcludedKeyword = excludeKeywords.any { title.contains(it) }
+                if (hasExcludedKeyword) {
+                    score -= 50
+                }
+                
+                // Title matching - require the song title to appear in the video title
+                val titleMatch = cleanTitle.contains(cleanSongTitle)
+                if (titleMatch) score += 40
+                
+                // Artist matching - check title and channel name
+                val artistMatch = title.contains(artistNameLower) || 
+                    channelName.contains(artistNameLower) ||
+                    (artistTokens.isNotEmpty() && artistTokens.all { token -> 
+                        title.contains(token) || channelName.contains(token)
+                    })
+                if (artistMatch) score += 35
+                
+                // Both title AND artist must match for a confident result
+                if (!titleMatch && !artistMatch) {
+                    score -= 60
+                } else if (!titleMatch) {
+                    score -= 25
+                } else if (!artistMatch) {
+                    score -= 30
+                }
+                
+                // Prefer official/VEVO channels
+                if (channelName.contains("vevo") || channelName.endsWith("official")) score += 25
+                if (title.contains("official")) score += 10
+                if (title.contains("music video") || title.contains(" mv ") || title.endsWith(" mv")) score += 10
+                
+                Log.d(TAG, "searchOfficialMusicVideo: Scored '${item.title}' = $score (title=$titleMatch, artist=$artistMatch, excluded=$hasExcludedKeyword)")
+                
+                // Only consider videos with positive score and require minimum confidence
+                if (score > 10) {
+                    if (overallBest == null || score > overallBest.second) {
+                        overallBest = item to score
+                    }
+                }
+            }
+            
+            // If we found a high-confidence match, no need to try more queries
+            if (overallBest != null && overallBest.second >= 80) {
+                Log.d(TAG, "searchOfficialMusicVideo: High confidence match found, skipping remaining queries")
+                break
+            }
+        }
+        
+        val selectedVideo = overallBest?.first
+        
+        if (selectedVideo != null) {
+            Log.d(TAG, "searchOfficialMusicVideo: Found video: ${selectedVideo.title} (score=${overallBest?.second})")
+            
+            val channelName = if (selectedVideo is SongItem) {
+                selectedVideo.artists.firstOrNull()?.name ?: artistName
+            } else {
+                artistName
+            }
+            
+            return@runCatching VideoSearchResult(
+                videoId = selectedVideo.id,
+                title = selectedVideo.title,
+                channelName = channelName,
+                thumbnailUrl = selectedVideo.thumbnail ?: ""
+            )
+        }
+        
+        throw Exception("No music video found for '$songTitle' by '$artistName'")
+    }
+
+    /**
+     * Get video stream URL, with automatic search fallback
+     */
+    suspend fun getVideoStreamUrlWithFallback(songTitle: String, artistName: String, videoId: String, isVideoSong: Boolean = true): Result<VideoSearchResult> = runCatching {
+        if (isVideoSong) {
+            // For video songs, keep the original video id and let the caller do
+            // the single authoritative stream resolution. Probing here causes a
+            // duplicate NewPipe extraction before video mode can show anything.
+            return@runCatching VideoSearchResult(
+                videoId = videoId,
+                title = songTitle,
+                channelName = artistName,
+                thumbnailUrl = ""
+            )
+        } else {
+            Log.d(TAG, "Skipping direct lookup for regular (non-video) song, searching for music video instead")
+        }
+        
+        // For regular songs or when direct lookup failed, search for official music video
+        val searchResult = searchOfficialMusicVideo(songTitle, artistName).getOrNull()
+            ?: throw Exception("No video available for this song")
+        
+        searchResult
+    }
+
+    /**
+     * Extract base MIME type without codec parameters.
+     * YouTube returns MIME types like "video/webm; codecs=\"vp9\"" which can cause
+     * ExoPlayer NAL parsing errors when set as top-level MIME type.
+     */
+    private fun sanitizeMimeType(mimeType: String?): String {
+        if (mimeType == null) return "video/mp4"
+        // Extract only the base type (e.g., "video/mp4" from "video/mp4; codecs=\"avc1.4d401f\"")
+        return mimeType.split(";").first().trim()
+    }
+
+    /**
+     * Enhanced MIME type sanitization to prevent NAL parsing errors
+     * - Forces MP4 format for problematic streams
+     * - Removes problematic codec parameters that cause parsing issues
+     */
+    private fun sanitizeMimeTypeForExoPlayer(mimeType: String?): String {
+        // Keep the real container type. Lying about WebM/3GPP as MP4 can make
+        // ExoPlayer select the wrong extractor and produce a black/no-show video.
+        return sanitizeMimeType(mimeType)
+    }
+
+    /**
+     * Check if a MIME type is MP4/H.264 which ExoPlayer handles most reliably
+     */
+    private fun isMp4Format(mimeType: String?): Boolean {
+        val base = sanitizeMimeType(mimeType)
+        return base == "video/mp4" || base == "video/3gpp"
+    }
+
+    /**
+     * Pick the best audio-only stream — prefer the highest-bitrate MP4/M4A
+     * (AAC) for ExoPlayer compatibility, falling back to anything else.
+     */
+    private fun pickBestAudioStream(
+        audioStreams: List<org.schabi.newpipe.extractor.stream.AudioStream>
+    ): org.schabi.newpipe.extractor.stream.AudioStream? {
+        if (audioStreams.isEmpty()) return null
+        val mp4Audios = audioStreams.filter {
+            val mime = it.format?.mimeType?.split(";")?.first()?.trim()
+            mime == "audio/mp4" || mime == "audio/m4a"
+        }
+        return mp4Audios.maxByOrNull { it.averageBitrate }
+            ?: audioStreams.maxByOrNull { it.averageBitrate }
+    }
+
+    /**
+     * Resolve a video as either a single muxed stream or a pair of video-only +
+     * audio-only streams that the caller will merge at the media-source layer.
+     *
+     * YouTube serves muxed streams only up to 720p (often only 360p in
+     * practice). For 1080p and above the only option is a video-only DASH
+     * stream paired with a separate audio-only stream — that's why this
+     * function returns a [VideoStreamSource.Merged] in those cases.
+     */
+    suspend fun getVideoStreamSource(videoId: String): Result<VideoStreamSource> = runCatching {
+        val streamInfo = NewPipeExtractor.getStreamInfo(videoId)
+
+        if (streamInfo != null) {
+            val muxedVideoStreams = streamInfo.videoStreams
+            val videoOnlyStreams = streamInfo.videoOnlyStreams
+            val audioStreams = streamInfo.audioStreams
+
+            Log.d(
+                TAG,
+                "getVideoStreamSource: ${muxedVideoStreams.size} muxed, " +
+                        "${videoOnlyStreams.size} video-only, ${audioStreams.size} audio-only " +
+                        "(preferred=${currentPreferredQuality.label})"
+            )
+
+            fun mergedSource(): VideoStreamSource.Merged? {
+                val videoOnly = findBestStream(videoOnlyStreams, requireAudio = false)
+                val audioOnly = pickBestAudioStream(audioStreams)
+                val videoUrl = videoOnly?.content ?: videoOnly?.url
+                val audioUrl = audioOnly?.content ?: audioOnly?.url
+                if (videoOnly != null && audioOnly != null && !videoUrl.isNullOrBlank() && !audioUrl.isNullOrBlank()) {
+                    Log.d(
+                        TAG,
+                        "getVideoStreamSource: Using MERGED video-only ${videoOnly.resolution} " +
+                                "+ audio ${audioOnly.averageBitrate}bps"
+                    )
+                    return VideoStreamSource.Merged(
+                        videoUrl = videoUrl,
+                        videoMimeType = sanitizeMimeTypeForExoPlayer(videoOnly.format?.mimeType),
+                        audioUrl = audioUrl,
+                        audioMimeType = sanitizeMimeType(audioOnly.format?.mimeType),
+                        height = videoOnly.height,
+                    )
+                }
+                return null
+            }
+
+            fun singleSource(): VideoStreamSource.Single? {
+                val streamGroups = listOf(
+                    muxedVideoStreams.filter { isMp4Format(it.format?.mimeType) },
+                    muxedVideoStreams,
+                )
+                for (streams in streamGroups) {
+                    val stream = findBestStream(streams, requireAudio = true)
+                    val url = stream?.content ?: stream?.url
+                    if (stream != null && !url.isNullOrBlank()) {
+                        Log.d(TAG, "getVideoStreamSource: Using SINGLE muxed stream ${stream.resolution}")
+                        return VideoStreamSource.Single(
+                            url = url,
+                            mimeType = sanitizeMimeTypeForExoPlayer(stream.format?.mimeType),
+                        )
+                    }
+                }
+                return null
+            }
+
+            // When the user asks for above 720p, prefer the video-only + audio-only
+            // merged path because muxed streams cap out below that.
+            if (currentPreferredQuality.height > 720) {
+                mergedSource()?.let { return@runCatching it }
+                Log.d(TAG, "getVideoStreamSource: Merged path unavailable, falling back to muxed/single")
+            }
+
+            singleSource()?.let { return@runCatching it }
+
+            // Some videos only expose separate streams. Merge them even for
+            // <=720p rather than handing ExoPlayer a silent video-only URL.
+            mergedSource()?.let { return@runCatching it }
+        }
+
+        // Fall back to the older resolver, which includes the YouTube player API
+        // fallback if NewPipe cannot extract stream info at all.
+        val singleResult = runCatching { getVideoStreamUrl(videoId).getOrThrow() }
+            .getOrNull()
+            ?: throw Exception("No playable video stream found")
+
+        VideoStreamSource.Single(singleResult.url, singleResult.mimeType)
+    }
+
+    /**
+     * Get video stream URL using NewPipeExtractor
+     * Prioritizes muxed MP4 streams (video+audio, H.264) for best compatibility
+     */
+    suspend fun getVideoStreamUrl(videoId: String): Result<VideoStreamResult> = runCatching {
+        val streamInfo = NewPipeExtractor.getStreamInfo(videoId)
+        
+        if (streamInfo != null) {
+            val muxedVideoStreams = streamInfo.videoStreams // These have both video and audio
+            val videoOnlyStreams = streamInfo.videoOnlyStreams // These are video only (no audio)
+            
+            Log.d(TAG,"AuraVideo: Found ${muxedVideoStreams.size} muxed and ${videoOnlyStreams.size} video-only streams")
+            
+            // Priority 1: Muxed MP4 streams (best compatibility with ExoPlayer)
+            val mp4MuxedStreams = muxedVideoStreams.filter { isMp4Format(it.format?.mimeType) }
+            val bestMp4Muxed = findBestStream(mp4MuxedStreams, requireAudio = true)
+            if (bestMp4Muxed != null) {
+                val url = bestMp4Muxed.content ?: bestMp4Muxed.url
+                if (url != null) {
+                    Log.d(TAG,"AuraVideo: Using muxed MP4 stream with resolution ${bestMp4Muxed.resolution}")
+                    return@runCatching VideoStreamResult(url, sanitizeMimeTypeForExoPlayer(bestMp4Muxed.format?.mimeType))
+                }
+            }
+
+            // Priority 2: Any muxed stream matching preferred quality
+            val bestMuxedStream = findBestStream(muxedVideoStreams, requireAudio = true)
+            if (bestMuxedStream != null) {
+                val url = bestMuxedStream.content ?: bestMuxedStream.url
+                if (url != null) {
+                    Log.d(TAG,"AuraVideo: Using muxed stream with resolution ${bestMuxedStream.resolution}")
+                    return@runCatching VideoStreamResult(url, sanitizeMimeTypeForExoPlayer(bestMuxedStream.format?.mimeType))
+                }
+            }
+            
+            // Priority 3: Video-only MP4 streams
+            val mp4VideoOnlyStreams = videoOnlyStreams.filter { isMp4Format(it.format?.mimeType) }
+            val bestMp4VideoOnly = findBestStream(mp4VideoOnlyStreams, requireAudio = false)
+            if (bestMp4VideoOnly != null) {
+                val url = bestMp4VideoOnly.content ?: bestMp4VideoOnly.url
+                if (url != null) {
+                    Log.d(TAG,"AuraVideo: Using video-only MP4 stream with resolution ${bestMp4VideoOnly.resolution}")
+                    return@runCatching VideoStreamResult(url, sanitizeMimeTypeForExoPlayer(bestMp4VideoOnly.format?.mimeType))
+                }
+            }
+
+            // Priority 4: Any video-only stream
+            val bestVideoOnlyStream = findBestStream(videoOnlyStreams, requireAudio = false)
+            if (bestVideoOnlyStream != null) {
+                val url = bestVideoOnlyStream.content ?: bestVideoOnlyStream.url
+                if (url != null) {
+                    Log.d(TAG,"AuraVideo: Using video-only stream with resolution ${bestVideoOnlyStream.resolution}")
+                    return@runCatching VideoStreamResult(url, sanitizeMimeTypeForExoPlayer(bestVideoOnlyStream.format?.mimeType))
+                }
+            }
+            
+            // Last resort: highest quality muxed stream regardless of format
+            if (muxedVideoStreams.isNotEmpty()) {
+                val fallbackStream = muxedVideoStreams.maxByOrNull { it.bitrate }
+                    if (fallbackStream != null) {
+                        val url = fallbackStream.content ?: fallbackStream.url
+                        if (url != null) {
+                            Log.d(TAG,"AuraVideo: Using fallback muxed stream with resolution ${fallbackStream.resolution}")
+                            return@runCatching VideoStreamResult(url, sanitizeMimeTypeForExoPlayer(fallbackStream.format?.mimeType))
+                        }
+                    }
+            }
+            
+            // Last resort: highest quality video-only stream
+            if (videoOnlyStreams.isNotEmpty()) {
+                val fallbackStream = videoOnlyStreams.maxByOrNull { it.bitrate }
+                if (fallbackStream != null) {
+                    val url = fallbackStream.content ?: fallbackStream.url
+                    if (url != null) {
+                        Log.d(TAG,"AuraVideo: Using fallback video-only stream with resolution ${fallbackStream.resolution}")
+                        return@runCatching VideoStreamResult(url, sanitizeMimeTypeForExoPlayer(fallbackStream.format?.mimeType))
+                    }
+                }
+            }
+        }
+
+        // Fallback to YouTube player API if NewPipe fails
+        Log.d(TAG,"AuraVideo: NewPipe failed, trying YouTube player API")
+        val playerResponse = YouTube.player(videoId, client = WEB_REMIX).getOrThrow()
+        
+        if (playerResponse.playabilityStatus.status != "OK") {
+            throw Exception("Playability error: ${playerResponse.playabilityStatus.reason ?: playerResponse.playabilityStatus.status}")
+        }
+
+        val streamingData = playerResponse.streamingData ?: throw Exception("No streaming data")
+
+        // Check if we need signature deobfuscation
+        val needsDeobfuscation = streamingData.formats?.any { it.signatureCipher != null || it.cipher != null } == true ||
+                streamingData.adaptiveFormats.any { it.signatureCipher != null || it.cipher != null }
+
+        // Try muxed formats first (has both audio and video), prefer MP4
+        val muxedFormats = streamingData.formats ?: emptyList()
+        val mp4MuxedFormats = muxedFormats.filter { isMp4Format(it.mimeType) }
+        
+        // Try MP4 muxed first, then any muxed
+        for (formats in listOf(mp4MuxedFormats, muxedFormats)) {
+            val bestFormat = findBestFormat(formats, currentPreferredQuality, requireAudio = true)
+            var url = bestFormat?.url
+            if (url == null && bestFormat != null && needsDeobfuscation) {
+                url = NewPipeExtractor.getStreamUrl(bestFormat, videoId)
+            }
+            if (url != null) {
+                Log.d(TAG,"AuraVideo: Using YouTube muxed format with height ${bestFormat?.height}")
+                return@runCatching VideoStreamResult(url, sanitizeMimeType(bestFormat?.mimeType))
+            }
+        }
+
+        // Try adaptive formats, prefer MP4
+        val adaptiveFormats = streamingData.adaptiveFormats
+        val mp4AdaptiveFormats = adaptiveFormats.filter { isMp4Format(it.mimeType) }
+        
+        for (formats in listOf(mp4AdaptiveFormats, adaptiveFormats)) {
+            val bestFormat = findBestFormat(formats, currentPreferredQuality, requireAudio = false)
+            var url = bestFormat?.url
+            if (url == null && bestFormat != null && needsDeobfuscation) {
+                url = NewPipeExtractor.getStreamUrl(bestFormat, videoId)
+            }
+            if (url != null) {
+                Log.d(TAG,"AuraVideo: Using YouTube adaptive format with height ${bestFormat?.height}")
+                return@runCatching VideoStreamResult(url, sanitizeMimeType(bestFormat?.mimeType))
+            }
+        }
+
+        throw Exception("No video URL available")
+    }
+
+    /**
+     * Find best format based on preferred quality
+     */
+    private fun findBestFormat(
+        formats: List<com.auramusic.innertube.models.response.PlayerResponse.StreamingData.Format>,
+        quality: VideoQuality,
+        requireAudio: Boolean
+    ): com.auramusic.innertube.models.response.PlayerResponse.StreamingData.Format? {
+        if (formats.isEmpty()) return null
+
+        // Filter to video formats
+        val videoFormats = formats.filter { it.isVideo && it.height != null }
+
+        // Try to find exact quality match first
+        val targetHeight = quality.height
+        val exactMatch = videoFormats.find { it.height == targetHeight }
+        if (exactMatch != null) {
+            return exactMatch
+        }
+
+        // Quality preference order: try lower qualities first before higher ones
+        val qualityOrder = when (quality) {
+            VideoQuality.QUALITY_1080P -> listOf(1080, 720, 480, 360)
+            VideoQuality.QUALITY_720P -> listOf(720, 480, 360, 1080)
+            VideoQuality.QUALITY_480P -> listOf(480, 360, 720, 1080)
+            VideoQuality.QUALITY_360P -> listOf(360, 480, 720, 1080)
+        }
+
+        for (height in qualityOrder) {
+            val match = videoFormats.find { it.height == height }
+            if (match != null) {
+                return match
+            }
+        }
+
+        // Last fallback: highest quality available
+        return videoFormats.maxByOrNull { it.height ?: 0 }
+    }
+
+    suspend fun hasVideoPlayback(videoId: String): Boolean {
+        return try {
+            // First try NewPipeExtractor
+            val streamInfo = NewPipeExtractor.getStreamInfo(videoId)
+            if (streamInfo != null) {
+                val hasVideo = streamInfo.videoStreams.isNotEmpty() || streamInfo.videoOnlyStreams.isNotEmpty()
+                if (hasVideo) return true
+            }
+
+            // Fallback to YouTube player API
+            val playerResponse = YouTube.player(videoId, client = WEB_REMIX).getOrNull()
+            val streamingData = playerResponse?.streamingData
+            
+            if (streamingData != null) {
+                val hasMuxedVideo = streamingData.formats?.any { it.isVideo } == true
+                val hasAdaptiveVideo = streamingData.adaptiveFormats.any { it.isVideo }
+                return hasMuxedVideo || hasAdaptiveVideo
+            }
+            
+            false
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun getVideoDetails(videoId: String): Result<VideoItem> = runCatching {
+        val response = YouTube.player(videoId, client = WEB_REMIX).getOrThrow()
+        val videoDetails = response.videoDetails ?: throw Exception("No video details")
+
+        VideoItem(
+            id = videoDetails.videoId,
+            title = videoDetails.title ?: "",
+            channelName = videoDetails.author ?: "",
+            channelId = videoDetails.channelId,
+            thumbnailUrl = videoDetails.thumbnail?.thumbnails?.lastOrNull()?.url ?: "",
+            duration = videoDetails.lengthSeconds.toIntOrNull() ?: 0,
+            viewCount = videoDetails.viewCount?.toLongOrNull() ?: 0L,
+            uploadDate = null,
+            description = null,
+        )
+    }
+}

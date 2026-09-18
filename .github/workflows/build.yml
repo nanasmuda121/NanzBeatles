@@ -1,0 +1,114 @@
+name: Build
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+env:
+  JAVA_VERSION: '21'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { variant: foss, ui: Mobile, arch: universal, task: FossMobileUniversal, output: fossMobileUniversal, asset: Beatles.apk }
+          - { variant: standalone, ui: Mobile, arch: arm64, task: StandaloneMobileArm64, output: standaloneMobileArm64, asset: Beatles-arm64.apk }
+          - { variant: standalone, ui: Mobile, arch: armeabi, task: StandaloneMobileArmeabi, output: standaloneMobileArmeabi, asset: Beatles-armeabi.apk }
+          - { variant: standalone, ui: Mobile, arch: x86, task: StandaloneMobileX86, output: standaloneMobileX86, asset: Beatles-x86.apk }
+          - { variant: standalone, ui: Mobile, arch: x86_64, task: StandaloneMobileX86_64, output: standaloneMobileX86_64, asset: Beatles-x86_64.apk }
+          - { variant: gms, ui: Mobile, arch: universal, task: GmsMobileUniversal, output: gmsMobileUniversal, asset: Beatles-with-Google-Cast.apk }
+          - { variant: foss, ui: Tv, arch: universal, task: FossTvUniversal, output: fossTvUniversal, asset: Beatles-Tv.apk }
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+
+      - name: Decode keystores
+        env:
+          DEBUG_KEYSTORE: ${{ secrets.DEBUG_KEYSTORE }}
+          RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE }}
+        run: |
+          mkdir -p app/keystore
+          if [ -n "$DEBUG_KEYSTORE" ]; then
+            echo "$DEBUG_KEYSTORE" | base64 -d > app/keystore/debug.keystore
+          else
+            keytool -genkey -v -keystore app/keystore/debug.keystore -alias nanzbeatlesdebug -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=NanzBeatlesDebug, OU=Dev, O=Nanz, L=Jakarta, S=Jakarta, C=ID"
+          fi
+          if [ -n "$RELEASE_KEYSTORE" ]; then
+            echo "$RELEASE_KEYSTORE" | base64 -d > app/keystore/release.keystore
+          else
+            keytool -genkey -v -keystore app/keystore/release.keystore -alias nanzbeatles -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=NanzBeatles, OU=Dev, O=Nanz, L=Jakarta, S=Jakarta, C=ID"
+          fi
+
+      - name: Create local.properties
+        run: |
+          cat > local.properties << EOF
+          sdk.dir=$ANDROID_HOME
+    
+          # LastFM API Keys
+          LASTFM_API_KEY=${{ secrets.LASTFM_API_KEY }}
+          LASTFM_SECRET=${{ secrets.LASTFM_SECRET }}
+     
+          # Paths are resolved relative to the app module
+          debug.storeFile=keystore/debug.keystore
+          debug.storePassword=${{ secrets.DEBUG_STORE_PASSWORD || 'android' }}
+          debug.keyAlias=${{ secrets.DEBUG_KEY_ALIAS || 'nanzbeatlesdebug' }}
+          debug.keyPassword=${{ secrets.DEBUG_KEY_PASSWORD || 'android' }}
+     
+          # Release keystore
+          release.storeFile=keystore/release.keystore
+          release.storePassword=${{ secrets.RELEASE_STORE_PASSWORD || 'android' }}
+          release.keyAlias=${{ secrets.RELEASE_KEY_ALIAS || 'nanzbeatles' }}
+          release.keyPassword=${{ secrets.RELEASE_KEY_PASSWORD || 'android' }}
+     
+          # Persistent Debug keystore
+          debug.persistent.storeFile=keystore/debug.keystore
+          debug.persistent.storePassword=${{ secrets.DEBUG_STORE_PASSWORD || 'android' }}
+          debug.persistent.keyAlias=${{ secrets.DEBUG_KEY_ALIAS || 'nanzbeatlesdebug' }}
+          debug.persistent.keyPassword=${{ secrets.DEBUG_KEY_PASSWORD || 'android' }}
+          EOF
+
+      - name: Build ${{ matrix.variant }} ${{ matrix.ui }} ${{ matrix.arch }} release APK
+        run: |
+          sed -i 's|tinypinyin = "2.0.3"|tinypinyin = "2.0.1"|g' gradle/libs.versions.toml
+          ./gradlew assemble${{ matrix.task }}Release --no-daemon --no-configuration-cache
+
+      - name: Name APK for release
+        run: |
+          mkdir -p release-artifact
+          apk="$(find app/build/outputs/apk/${{ matrix.output }}/release -maxdepth 1 -name '*.apk' -type f | head -n1)"
+          test -n "$apk"
+          cp "$apk" "release-artifact/${{ matrix.asset }}"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.ui }}-${{ matrix.variant }}-${{ matrix.arch }}-release
+          path: release-artifact/${{ matrix.asset }}
+          if-no-files-found: error
+
+      - name: Create or update GitHub Release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload v1.0.0 "release-artifact/${{ matrix.asset }}" --clobber || \
+          gh release create v1.0.0 "release-artifact/${{ matrix.asset }}" --title "NanzBeatles v1.0.0" --notes "### NanzBeatles v1.0.0 (Beatles)" || true

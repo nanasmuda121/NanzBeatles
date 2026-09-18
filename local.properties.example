@@ -1,0 +1,43 @@
+# Local Configuration for AuraMusic
+# Copy this file to local.properties and fill in your actual values
+# DO NOT commit local.properties to version control
+
+# ============================================================================
+# API Keys (Get from respective services)
+# ============================================================================
+
+# Last.fm API Keys
+lastfm.api.key=YOUR_LASTFM_API_KEY_HERE
+lastfm.secret=YOUR_LASTFM_SECRET_HERE
+
+# ============================================================================
+# Signing Configuration - All keystore credentials
+# ============================================================================
+
+# Persistent Debug Keystore
+debug.persistent.storeFile=app/keystore/persistent-debug.keystore
+debug.persistent.storePassword=android
+debug.persistent.keyAlias=androiddebugkey
+debug.persistent.keyPassword=android
+
+# Release Keystore (for Google Play release builds)
+release.storeFile=app/keystore/release.keystore
+release.storePassword=YOUR_KEYSTORE_PASSWORD_HERE
+release.keyAlias=auramusic
+release.keyPassword=YOUR_KEY_PASSWORD_HERE
+
+# Default Debug Keystore
+debug.storeFile=app/keystore/debug.keystore
+debug.storePassword=android
+debug.keyAlias=auramusicdebug
+debug.keyPassword=android
+
+# ============================================================================
+# Firebase Configuration
+# ============================================================================
+
+# Firebase Web Client ID (from Firebase Console)
+firebase.web.client.id=YOUR_WEB_CLIENT_ID.apps.googleusercontent.com
+
+# Firebase Android Client ID (from google-services.json)
+firebase.android.client.id=YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com

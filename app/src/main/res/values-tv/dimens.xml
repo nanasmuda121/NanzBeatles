@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- TV optimized dimensions -->
+    <dimen name="card_width">300dp</dimen>
+    <dimen name="card_height">200dp</dimen>
+    <dimen name="card_margin">20dp</dimen>
+    <dimen name="text_size_large">24sp</dimen>
+    <dimen name="text_size_medium">18sp</dimen>
+    <dimen name="touch_target_size">48dp</dimen>
+</resources>

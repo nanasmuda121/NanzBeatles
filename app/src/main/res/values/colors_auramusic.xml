@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Widget colors for light mode -->
+    <color name="widget_text_primary">#1C1B1F</color>
+    <color name="widget_text_secondary">#49454F</color>
+    <color name="widget_on_tertiary_container">#FFFFFF</color>
+    <color name="widget_on_primary_container">#FFFFFF</color>
+    <color name="widget_play_button_low_icon">#FFFFFF</color>
+    <color name="widget_tertiary_container">#E8DEF8</color>
+    <color name="widget_primary_container">#FFB4AB</color>
+    <color name="widget_mic_active_bg">#FFB4AB</color>
+    <color name="widget_mic_pulse_ring">#FFB4AB</color>
+    <color name="widget_mic_pulse_ring_mid">#FFB4AB</color>
+    <color name="widget_mic_pulse_ring_low">#FFB4AB</color>
+    <color name="widget_mic_pulse_ring_fade">#FFB4AB</color>
+    <color name="widget_play_button_low_bg">#FFB4AB</color>
+
+    <!-- Material theme colors -->
+    <color name="colorOnSurface">#1C1B1F</color>
+</resources>

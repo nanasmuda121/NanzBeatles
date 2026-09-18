@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/widget_primary_container">
+
+    <!-- Full cover album art -->
+    <ImageView
+        android:id="@+id/widget_compact_album_art"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_widget_music_placeholder" />
+
+    <!-- Dark overlay for better contrast -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:text=""
+        android:background="#40000000" />
+
+    <!-- Centered play button -->
+    <FrameLayout
+        android:id="@+id/widget_compact_play_container"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_centerInParent="true"
+        android:background="@drawable/widget_button_circle_large"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:id="@+id/widget_compact_play_pause"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="20dp"
+            android:src="@drawable/ic_widget_play" />
+
+    </FrameLayout>
+
+    <!-- Bottom controls -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:padding="12dp"
+        android:background="#80000000">
+
+        <ImageView
+            android:id="@+id/widget_compact_previous"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@drawable/widget_button_transparent"
+            android:padding="6dp"
+            android:clickable="true"
+            android:src="@drawable/ic_widget_skip_previous" />
+
+        <ImageView
+            android:id="@+id/widget_compact_next"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="24dp"
+            android:background="@drawable/widget_button_transparent"
+            android:padding="6dp"
+            android:clickable="true"
+            android:src="@drawable/ic_widget_skip_next" />
+
+    </LinearLayout>
+
+</RelativeLayout>

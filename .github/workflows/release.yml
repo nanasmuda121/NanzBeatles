@@ -1,0 +1,336 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Version name, for example 2.6.0'
+        required: true
+        type: string
+      version_code:
+        description: 'Build number / Android versionCode, for example 23'
+        required: true
+        type: string
+      previous_tag:
+        description: 'Previous release tag, for example v2.5.0. Leave blank to use the latest published GitHub Release.'
+        required: false
+        default: ''
+        type: string
+      draft:
+        description: 'Create the GitHub release as a draft'
+        required: true
+        default: false
+        type: boolean
+      prerelease:
+        description: 'Mark the GitHub release as a prerelease'
+        required: true
+        default: false
+        type: boolean
+
+env:
+  JAVA_VERSION: '21'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+
+      - name: Prepare release metadata
+        id: metadata
+        env:
+          VERSION_NAME_INPUT: ${{ inputs.version_name || '' }}
+          VERSION_CODE_INPUT: ${{ inputs.version_code || '' }}
+        run: |
+          set -euo pipefail
+
+          if [ -n "${VERSION_NAME_INPUT}" ]; then
+            version_name="${VERSION_NAME_INPUT#v}"
+          else
+            version_name="${GITHUB_REF_NAME#v}"
+          fi
+
+          if [ -n "${VERSION_CODE_INPUT}" ]; then
+            version_code="${VERSION_CODE_INPUT}"
+          else
+            version_code="$(grep -E 'versionCode = [0-9]+' app/build.gradle.kts | head -n1 | grep -Eo '[0-9]+')"
+          fi
+
+          tag_name="v${version_name}"
+          release_title="AuraMusic ${tag_name} (Build ${version_code})"
+
+          echo "version_name=${version_name}" >> "$GITHUB_OUTPUT"
+          echo "version_code=${version_code}" >> "$GITHUB_OUTPUT"
+          echo "tag_name=${tag_name}" >> "$GITHUB_OUTPUT"
+          echo "release_title=${release_title}" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve previous published release
+        id: previous_release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ steps.metadata.outputs.tag_name }}
+          PREVIOUS_TAG_INPUT: ${{ inputs.previous_tag || '' }}
+        run: |
+          set -euo pipefail
+
+          if [ -n "${PREVIOUS_TAG_INPUT}" ]; then
+            previous_tag="${PREVIOUS_TAG_INPUT}"
+          else
+            previous_tag="$(gh release list --limit 100 --json tagName,isDraft,publishedAt --jq '[.[] | select(.isDraft == false)] | sort_by(.publishedAt) | reverse | .[].tagName' | grep -Fxv "${TAG_NAME}" | head -n1 || true)"
+          fi
+
+          if [ -z "${previous_tag}" ]; then
+            echo "Could not find a previous published GitHub Release. Provide previous_tag when running manually." >&2
+            exit 1
+          fi
+
+          echo "previous_tag=${previous_tag}" >> "$GITHUB_OUTPUT"
+          echo "Using ${previous_tag} as the previous release tag."
+
+      - name: Update Android version
+        env:
+          VERSION_NAME: ${{ steps.metadata.outputs.version_name }}
+          VERSION_CODE: ${{ steps.metadata.outputs.version_code }}
+        run: |
+          set -euo pipefail
+          perl -0pi -e 's/versionCode = \d+/versionCode = $ENV{VERSION_CODE}/' app/build.gradle.kts
+          perl -0pi -e 's/versionName = "[^"]+"/versionName = "$ENV{VERSION_NAME}"/' app/build.gradle.kts
+
+      - name: Generate release notes
+        env:
+          VERSION_NAME: ${{ steps.metadata.outputs.version_name }}
+          VERSION_CODE: ${{ steps.metadata.outputs.version_code }}
+        run: |
+          set -euo pipefail
+
+          version_name="${VERSION_NAME}"
+          version_code="${VERSION_CODE}"
+
+          if [ -f RELEASE_NOTES.md ] && grep -q "AuraMusic v${version_name} (Build ${version_code})" RELEASE_NOTES.md; then
+            python3 - <<'PY'
+          import re
+          from pathlib import Path
+          import os
+
+          version_name = os.environ["VERSION_NAME"]
+          version_code = os.environ["VERSION_CODE"]
+          text = Path("RELEASE_NOTES.md").read_text(encoding="utf-8")
+          pattern = rf"^# AuraMusic v{re.escape(version_name)} \(Build {re.escape(version_code)}\).*?(?=^# AuraMusic v|\Z)"
+          m = re.search(pattern, text, re.MULTILINE | re.DOTALL)
+          if m:
+              Path("release-notes-body.md").write_text(m.group(0).strip() + "\n", encoding="utf-8")
+          else:
+              Path("release-notes-body.md").write_text(f"# AuraMusic v{version_name} (Build {version_code})\n\n@chila254 released v{version_name}.\n", encoding="utf-8")
+          PY
+          elif [ -f RELEASE_NOTES.md ]; then
+            cp RELEASE_NOTES.md release-notes-body.md
+          else
+            echo "# AuraMusic v${VERSION_NAME} (Build ${VERSION_CODE})" > release-notes-body.md
+            echo "" >> release-notes-body.md
+            echo "@chila254 released v${VERSION_NAME}." >> release-notes-body.md
+          fi
+
+      - name: Update RELEASE_NOTES.md and CHANGELOG.md
+        env:
+          VERSION_NAME: ${{ steps.metadata.outputs.version_name }}
+          VERSION_CODE: ${{ steps.metadata.outputs.version_code }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          version_name = os.environ["VERSION_NAME"]
+          version_code = os.environ["VERSION_CODE"]
+          body = Path("release-notes-body.md").read_text(encoding="utf-8").strip()
+
+          targets = {
+              "RELEASE_NOTES.md": "Release Notes",
+              "CHANGELOG.md": "Changelog",
+          }
+
+          for filename, suffix in targets.items():
+              path = Path(filename)
+              old = path.read_text(encoding="utf-8") if path.exists() else ""
+              header = f"AuraMusic v{version_name} (Build {version_code})"
+              if header in old:
+                  print(f"{filename} already contains {header}, skipping")
+                  continue
+              new_section = f"# AuraMusic v{version_name} (Build {version_code}) {suffix}\n\n{body}\n\n"
+              path.write_text(new_section + old.lstrip(), encoding="utf-8")
+          PY
+
+      - name: Decode keystores
+        env:
+          DEBUG_KEYSTORE: ${{ secrets.DEBUG_KEYSTORE }}
+          RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE }}
+        run: |
+          set -euo pipefail
+          mkdir -p app/keystore
+          echo "$DEBUG_KEYSTORE" | base64 -d > app/keystore/debug.keystore
+          echo "$RELEASE_KEYSTORE" | base64 -d > app/keystore/release.keystore
+          ls -la app/keystore/
+
+      - name: Create local.properties
+        run: |
+          set -euo pipefail
+          cat > local.properties << EOF
+          sdk.dir=$ANDROID_HOME
+
+          # LastFM API Keys
+          LASTFM_API_KEY=${{ secrets.LASTFM_API_KEY }}
+          LASTFM_SECRET=${{ secrets.LASTFM_SECRET }}
+
+          # Paths are resolved relative to the app module
+          debug.storeFile=keystore/debug.keystore
+          debug.storePassword=${{ secrets.DEBUG_STORE_PASSWORD }}
+          debug.keyAlias=${{ secrets.DEBUG_KEY_ALIAS }}
+          debug.keyPassword=${{ secrets.DEBUG_KEY_PASSWORD }}
+
+          # Release keystore
+          release.storeFile=keystore/release.keystore
+          release.storePassword=${{ secrets.RELEASE_STORE_PASSWORD }}
+          release.keyAlias=${{ secrets.RELEASE_KEY_ALIAS }}
+          release.keyPassword=${{ secrets.RELEASE_KEY_PASSWORD }}
+
+          # Persistent Debug keystore
+          debug.persistent.storeFile=keystore/debug.keystore
+          debug.persistent.storePassword=${{ secrets.DEBUG_STORE_PASSWORD }}
+          debug.persistent.keyAlias=${{ secrets.DEBUG_KEY_ALIAS }}
+          debug.persistent.keyPassword=${{ secrets.DEBUG_KEY_PASSWORD }}
+          EOF
+
+      - name: Build release APK variants
+        run: |
+          set -euo pipefail
+          sed -i 's|tinypinyin = "2.0.3"|tinypinyin = "2.0.1"|g' gradle/libs.versions.toml
+
+          tasks=(
+            assembleFossMobileUniversalRelease
+            assembleGmsMobileUniversalRelease
+            assembleStandaloneMobileArm64Release
+            assembleStandaloneMobileArmeabiRelease
+            assembleStandaloneMobileX86Release
+            assembleStandaloneMobileX86_64Release
+            assembleFossTvUniversalRelease
+          )
+          ./gradlew "${tasks[@]}" --no-daemon --no-configuration-cache
+
+      - name: Collect and rename APK assets
+        env:
+          VERSION_NAME: ${{ steps.metadata.outputs.version_name }}
+          VERSION_CODE: ${{ steps.metadata.outputs.version_code }}
+        run: |
+          set -euo pipefail
+          mkdir -p release-artifacts
+
+          copy_apk() {
+            local source_dir="$1"
+            local output_name="$2"
+            local apk
+            apk="$(find "$source_dir" -maxdepth 1 -name '*.apk' -type f | head -n1)"
+            test -n "$apk"
+            cp "$apk" "release-artifacts/$output_name"
+          }
+
+          copy_apk app/build/outputs/apk/fossMobileUniversal/release AuraMusic.apk
+          copy_apk app/build/outputs/apk/gmsMobileUniversal/release AuraMusic-with-Google-Cast.apk
+          copy_apk app/build/outputs/apk/standaloneMobileArm64/release AuraMusic-arm64.apk
+          copy_apk app/build/outputs/apk/standaloneMobileArmeabi/release AuraMusic-armeabi.apk
+          copy_apk app/build/outputs/apk/standaloneMobileX86/release AuraMusic-x86.apk
+          copy_apk app/build/outputs/apk/standaloneMobileX86_64/release AuraMusic-x86_64.apk
+          tv_apk="$(find app/build/outputs/apk/fossTvUniversal/release -maxdepth 1 -name '*.apk' -type f | head -n1)"
+          test -n "$tv_apk"
+          cp "$tv_apk" release-artifacts/AuraMusic-Tv.apk
+
+          ls -la release-artifacts
+
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: AuraMusic-${{ steps.metadata.outputs.tag_name }}-APKs
+          path: release-artifacts/*.apk
+          if-no-files-found: error
+
+      - name: Commit release files
+        env:
+          TAG_NAME: ${{ steps.metadata.outputs.tag_name }}
+          VERSION_CODE: ${{ steps.metadata.outputs.version_code }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          git config user.name "chila254"
+          git config user.email "franklinfinyange@gmail.com"
+
+          git add app/build.gradle.kts RELEASE_NOTES.md CHANGELOG.md
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(release): ${TAG_NAME} (build ${VERSION_CODE})"
+            if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+              git push origin "HEAD:${DEFAULT_BRANCH}"
+            else
+              git push origin "HEAD:${GITHUB_REF_NAME}"
+            fi
+          fi
+
+      - name: Create tag
+        env:
+          TAG_NAME: ${{ steps.metadata.outputs.tag_name }}
+          RELEASE_TITLE: ${{ steps.metadata.outputs.release_title }}
+        run: |
+          set -euo pipefail
+          git fetch --tags
+          if git rev-parse "${TAG_NAME}" >/dev/null 2>&1; then
+            echo "Tag ${TAG_NAME} already exists; using existing tag."
+          else
+            git tag -a "${TAG_NAME}" -m "${RELEASE_TITLE}"
+            git push origin "${TAG_NAME}"
+          fi
+
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ steps.metadata.outputs.tag_name }}
+          RELEASE_TITLE: ${{ steps.metadata.outputs.release_title }}
+          DRAFT: ${{ inputs.draft }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          set -euo pipefail
+
+          if gh release view "${TAG_NAME}" >/dev/null 2>&1; then
+            gh release edit "${TAG_NAME}" \
+              --title "${RELEASE_TITLE}" \
+              --notes-file release-notes-body.md \
+              $([ "${DRAFT}" = "true" ] && echo --draft || true) \
+              $([ "${PRERELEASE}" = "true" ] && echo --prerelease || true)
+            gh release upload "${TAG_NAME}" release-artifacts/*.apk --clobber
+          else
+            args=("${TAG_NAME}" release-artifacts/*.apk --title "${RELEASE_TITLE}" --notes-file release-notes-body.md)
+            if [ "${DRAFT}" = "true" ]; then
+              args+=(--draft)
+            fi
+            if [ "${PRERELEASE}" = "true" ]; then
+              args+=(--prerelease)
+            fi
+            gh release create "${args[@]}"
+          fi

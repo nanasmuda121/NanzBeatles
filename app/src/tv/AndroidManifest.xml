@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-feature
+        android:name="android.software.leanback"
+        android:required="true" />
+
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+
+    <application
+        android:banner="@mipmap/tv_banner"
+        android:label="@string/app_name_tv"
+        tools:replace="android:banner,android:label">
+
+        <activity
+            android:name=".TvMainActivity"
+            android:exported="true"
+            android:banner="@mipmap/tv_banner"
+            android:launchMode="singleTask"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
+            android:theme="@style/Theme.AuraMusic">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- TV Recommendations: "Continue Listening" row on Google TV home screen -->
+        <service
+            android:name=".tv.TvRecommendationService"
+            android:foregroundServiceType="mediaPlayback"
+            android:exported="false" />
+
+        <!-- Refresh recommendations on device boot -->
+        <receiver
+            android:name=".tv.TvBootReceiver"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Hide the phone launcher aliases on TV. -->
+        <activity-alias
+            android:name=".MainActivityAlias"
+            tools:node="remove" />
+
+        <activity-alias
+            android:name=".MainActivityStatic"
+            tools:node="remove" />
+    </application>
+</manifest>

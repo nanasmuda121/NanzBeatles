@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material 3 Dark Theme Colors - Using Dark/Black theme -->
+
+    <!-- Primary Colors - Dark for dark mode -->
+    <color name="primary">#FF333333</color>
+    <color name="on_primary">#FFFFFFFF</color>
+    <color name="primary_container">#FF1A1A1A</color>
+    <color name="on_primary_container">#FFE0E0E0</color>
+
+    <!-- Secondary Colors -->
+    <color name="secondary">#FFD7C3BE</color>
+    <color name="on_secondary">#FF41332C</color>
+    <color name="secondary_container">#FF594942</color>
+    <color name="on_secondary_container">#FFF4DDED</color>
+
+    <!-- Tertiary Colors -->
+    <color name="tertiary">#FFE3BF7C</color>
+    <color name="on_tertiary">#FF3E2E00</color>
+    <color name="tertiary_container">#FF594400</color>
+    <color name="on_tertiary_container">#FFFFE18C</color>
+
+    <!-- Background and Surface Colors - Black for dark mode -->
+    <color name="background">#FF000000</color>
+    <color name="on_background">#FFFFFFFF</color>
+    <color name="surface">#FF000000</color>
+    <color name="on_surface">#FFFFFFFF</color>
+    <color name="surface_variant">#FF1A1A1A</color>
+    <color name="on_surface_variant">#FFCCCCCC</color>
+
+    <!-- Error Colors -->
+    <color name="error">#FFFFB4AB</color>
+    <color name="on_error">#FF690005</color>
+    <color name="error_container">#FF93000A</color>
+    <color name="on_error_container">#FFFFDAD6</color>
+
+    <!-- Outline Colors -->
+    <color name="outline">#FF444444</color>
+    <color name="outline_variant">#FF333333</color>
+
+    <!-- Legacy colors for compatibility -->
+    <color name="colorPrimary">#FF333333</color>
+    <color name="colorPrimaryVariant">#FF1A1A1A</color>
+    <color name="colorOnPrimary">#FFFFFFFF</color>
+    <color name="colorSecondary">#FFD7C3BE</color>
+    <color name="colorSecondaryVariant">#FF594942</color>
+    <color name="colorOnSecondary">#FF41332C</color>
+    <color name="colorAccent">#FF333333</color>
+    <color name="colorError">#FFFFB4AB</color>
+    <color name="colorOnError">#FF690005</color>
+</resources>

@@ -47,11 +47,11 @@
 
         <!-- Hide the phone launcher aliases on TV. -->
         <activity-alias
-            android:name=".MainActivityAlias"
+            android:name="${applicationId}.MainActivityAlias"
             tools:node="remove" />
 
         <activity-alias
-            android:name=".MainActivityStatic"
+            android:name="${applicationId}.MainActivityStatic"
             tools:node="remove" />
     </application>
 </manifest>

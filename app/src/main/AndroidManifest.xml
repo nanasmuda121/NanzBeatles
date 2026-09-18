@@ -189,7 +189,7 @@
         </activity>
 
         <activity-alias
-            android:name=".MainActivityAlias"
+            android:name="${applicationId}.MainActivityAlias"
             android:enabled="true"
             android:exported="true"
             android:icon="@mipmap/ic_launcher"
@@ -203,7 +203,7 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".MainActivityStatic"
+            android:name="${applicationId}.MainActivityStatic"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_static"

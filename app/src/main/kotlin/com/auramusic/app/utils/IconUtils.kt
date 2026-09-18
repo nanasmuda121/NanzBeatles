@@ -12,8 +12,8 @@ import android.content.pm.PackageManager
 object IconUtils {
     fun setIcon(context: Context, enabled: Boolean) {
         val pm = context.packageManager
-        val dynamic = ComponentName(context, "com.auramusic.app.MainActivityAlias")
-        val static = ComponentName(context, "com.auramusic.app.MainActivityStatic")
+        val dynamic = ComponentName(context, "${context.packageName}.MainActivityAlias")
+        val static = ComponentName(context, "${context.packageName}.MainActivityStatic")
 
         pm.setComponentEnabledSetting(
             dynamic,

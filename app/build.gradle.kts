@@ -22,11 +22,11 @@ android {
     ndkVersion = "27.0.12077973"
 
     defaultConfig {
-        applicationId = "com.auramusic.app"
+        applicationId = "com.nanz.beatles"
         minSdk = 23
         targetSdk = 36
-        versionCode = 28
-        versionName = "3.1.0"
+        versionCode = 200
+        versionName = "2.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true

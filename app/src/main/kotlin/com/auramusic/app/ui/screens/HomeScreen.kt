@@ -226,7 +226,7 @@ fun HomeScreen(
     val accountImageUrl by viewModel.accountImageUrl.collectAsState()
     val innerTubeCookie by rememberPreference(InnerTubeCookieKey, "")
 
-    val glassApplyHomeCards by rememberPreference(LiquidGlassApplyHomeCardsKey, defaultValue = false)
+    val glassApplyHomeCards by rememberPreference(LiquidGlassApplyHomeCardsKey, defaultValue = true)
 
     val shouldShowWrappedCard by viewModel.showWrappedCard.collectAsState()
     val wrappedState by viewModel.wrappedManager.state.collectAsState()
@@ -638,7 +638,7 @@ fun HomeScreen(
                                 }
                             ),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            containerColor = if (glassApplyHomeCards) Color.Transparent else MaterialTheme.colorScheme.primaryContainer,
                         ),
                     ) {
                         Row(
@@ -701,7 +701,7 @@ fun HomeScreen(
                                     }
                                 ),
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                containerColor = if (glassApplyHomeCards) Color.Transparent else MaterialTheme.colorScheme.secondaryContainer,
                             ),
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
@@ -765,7 +765,7 @@ fun HomeScreen(
                                     if (glassApplyHomeCards) mod.liquidGlassFromPrefs() else mod
                                 },
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                containerColor = if (glassApplyHomeCards) Color.Transparent else MaterialTheme.colorScheme.surfaceVariant,
                             ),
                         ) {
                             Box(

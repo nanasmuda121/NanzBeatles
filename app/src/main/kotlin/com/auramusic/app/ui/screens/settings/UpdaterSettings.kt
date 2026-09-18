@@ -68,8 +68,6 @@ fun UpdaterScreen(
     var isChecking by remember { mutableStateOf(false) }
     var updateAvailable by remember { mutableStateOf(false) }
     var latestVersion by remember { mutableStateOf<String?>(null) }
-    var showChangelog by remember { mutableStateOf(false) }
-    var changelogContent by remember { mutableStateOf<String?>(null) }
     var checkError by remember { mutableStateOf<String?>(null) }
     
     val coroutineScope = rememberCoroutineScope()
@@ -83,7 +81,6 @@ fun UpdaterScreen(
                     if (releaseInfo != null) {
                         latestVersion = releaseInfo.versionName
                         updateAvailable = hasUpdate
-                        changelogContent = releaseInfo.description
                     }
                 }.onFailure {
                     checkError = "Failed to check for updates: ${it.message}"
@@ -277,29 +274,6 @@ fun UpdaterScreen(
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
-        }
-
-        if (updateAvailable && latestVersion != null) {
-            Spacer(Modifier.height(16.dp))
-            Button(
-                onClick = { showChangelog = !showChangelog },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-            ) {
-                Text(if (showChangelog) "Hide Changelog" else "View Changelog")
-            }
-
-            if (showChangelog && changelogContent != null) {
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    text = changelogContent!!,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                )
-            }
         }
 
         Spacer(Modifier.height(32.dp))

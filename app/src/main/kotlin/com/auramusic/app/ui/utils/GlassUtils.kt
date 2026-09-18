@@ -7,18 +7,18 @@ package com.auramusic.app.ui.utils
 
 import android.os.Build
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.Dp
@@ -30,10 +30,10 @@ import com.auramusic.app.constants.LiquidGlassOpacityKey
 import com.auramusic.app.utils.rememberPreference
 
 /**
- * Liquid Glass Effect - Apple/iOS style frosted glass
- * Creates a translucent frosted glass appearance with blur effect
- * Adapts to light/dark themes automatically using surface luminance.
- * 
+ * Liquid Glass Effect - Apple/iOS style frosted monochrome glass
+ * Creates a translucent frosted glass appearance with refraction border and specular highlight.
+ * Keeps foreground content 100% sharp and visible.
+ *
  * @param enabled Whether the liquid glass effect is enabled
  * @param cornerRadius The corner radius for the glass effect
  * @param alpha The transparency alpha (0.0 to 1.0)
@@ -42,28 +42,41 @@ import com.auramusic.app.utils.rememberPreference
 @Composable
 fun Modifier.liquidGlass(
     enabled: Boolean,
-    cornerRadius: Dp = 16.dp,
-    alpha: Float = 0.15f,
-    blurRadius: Dp = 20.dp
+    cornerRadius: Dp = 18.dp,
+    alpha: Float = 0.20f,
+    blurRadius: Dp = 35.dp
 ): Modifier {
     return this.then(
         if (enabled) {
             val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-            val glassBaseAlpha = if (isDark) alpha.coerceAtLeast(0.3f) else alpha
-            val shimmerColor = if (isDark) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.1f)
+            val glassBaseAlpha = if (isDark) alpha.coerceAtLeast(0.35f) else alpha.coerceAtLeast(0.25f)
+            val borderBrush = Brush.verticalGradient(
+                listOf(
+                    if (isDark) Color.White.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.45f),
+                    if (isDark) Color.White.copy(alpha = 0.05f) else Color.White.copy(alpha = 0.12f)
+                )
+            )
+            val highlightBrush = Brush.verticalGradient(
+                listOf(
+                    if (isDark) Color.White.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.20f),
+                    Color.Transparent
+                )
+            )
             Modifier
                 .clip(RoundedCornerShape(cornerRadius))
+                .border(
+                    width = 1.dp,
+                    brush = borderBrush,
+                    shape = RoundedCornerShape(cornerRadius)
+                )
                 .background(
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = glassBaseAlpha)
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = glassBaseAlpha),
+                    shape = RoundedCornerShape(cornerRadius)
                 )
-                .then(
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        Modifier.blur(blurRadius)
-                    } else {
-                        Modifier
-                    }
+                .background(
+                    brush = highlightBrush,
+                    shape = RoundedCornerShape(cornerRadius)
                 )
-                .background(shimmerColor, RoundedCornerShape(cornerRadius))
         } else {
             Modifier
         }
@@ -71,38 +84,62 @@ fun Modifier.liquidGlass(
 }
 
 /**
- * Liquid Glass container - provides the frosted glass background
+ * Liquid Glass container - provides frosted glass background with heavy blur on Android 12+
+ * while keeping children in the content block crystal clear.
  */
 @Composable
 fun LiquidGlassContainer(
     enabled: Boolean,
     modifier: Modifier = Modifier,
-    cornerRadius: Dp = 16.dp,
+    cornerRadius: Dp = 18.dp,
+    blurRadius: Dp = 35.dp,
     content: @Composable BoxScope.() -> Unit
 ) {
     if (enabled) {
         val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
         val baseAlpha = if (isDark) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) 0.35f else 0.3f
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) 0.45f else 0.40f
         } else {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) 0.2f else 0.15f
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) 0.30f else 0.25f
         }
-        val shimmerColor = if (isDark) Color.White.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.1f)
+        val borderBrush = Brush.verticalGradient(
+            listOf(
+                if (isDark) Color.White.copy(alpha = 0.28f) else Color.White.copy(alpha = 0.50f),
+                if (isDark) Color.White.copy(alpha = 0.06f) else Color.White.copy(alpha = 0.15f)
+            )
+        )
+        val highlightBrush = Brush.verticalGradient(
+            listOf(
+                if (isDark) Color.White.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.22f),
+                Color.Transparent
+            )
+        )
         Box(
             modifier = modifier
                 .clip(RoundedCornerShape(cornerRadius))
-                .background(
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = baseAlpha)
-                )
-                .then(
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        Modifier.blur(20.dp)
-                    } else {
-                        Modifier
-                    }
-                )
-                .background(shimmerColor, RoundedCornerShape(cornerRadius))
+                .border(1.dp, borderBrush, RoundedCornerShape(cornerRadius))
         ) {
+            // Backdrop blurred layer (Android 12+)
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = baseAlpha),
+                        shape = RoundedCornerShape(cornerRadius)
+                    )
+                    .background(
+                        brush = highlightBrush,
+                        shape = RoundedCornerShape(cornerRadius)
+                    )
+                    .then(
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            Modifier.blur(blurRadius)
+                        } else {
+                            Modifier
+                        }
+                    )
+            )
+            // Crisp foreground content layer
             content()
         }
     } else {
@@ -119,43 +156,16 @@ fun LiquidGlassContainer(
 fun FrostedGlassCard(
     enabled: Boolean,
     modifier: Modifier = Modifier,
-    cornerRadius: Dp = 16.dp,
+    cornerRadius: Dp = 18.dp,
     content: @Composable BoxScope.() -> Unit
 ) {
-    if (enabled) {
-        val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-        val glassColor = MaterialTheme.colorScheme.surfaceVariant.copy(
-            alpha = if (isDark) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) 0.35f else 0.3f
-            } else {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) 0.25f else 0.2f
-            }
-        )
-        val shimmerAlpha = if (isDark) 0.1f else 0.08f
-        
-        Box(
-            modifier = modifier
-                .clip(RoundedCornerShape(cornerRadius))
-                .background(
-                    color = glassColor
-                )
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Color.White.copy(alpha = shimmerAlpha),
-                        RoundedCornerShape(cornerRadius)
-                    )
-            ) {
-                content()
-            }
-        }
-    } else {
-        Box(modifier = modifier) {
-            content()
-        }
-    }
+    LiquidGlassContainer(
+        enabled = enabled,
+        modifier = modifier,
+        cornerRadius = cornerRadius,
+        blurRadius = 35.dp,
+        content = content
+    )
 }
 
 /**
@@ -164,10 +174,10 @@ fun FrostedGlassCard(
  */
 @Composable
 fun Modifier.liquidGlassFromPrefs(): Modifier {
-    val enabled by rememberPreference(LiquidGlassEffectKey, defaultValue = false)
-    val blurRadius by rememberPreference(LiquidGlassBlurRadiusKey, defaultValue = 20f)
-    val cornerRadius by rememberPreference(LiquidGlassCornerRadiusKey, defaultValue = 16f)
-    val opacity by rememberPreference(LiquidGlassOpacityKey, defaultValue = 0.15f)
+    val enabled by rememberPreference(LiquidGlassEffectKey, defaultValue = true)
+    val blurRadius by rememberPreference(LiquidGlassBlurRadiusKey, defaultValue = 35f)
+    val cornerRadius by rememberPreference(LiquidGlassCornerRadiusKey, defaultValue = 18f)
+    val opacity by rememberPreference(LiquidGlassOpacityKey, defaultValue = 0.20f)
     return this.liquidGlass(
         enabled = enabled,
         cornerRadius = cornerRadius.dp,
@@ -182,14 +192,16 @@ fun Modifier.liquidGlassFromPrefs(): Modifier {
 @Composable
 fun LiquidGlassContainerFromPrefs(
     modifier: Modifier = Modifier,
-    cornerRadius: Dp = 16.dp,
+    cornerRadius: Dp = 18.dp,
     content: @Composable BoxScope.() -> Unit
 ) {
-    val enabled by rememberPreference(LiquidGlassEffectKey, defaultValue = false)
+    val enabled by rememberPreference(LiquidGlassEffectKey, defaultValue = true)
+    val blurRadius by rememberPreference(LiquidGlassBlurRadiusKey, defaultValue = 35f)
     LiquidGlassContainer(
         enabled = enabled,
         modifier = modifier,
         cornerRadius = cornerRadius,
+        blurRadius = blurRadius.dp,
         content = content
     )
 }

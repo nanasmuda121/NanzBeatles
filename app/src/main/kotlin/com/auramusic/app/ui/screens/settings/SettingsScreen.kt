@@ -30,7 +30,6 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.navigation.NavController
 import com.auramusic.app.BuildConfig
-import com.auramusic.app.LocalChangelogState
 import com.auramusic.app.LocalPlayerAwareWindowInsets
 import com.auramusic.app.R
 import com.auramusic.app.ui.component.IconButton
@@ -194,14 +193,6 @@ fun SettingsScreen(
                         icon = painterResource(R.drawable.update),
                         title = { Text(stringResource(R.string.updater)) },
                         onClick = { navController.navigate("settings/updater") }
-                    )
-                )
-                val showChangelog = LocalChangelogState.current
-                add(
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.newspaper),
-                        title = { Text(stringResource(R.string.changelog)) },
-                        onClick = { showChangelog.value = true }
                     )
                 )
                 if (latestVersionName != BuildConfig.VERSION_NAME) {

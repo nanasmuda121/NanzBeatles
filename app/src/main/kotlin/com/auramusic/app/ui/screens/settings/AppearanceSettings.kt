@@ -153,11 +153,11 @@ fun AppearanceSettings(
 ) {
     val (dynamicTheme, onDynamicThemeChange) = rememberPreference(
         DynamicThemeKey,
-        defaultValue = true
+        defaultValue = false
     )
     val (enableDynamicIcon, onEnableDynamicIconChange) = rememberPreference(
         EnableDynamicIconKey,
-        defaultValue = true
+        defaultValue = false
     )
     val (enableHighRefreshRate, onEnableHighRefreshRateChange) = rememberPreference(
         EnableHighRefreshRateKey,
@@ -202,7 +202,7 @@ fun AppearanceSettings(
     val (playerBackground, onPlayerBackgroundChange) =
         rememberEnumPreference(
             PlayerBackgroundStyleKey,
-            defaultValue = PlayerBackgroundStyle.DEFAULT,
+            defaultValue = PlayerBackgroundStyle.BLUR,
         )
 
     val (defaultOpenTab, onDefaultOpenTabChange) = rememberEnumPreference(
@@ -228,31 +228,31 @@ fun AppearanceSettings(
     )
     val (liquidGlassEnabled, onLiquidGlassEnabledChange) = rememberPreference(
         LiquidGlassEffectKey,
-        defaultValue = false
+        defaultValue = true
     )
     val (liquidGlassBlurRadius, onLiquidGlassBlurRadiusChange) = rememberPreference(
         LiquidGlassBlurRadiusKey,
-        defaultValue = 20f
+        defaultValue = 35f
     )
     val (liquidGlassCornerRadius, onLiquidGlassCornerRadiusChange) = rememberPreference(
         LiquidGlassCornerRadiusKey,
-        defaultValue = 16f
+        defaultValue = 18f
     )
     val (liquidGlassOpacity, onLiquidGlassOpacityChange) = rememberPreference(
         LiquidGlassOpacityKey,
-        defaultValue = 0.15f
+        defaultValue = 0.20f
     )
     val (liquidGlassApplyHomeCards, onLiquidGlassApplyHomeCardsChange) = rememberPreference(
         LiquidGlassApplyHomeCardsKey,
-        defaultValue = false
+        defaultValue = true
     )
     val (liquidGlassApplyPlayer, onLiquidGlassApplyPlayerChange) = rememberPreference(
         LiquidGlassApplyPlayerKey,
-        defaultValue = false
+        defaultValue = true
     )
     val (liquidGlassApplyNavBar, onLiquidGlassApplyNavBarChange) = rememberPreference(
         LiquidGlassApplyNavBarKey,
-        defaultValue = false
+        defaultValue = true
     )
     val (homeLayoutMode, onHomeLayoutModeChange) = rememberEnumPreference(
         HomeLayoutModeKey,

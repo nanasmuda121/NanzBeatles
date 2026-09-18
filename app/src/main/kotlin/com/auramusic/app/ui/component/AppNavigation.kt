@@ -5,6 +5,8 @@
 
 package com.auramusic.app.ui.component
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -15,13 +17,19 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.auramusic.app.constants.LiquidGlassApplyNavBarKey
+import com.auramusic.app.constants.LiquidGlassEffectKey
 import com.auramusic.app.ui.screens.Screens
+import com.auramusic.app.utils.rememberPreference
 
 @Immutable
 private data class NavItemState(
@@ -82,11 +90,37 @@ fun AppNavigationBar(
     pureBlack: Boolean = false,
     slimNav: Boolean = false,
 ) {
-    val containerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer
-    val contentColor = if (pureBlack) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+    val liquidGlassEnabled by rememberPreference(LiquidGlassEffectKey, defaultValue = true)
+    val liquidGlassApplyNavBar by rememberPreference(LiquidGlassApplyNavBarKey, defaultValue = true)
+    val isGlass = liquidGlassEnabled && liquidGlassApplyNavBar
+
+    val containerColor = when {
+        isGlass -> Color.Transparent
+        pureBlack -> Color.Black
+        else -> MaterialTheme.colorScheme.surfaceContainer
+    }
+    val contentColor = if (pureBlack || isGlass) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
     
+    val navModifier = if (isGlass) {
+        modifier
+            .border(
+                width = 1.dp,
+                brush = Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = 0.16f),
+                        Color.Transparent
+                    )
+                )
+            )
+            .background(
+                Color(0xFF101010).copy(alpha = 0.75f)
+            )
+    } else {
+        modifier
+    }
+
     NavigationBar(
-        modifier = modifier,
+        modifier = navModifier,
         containerColor = containerColor,
         contentColor = contentColor
     ) {

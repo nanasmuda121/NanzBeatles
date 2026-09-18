@@ -226,10 +226,10 @@ private fun NewMiniPlayer(
     }
     
     // Memoize colors
-    val liquidGlassEnabled by rememberPreference(LiquidGlassEffectKey, defaultValue = false)
-    val liquidGlassBlurRadius by rememberPreference(LiquidGlassBlurRadiusKey, defaultValue = 20f)
-    val liquidGlassCornerRadius by rememberPreference(LiquidGlassCornerRadiusKey, defaultValue = 16f)
-    val liquidGlassOpacity by rememberPreference(LiquidGlassOpacityKey, defaultValue = 0.15f)
+    val liquidGlassEnabled by rememberPreference(LiquidGlassEffectKey, defaultValue = true)
+    val liquidGlassBlurRadius by rememberPreference(LiquidGlassBlurRadiusKey, defaultValue = 35f)
+    val liquidGlassCornerRadius by rememberPreference(LiquidGlassCornerRadiusKey, defaultValue = 18f)
+    val liquidGlassOpacity by rememberPreference(LiquidGlassOpacityKey, defaultValue = 0.20f)
 
     // Mini player customization
     val miniPlayerHeight by rememberPreference(MiniPlayerHeightKey, defaultValue = 64f)
@@ -333,7 +333,20 @@ private fun NewMiniPlayer(
                 .offset { IntOffset(offsetXAnimatable.value.roundToInt(), 0) }
                 .clip(RoundedCornerShape(miniPlayerCornerRadius.dp))
                 .background(color = backgroundColor)
-                .border(1.dp, outlineColor.copy(alpha = 0.3f), RoundedCornerShape(miniPlayerCornerRadius.dp))
+                .border(
+                    width = 1.dp,
+                    brush = if (liquidGlassEnabled) {
+                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                            listOf(
+                                Color.White.copy(alpha = 0.28f),
+                                Color.White.copy(alpha = 0.06f)
+                            )
+                        )
+                    } else {
+                        androidx.compose.ui.graphics.SolidColor(outlineColor.copy(alpha = 0.3f))
+                    },
+                    shape = RoundedCornerShape(miniPlayerCornerRadius.dp)
+                )
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,

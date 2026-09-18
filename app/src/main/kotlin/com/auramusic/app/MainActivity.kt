@@ -128,7 +128,6 @@ import com.auramusic.innertube.models.WatchEndpoint
 import com.auramusic.app.constants.AppBarHeight
 import com.auramusic.app.constants.AppLanguageKey
 import com.auramusic.app.constants.LastSeenVersionKey
-import com.auramusic.app.constants.ChangelogShownForVersionKey
 import com.auramusic.app.constants.CheckForUpdatesKey
 import com.auramusic.app.constants.DarkModeKey
 import com.auramusic.app.constants.DefaultOpenTabKey
@@ -178,7 +177,6 @@ import com.auramusic.app.ui.menu.YouTubeSongMenu
 import com.auramusic.app.ui.player.BottomSheetPlayer
 import com.auramusic.app.ui.screens.Screens
 import com.auramusic.app.ui.screens.navigationBuilder
-import com.auramusic.app.ui.screens.settings.ChangelogScreen
 import com.auramusic.app.ui.screens.settings.DarkMode
 import com.auramusic.app.ui.screens.settings.NavigationTab
 import com.auramusic.app.ui.theme.ColorSaver
@@ -411,7 +409,6 @@ class MainActivity : ComponentActivity() {
         downloadUtil: DownloadUtil,
         syncUtils: SyncUtils,
     ) {
-        val changelogState = remember { mutableStateOf(false) }
         val checkForUpdates by rememberPreference(CheckForUpdatesKey, defaultValue = true)
 
         LaunchedEffect(checkForUpdates) {
@@ -436,21 +433,6 @@ class MainActivity : ComponentActivity() {
                             }
                             // Always show badge if there's a new version available
                             onLatestVersionNameChange(normalizedVersion)
-                            
-                            // Check if app was just updated for changelog
-                            var lastSeenVersion: String? = null
-                            var changelogShownForVersion: String? = null
-                            runBlocking {
-                                lastSeenVersion = dataStore.data.map { it[LastSeenVersionKey] }.first()
-                                changelogShownForVersion = dataStore.data.map { it[ChangelogShownForVersionKey] }.first()
-                            }
-                            val currentVersion = BuildConfig.VERSION_NAME
-                            val isAppUpdated = lastSeenVersion != currentVersion
-                            
-                            // If app was updated, show changelog if not already shown for this version
-                            if (isAppUpdated && changelogShownForVersion != currentVersion) {
-                                changelogState.value = true
-                            }
                             
                             // If there's a new version available, show notification
                             if (hasUpdate && notifEnabled) {
@@ -493,7 +475,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        val enableDynamicTheme by rememberPreference(DynamicThemeKey, defaultValue = true)
+        val enableDynamicTheme by rememberPreference(DynamicThemeKey, defaultValue = false)
         val enableHighRefreshRate by rememberPreference(EnableHighRefreshRateKey, defaultValue = true)
 
         LaunchedEffect(enableHighRefreshRate) {
@@ -523,7 +505,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        val darkTheme by rememberEnumPreference(DarkModeKey, defaultValue = DarkMode.AUTO)
+        val darkTheme by rememberEnumPreference(DarkModeKey, defaultValue = DarkMode.ON)
         val isSystemInDarkTheme = isSystemInDarkTheme()
         val useDarkTheme = remember(darkTheme, isSystemInDarkTheme) {
             if (darkTheme == DarkMode.AUTO) isSystemInDarkTheme else darkTheme == DarkMode.ON
@@ -533,7 +515,7 @@ class MainActivity : ComponentActivity() {
             setSystemBarAppearance(useDarkTheme)
         }
 
-        val pureBlackEnabled by rememberPreference(PureBlackKey, defaultValue = false)
+        val pureBlackEnabled by rememberPreference(PureBlackKey, defaultValue = true)
         val pureBlack = remember(pureBlackEnabled, useDarkTheme) {
             pureBlackEnabled && useDarkTheme
         }
@@ -945,7 +927,6 @@ class MainActivity : ComponentActivity() {
                     LocalSyncUtils provides syncUtils,
                     LocalListenTogetherManager provides listenTogetherManager,
                     LocalHardwareIntegrationManager provides hardwareIntegrationManager,
-                    LocalChangelogState provides remember { mutableStateOf(false) },
                     LocalVoiceCommandController provides voiceCommandController,
                 ) {
 
@@ -1278,21 +1259,6 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    val changelogState = LocalChangelogState.current
-
-                    if (changelogState.value) {
-                        ChangelogScreen(
-                            onDismiss = {
-                                changelogState.value = false
-                                lifecycleScope.launch {
-                                    dataStore.edit {
-                                        it[ChangelogShownForVersionKey] = BuildConfig.VERSION_NAME
-                                    }
-                                }
-                            }
-                        )
-                    }
-
                     sharedSong?.let { song ->
                         playerConnection?.let {
                             Dialog(
@@ -1495,4 +1461,3 @@ val LocalSyncUtils = staticCompositionLocalOf<SyncUtils> { error("No SyncUtils p
 val LocalListenTogetherManager = staticCompositionLocalOf<com.auramusic.app.listentogether.ListenTogetherManager?> { null }
 val LocalHardwareIntegrationManager = staticCompositionLocalOf<com.auramusic.app.hardware.HardwareIntegrationManager?> { null }
 val LocalIsPlayerExpanded = compositionLocalOf { false }
-val LocalChangelogState = compositionLocalOf { mutableStateOf(false) }

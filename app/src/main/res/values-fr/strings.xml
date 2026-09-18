@@ -614,7 +614,7 @@
     <string name="play_on_app">Écouter sur NanzBeatles</string>
     <string name="wrapped_logo_content_description">Récapitulatif NanzBeatles</string>
     <string name="wrapped_special_thanks">Un grand merci à vous pour votre soutien à NanzBeatles !</string>
-    <string name="github_releases_url">https://github.com/nanasmuda121/NanzBeatles/releases</string>
+    <string name="github_releases_url">https://github.com/nanasmuda121/update-NanzBeatles/releases</string>
     <string name="crash_title">NanzBeatles a planté</string>
     <string name="listen_on_youtube_music">Écoutez sur YouTube Music</string>
     <string name="lastfm_integration">Intégration de Last.fm</string>

@@ -27,7 +27,7 @@ import com.auramusic.app.R
 import com.auramusic.app.constants.VideoAutoplayEnabledKey
 import com.auramusic.app.constants.VideoQuality
 import com.auramusic.app.constants.VideoQualityKey
-import com.auramusic.app.utils.AuraPlayerUtils
+import com.auramusic.app.utils.BeatlesPlayerUtils
 import com.auramusic.app.utils.VideoThumbnails
 import com.auramusic.app.utils.dataStore
 import com.auramusic.app.utils.get
@@ -284,7 +284,7 @@ object VideoPlaybackManager {
         )
         scope.launch {
             val source = withContext(Dispatchers.IO) {
-                AuraPlayerUtils.getVideoStreamSource(videoId).getOrNull()
+                BeatlesPlayerUtils.getVideoStreamSource(videoId).getOrNull()
             }
             if (source == null) {
                 _uiState.update { it.copy(isBuffering = false, error = "Could not load video") }
@@ -690,7 +690,7 @@ object VideoPlaybackManager {
         val session = _uiState.value.session ?: return
         val exo = player ?: return
         currentQuality = quality
-        AuraPlayerUtils.setPreferredVideoQuality(quality)
+        BeatlesPlayerUtils.setPreferredVideoQuality(quality)
         val positionMs = exo.currentPosition
         _uiState.update { it.copy(videoQuality = quality) }
         currentContext?.let { ctx ->
@@ -699,7 +699,7 @@ object VideoPlaybackManager {
             }
             scope.launch {
                 val source = withContext(Dispatchers.IO) {
-                    AuraPlayerUtils.getVideoStreamSource(session.videoId).getOrNull()
+                    BeatlesPlayerUtils.getVideoStreamSource(session.videoId).getOrNull()
                 }
                 if (source == null) {
                     // Keep old stream playing if the new quality can't be resolved.
@@ -903,12 +903,12 @@ object VideoPlaybackManager {
         }
     }
 
-    /** Reads videoQuality/autoplay from DataStore and pushes them to AuraVideo + state. */
+    /** Reads videoQuality/autoplay from DataStore and pushes them to BeatlesVideo + state. */
     private fun applyStoredPreferences(context: Context) {
         val storedQuality = context.dataStore.get(VideoQualityKey, "QUALITY_720P")
         currentQuality = runCatching { VideoQuality.valueOf(storedQuality) }.getOrDefault(VideoQuality.QUALITY_720P)
         currentAutoplay = context.dataStore.get(VideoAutoplayEnabledKey, true)
-        AuraPlayerUtils.setPreferredVideoQuality(currentQuality)
+        BeatlesPlayerUtils.setPreferredVideoQuality(currentQuality)
         _uiState.update { it.copy(videoQuality = currentQuality, autoplayEnabled = currentAutoplay) }
     }
 
@@ -920,7 +920,7 @@ object VideoPlaybackManager {
      */
     private fun loadMediaSourceInto(
         videoId: String,
-        source: com.auramusic.auravideo.AuraVideo.VideoStreamSource,
+        source: com.auramusic.auravideo.BeatlesVideo.VideoStreamSource,
         title: String,
         channelName: String,
         channelThumbnail: String?,
@@ -964,7 +964,7 @@ object VideoPlaybackManager {
     @OptIn(UnstableApi::class)
     private fun buildMediaSource(
         videoId: String,
-        source: com.auramusic.auravideo.AuraVideo.VideoStreamSource,
+        source: com.auramusic.auravideo.BeatlesVideo.VideoStreamSource,
         title: String,
         channelName: String,
         channelThumbnail: String?,
@@ -987,7 +987,7 @@ object VideoPlaybackManager {
             }
             .build()
         return when (source) {
-            is com.auramusic.auravideo.AuraVideo.VideoStreamSource.Single -> {
+            is com.auramusic.auravideo.BeatlesVideo.VideoStreamSource.Single -> {
                 val mediaItem = MediaItem.Builder()
                     .setUri(source.url)
                     .setMimeType(source.mimeType)
@@ -996,7 +996,7 @@ object VideoPlaybackManager {
                     .build()
                 factory.createMediaSource(mediaItem)
             }
-            is com.auramusic.auravideo.AuraVideo.VideoStreamSource.Merged -> {
+            is com.auramusic.auravideo.BeatlesVideo.VideoStreamSource.Merged -> {
                 val videoMediaItem = MediaItem.Builder()
                     .setUri(source.videoUrl)
                     .setMimeType(source.videoMimeType)

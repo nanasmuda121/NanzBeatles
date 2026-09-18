@@ -54,8 +54,8 @@ class VoskWakeWordDetector @Inject constructor(
         private const val BUFFER_SIZE = 4096
         private const val MODEL_NAME = "vosk-model-small-en-us-0.15"
         private const val MODEL_URL = "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip"
-        private const val WAKE_WORD = "aura"
-        private const val WAKE_WORD_GRAMMAR = "[\"hey aura\", \"hello aura\", \"ok aura\", \"[unk]\"]"
+        private const val WAKE_WORD = "beatles"
+        private const val WAKE_WORD_GRAMMAR = "[\"hey beatles\", \"halo beatles\", \"ok beatles\", \"hey aura\", \"hello aura\", \"ok aura\", \"[unk]\"]"
     }
 
     private fun showToast(message: String) {
@@ -425,9 +425,11 @@ class VoskWakeWordDetector @Inject constructor(
                         // Only check final results to avoid false positives from partial hypotheses
                         if (isFinal == true) {
                             val finalJson = recognizer?.result ?: ""
-                            // Require an exact phrase match from the grammar (hey aura / hello aura / ok aura)
                             val textMatch = Regex("\"text\"\\s*:\\s*\"([^\"]+)\"").find(finalJson)?.groupValues?.get(1)?.trim() ?: ""
-                            val isWakePhrase = textMatch.length >= 7 && (textMatch == "hey aura" || textMatch == "hello aura" || textMatch == "ok aura")
+                            val isWakePhrase = textMatch.length >= 7 && (
+                                textMatch.contains("beatles") || textMatch.contains("aura") ||
+                                textMatch == "hey beatles" || textMatch == "halo beatles" || textMatch == "ok beatles"
+                            )
                             if (isWakePhrase) {
                                 android.util.Log.d("VoskWakeWordDetector", "DETECTED in final: $finalJson")
                                 

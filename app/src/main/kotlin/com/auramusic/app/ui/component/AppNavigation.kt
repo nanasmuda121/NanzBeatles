@@ -5,6 +5,7 @@
 
 package com.auramusic.app.ui.component
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.material3.Icon
@@ -104,11 +105,13 @@ fun AppNavigationBar(
     val navModifier = if (isGlass) {
         modifier
             .border(
-                width = 1.dp,
-                brush = Brush.verticalGradient(
-                    listOf(
-                        Color.White.copy(alpha = 0.16f),
-                        Color.Transparent
+                BorderStroke(
+                    width = 1.dp,
+                    brush = Brush.verticalGradient(
+                        listOf(
+                            Color.White.copy(alpha = 0.16f),
+                            Color.Transparent
+                        )
                     )
                 )
             )

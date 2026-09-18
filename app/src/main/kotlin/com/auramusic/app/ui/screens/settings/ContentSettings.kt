@@ -296,26 +296,6 @@ fun ContentSettings(
         )
     }
 
-    var showContentLanguageDialog by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    if (showContentLanguageDialog) {
-        EnumDialog(
-            onDismiss = { showContentLanguageDialog = false },
-            onSelect = {
-                onContentLanguageChange(it)
-                showContentLanguageDialog = false
-            },
-            title = stringResource(R.string.content_language),
-            current = contentLanguage,
-            values = (listOf(SYSTEM_DEFAULT) + LanguageCodeToName.keys.toList()),
-            valueText = {
-                LanguageCodeToName.getOrElse(it) { stringResource(R.string.system_default) }
-            }
-        )
-    }
-
     var showContentCountryDialog by rememberSaveable {
         mutableStateOf(false)
     }
@@ -332,26 +312,6 @@ fun ContentSettings(
             values = (listOf(SYSTEM_DEFAULT) + CountryCodeToName.keys.toList()),
             valueText = {
                 CountryCodeToName.getOrElse(it) { stringResource(R.string.system_default) }
-            }
-        )
-    }
-
-    var showAppLanguageDialog by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    if (showAppLanguageDialog) {
-        EnumDialog(
-            onDismiss = { showAppLanguageDialog = false },
-            onSelect = {
-                onAppLanguageChange(it)
-                showAppLanguageDialog = false
-            },
-            title = stringResource(R.string.app_language),
-            current = appLanguage,
-            values = (listOf(SYSTEM_DEFAULT) + LanguageCodeToName.keys.toList()),
-            valueText = {
-                LanguageCodeToName.getOrElse(it) { stringResource(R.string.system_default) }
             }
         )
     }
@@ -530,16 +490,6 @@ fun ContentSettings(
             title = stringResource(R.string.general),
             items = listOf(
                 Material3SettingsItem(
-                    icon = painterResource(R.drawable.language),
-                    title = { Text(stringResource(R.string.content_language)) },
-                    description = {
-                        Text(
-                            LanguageCodeToName.getOrElse(contentLanguage) { stringResource(R.string.system_default) }
-                        )
-                    },
-                    onClick = { showContentLanguageDialog = true }
-                ),
-                Material3SettingsItem(
                     icon = painterResource(R.drawable.location_on),
                     title = { Text(stringResource(R.string.content_country)) },
                     description = {
@@ -662,38 +612,6 @@ fun ContentSettings(
 
         Spacer(modifier = Modifier.height(27.dp))
 
-        Material3SettingsGroup(
-            title = stringResource(R.string.app_language),
-            items = listOf(
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.language),
-                        title = { Text(stringResource(R.string.app_language)) },
-                        onClick = {
-                            context.startActivity(
-                                Intent(
-                                    Settings.ACTION_APP_LOCALE_SETTINGS,
-                                    "package:${context.packageName}".toUri()
-                                )
-                            )
-                        }
-                    )
-                } else {
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.language),
-                        title = { Text(stringResource(R.string.app_language)) },
-                        description = {
-                            Text(
-                                LanguageCodeToName.getOrElse(appLanguage) { stringResource(R.string.system_default) }
-                            )
-                        },
-                        onClick = { showAppLanguageDialog = true }
-                    )
-                }
-            )
-        )
-
-        Spacer(modifier = Modifier.height(27.dp))
 
         Material3SettingsGroup(
             title = stringResource(R.string.proxy),
@@ -842,8 +760,8 @@ fun ContentSettings(
                 ),
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.lyrics),
-                    title = { Text("Enable Paxsenix") },
-                    description = { Text("High-quality synchronized lyrics from Paxsenix") },
+                    title = { Text("Aktifkan Paxsenix") },
+                    description = { Text("Lirik tersinkronisasi berkualitas tinggi dari Paxsenix") },
                     trailingContent = {
                         Switch(
                             checked = enablePaxsenix,
@@ -863,8 +781,8 @@ fun ContentSettings(
                 ),
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.lyrics),
-                    title = { Text("Enable Musixmatch") },
-                    description = { Text("Synced, rich-synced, and plain lyrics from Musixmatch") },
+                    title = { Text("Aktifkan Musixmatch") },
+                    description = { Text("Lirik tersinkronisasi dan teks biasa dari Musixmatch") },
                     trailingContent = {
                         Switch(
                             checked = enableMusixmatch,

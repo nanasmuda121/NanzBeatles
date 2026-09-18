@@ -104,6 +104,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
@@ -193,7 +194,7 @@ import com.auramusic.app.ui.utils.toHighQualityThumbnail
 import com.auramusic.app.utils.makeTimeString
 import com.auramusic.app.utils.rememberEnumPreference
 import com.auramusic.app.utils.rememberPreference
-import com.auramusic.app.playback.AuraCanvasRepository
+import com.auramusic.app.playback.BeatlesCanvasRepository
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -740,7 +741,7 @@ fun BottomSheetPlayer(
     LaunchedEffect(auraCanvasEnabled, state.isExpanded, mediaMetadata) {
         if (auraCanvasEnabled && state.isExpanded && mediaMetadata?.isVideoSong != true && !videoModeEnabled) {
             auraCanvasUrl = runCatching {
-                AuraCanvasRepository.findCanvasUrl(
+                BeatlesCanvasRepository.findCanvasUrl(
                     title = mediaMetadata?.title,
                     artist = mediaMetadata?.artists?.joinToString(", ") { it.name },
                     album = mediaMetadata?.album?.title,
@@ -765,7 +766,7 @@ fun BottomSheetPlayer(
             ) {
                 val currentMetadata = mediaMetadata
                 if (shouldAuraCanvas && currentMetadata != null) {
-                    AuraCanvasOverlay(
+                    BeatlesCanvasOverlay(
                         title = currentMetadata.title,
                         artist = currentMetadata.artists.joinToString(", ") { it.name },
                         album = currentMetadata.album?.title,
@@ -794,6 +795,7 @@ fun BottomSheetPlayer(
                                                 .build(),
                                             contentDescription = null,
                                             contentScale = ContentScale.Crop,
+                                            colorFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) }),
                                             modifier = Modifier
                                                 .fillMaxSize()
                                                 .blur(if (useDarkTheme) 150.dp else 100.dp)
@@ -801,7 +803,7 @@ fun BottomSheetPlayer(
                                         Box(
                                             modifier = Modifier
                                                 .fillMaxSize()
-                                                .background(Color.Black.copy(alpha = 0.3f))
+                                                .background(Color.Black.copy(alpha = 0.45f))
                                         )
                                     }
                                 }

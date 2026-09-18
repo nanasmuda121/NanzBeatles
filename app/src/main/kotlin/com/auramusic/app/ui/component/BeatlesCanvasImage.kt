@@ -31,7 +31,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import coil3.compose.AsyncImage
 import com.auramusic.app.constants.AuraCanvasEnabledKey
-import com.auramusic.app.playback.AuraCanvasRepository
+import com.auramusic.app.playback.BeatlesCanvasRepository
 import com.auramusic.app.utils.rememberPreference
 import timber.log.Timber
 
@@ -46,7 +46,7 @@ import timber.log.Timber
  */
 @UnstableApi
 @Composable
-fun AuraCanvasImage(
+fun BeatlesCanvasImage(
     title: String?,
     artist: String?,
     staticImageUrl: String?,
@@ -63,7 +63,7 @@ fun AuraCanvasImage(
         canvasUrl = null
         if (!enabled) return@LaunchedEffect
         canvasUrl = runCatching {
-            AuraCanvasRepository.findCanvasUrl(title, artist, album, durationMs)
+            BeatlesCanvasRepository.findCanvasUrl(title, artist, album, durationMs)
         }.getOrNull()
     }
 

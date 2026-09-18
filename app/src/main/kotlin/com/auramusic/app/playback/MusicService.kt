@@ -196,7 +196,7 @@ import com.auramusic.app.subtitles.SubtitleInfo
 import com.auramusic.app.video.VideoPlaybackManager
 import com.auramusic.app.video.VideoPlaybackService
 import com.auramusic.app.utils.CoilBitmapLoader
-import com.auramusic.app.utils.AuraPlayerUtils
+import com.auramusic.app.utils.BeatlesPlayerUtils
 import com.auramusic.app.utils.NetworkConnectivityObserver
 import com.auramusic.app.utils.AUDIOBOOK_MIN_DURATION_SECONDS
 import com.auramusic.app.utils.AUDIOBOOK_RESUME_THRESHOLD_MS
@@ -796,13 +796,13 @@ class MusicService :
         // Initialize video quality preference from settings
         val savedVideoQuality = dataStore.get(VideoQualityKey, "QUALITY_720P")
         val auraVideoQuality = when (savedVideoQuality) {
-            "QUALITY_1080P" -> com.auramusic.auravideo.AuraVideo.VideoQuality.QUALITY_1080P
-            "QUALITY_720P" -> com.auramusic.auravideo.AuraVideo.VideoQuality.QUALITY_720P
-            "QUALITY_480P" -> com.auramusic.auravideo.AuraVideo.VideoQuality.QUALITY_480P
-            "QUALITY_360P" -> com.auramusic.auravideo.AuraVideo.VideoQuality.QUALITY_360P
-            else -> com.auramusic.auravideo.AuraVideo.VideoQuality.QUALITY_720P
+            "QUALITY_1080P" -> com.auramusic.auravideo.BeatlesVideo.VideoQuality.QUALITY_1080P
+            "QUALITY_720P" -> com.auramusic.auravideo.BeatlesVideo.VideoQuality.QUALITY_720P
+            "QUALITY_480P" -> com.auramusic.auravideo.BeatlesVideo.VideoQuality.QUALITY_480P
+            "QUALITY_360P" -> com.auramusic.auravideo.BeatlesVideo.VideoQuality.QUALITY_360P
+            else -> com.auramusic.auravideo.BeatlesVideo.VideoQuality.QUALITY_720P
         }
-        com.auramusic.auravideo.AuraVideo.setPreferredVideoQuality(auraVideoQuality)
+        com.auramusic.auravideo.BeatlesVideo.setPreferredVideoQuality(auraVideoQuality)
         Timber.d("Initialized video quality preference: $savedVideoQuality")
 
         // Initialize Google Cast
@@ -3924,7 +3924,7 @@ class MusicService :
     private val _currentVideoId = MutableStateFlow<String?>(null)
     val currentVideoId: StateFlow<String?> = _currentVideoId.asStateFlow()
     // Cache for resolved video search results to avoid re-fetching
-    private val videoSearchCache = java.util.concurrent.ConcurrentHashMap<String, com.auramusic.auravideo.AuraVideo.VideoSearchResult>()
+    private val videoSearchCache = java.util.concurrent.ConcurrentHashMap<String, com.auramusic.auravideo.BeatlesVideo.VideoSearchResult>()
     // Cache for video captions to avoid re-fetching on player collapse/expand
     val captionCache = java.util.concurrent.ConcurrentHashMap<String, String>()
     val captionAttemptedIds = java.util.Collections.synchronizedSet(mutableSetOf<String>())
@@ -4117,7 +4117,7 @@ class MusicService :
                         // instead of leaving the TV paused on a black surface.
                         val timeoutResult = withContext(Dispatchers.IO) {
                             kotlinx.coroutines.withTimeoutOrNull(VIDEO_SEARCH_TIMEOUT_MS) {
-                                AuraPlayerUtils.getVideoStreamUrlWithFallback(songTitle, artistName, mediaId, isVideoSong)
+                                BeatlesPlayerUtils.getVideoStreamUrlWithFallback(songTitle, artistName, mediaId, isVideoSong)
                             }
                         }
                         timeoutResult ?: run {
@@ -4208,13 +4208,13 @@ class MusicService :
                             // exceeds 720p, since YouTube only ships separate video-only
                             // and audio-only streams above that resolution.
                             var sourceResult = withContext(Dispatchers.IO) {
-                                AuraPlayerUtils.getVideoStreamSource(videoId)
+                                BeatlesPlayerUtils.getVideoStreamSource(videoId)
                             }
 
                             if (sourceResult.isFailure && isVideoSong && videoId == mediaId) {
                                 subtitleJob?.cancel()
                                 val fallbackVideo = withContext(Dispatchers.IO) {
-                                    AuraPlayerUtils.getVideoStreamUrlWithFallback(
+                                    BeatlesPlayerUtils.getVideoStreamUrlWithFallback(
                                         songTitle,
                                         artistName,
                                         mediaId,
@@ -4225,7 +4225,7 @@ class MusicService :
                                     Timber.d("setVideoMode: Direct video failed, trying fallback videoId=${fallbackVideo.videoId}")
                                     videoId = fallbackVideo.videoId
                                     sourceResult = withContext(Dispatchers.IO) {
-                                        AuraPlayerUtils.getVideoStreamSource(videoId)
+                                        BeatlesPlayerUtils.getVideoStreamSource(videoId)
                                     }
                                 }
                             }
@@ -4233,13 +4233,13 @@ class MusicService :
                             if (sourceResult.isSuccess) {
                                 val streamSource = sourceResult.getOrNull()
                                 val primaryVideoUrl = when (streamSource) {
-                                    is com.auramusic.auravideo.AuraVideo.VideoStreamSource.Single -> streamSource.url
-                                    is com.auramusic.auravideo.AuraVideo.VideoStreamSource.Merged -> streamSource.videoUrl
+                                    is com.auramusic.auravideo.BeatlesVideo.VideoStreamSource.Single -> streamSource.url
+                                    is com.auramusic.auravideo.BeatlesVideo.VideoStreamSource.Merged -> streamSource.videoUrl
                                     null -> ""
                                 }
                                 val primaryMimeType = when (streamSource) {
-                                    is com.auramusic.auravideo.AuraVideo.VideoStreamSource.Single -> streamSource.mimeType
-                                    is com.auramusic.auravideo.AuraVideo.VideoStreamSource.Merged -> streamSource.videoMimeType
+                                    is com.auramusic.auravideo.BeatlesVideo.VideoStreamSource.Single -> streamSource.mimeType
+                                    is com.auramusic.auravideo.BeatlesVideo.VideoStreamSource.Merged -> streamSource.videoMimeType
                                     null -> "video/mp4"
                                 }
                                 currentVideoUrl = primaryVideoUrl
@@ -4291,11 +4291,11 @@ class MusicService :
                                 player.playWhenReady = false
 
                                 when (streamSource) {
-                                    is com.auramusic.auravideo.AuraVideo.VideoStreamSource.Single -> {
+                                    is com.auramusic.auravideo.BeatlesVideo.VideoStreamSource.Single -> {
                                         Timber.d("setVideoMode: Replacing media item at index $index (single source)")
                                         player.replaceMediaItem(index, videoMediaItem)
                                     }
-                                    is com.auramusic.auravideo.AuraVideo.VideoStreamSource.Merged -> {
+                                    is com.auramusic.auravideo.BeatlesVideo.VideoStreamSource.Merged -> {
                                         // Build a MergingMediaSource of (video-only + audio-only)
                                         // so we can actually expose 1080p+ — muxed YouTube
                                         // streams cap below that.
@@ -4416,7 +4416,7 @@ class MusicService :
     suspend fun checkVideoAvailability(mediaId: String): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                val available = AuraPlayerUtils.hasVideoPlayback(mediaId)
+                val available = BeatlesPlayerUtils.hasVideoPlayback(mediaId)
                 _isVideoAvailable.value = available
                 Timber.d("checkVideoAvailability: Video available for $mediaId = $available")
                 available

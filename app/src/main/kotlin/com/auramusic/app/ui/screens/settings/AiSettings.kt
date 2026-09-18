@@ -82,7 +82,7 @@ fun AiSettings(
     var openRouterModel by rememberPreference(OpenRouterModelKey, "mistralai/mistral-small-3.1-24b-instruct:free")
     var autoTranslateLyrics by rememberPreference(AutoTranslateLyricsKey, false)
     var autoTranslateLyricsMismatch by rememberPreference(AutoTranslateLyricsMismatchKey, false)
-    var translateLanguage by rememberPreference(TranslateLanguageKey, "en")
+    var translateLanguage by rememberPreference(TranslateLanguageKey, "id")
     var translateMode by rememberPreference(TranslateModeKey, "Literal")
 
     val aiProviders = mapOf(

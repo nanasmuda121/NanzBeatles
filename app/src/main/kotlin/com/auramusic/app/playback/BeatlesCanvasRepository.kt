@@ -48,7 +48,7 @@ import timber.log.Timber
  * No Spotify developer key, sp_dc, or protobuf parsing is needed in the app –
  * the Render server owns all of that.
  */
-object AuraCanvasRepository {
+object BeatlesCanvasRepository {
 
     private const val MANIFEST_URL = "https://auramusiccanvas.vercel.app/canvas.json"
     private const val REMOTE_BASE_URL = "https://auramusiccanvasserver.onrender.com"

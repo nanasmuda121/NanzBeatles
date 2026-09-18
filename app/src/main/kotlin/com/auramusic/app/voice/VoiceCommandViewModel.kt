@@ -42,7 +42,7 @@ import javax.inject.Inject
     private var hasMicPermission = false
     private var voiceEnabled = false
     private var wakeWordEnabled = false
-    private var customWakeWord = "aura"
+    private var customWakeWord = "beatles"
 
     private var restartJob: Job? = null
     private var feedbackJob: Job? = null
@@ -171,7 +171,7 @@ import javax.inject.Inject
                     Triple(
                         prefs[EnableVoiceCommandsKey] ?: false,
                         prefs[EnableVoiceWakeWordKey] ?: false,
-                        prefs[VoiceWakeWordKey] ?: "aura"
+                        prefs[VoiceWakeWordKey] ?: "beatles"
                     )
                 }
                 .distinctUntilChanged()

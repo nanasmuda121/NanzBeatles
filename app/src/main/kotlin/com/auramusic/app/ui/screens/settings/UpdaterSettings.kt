@@ -83,7 +83,7 @@ fun UpdaterScreen(
                         updateAvailable = hasUpdate
                     }
                 }.onFailure {
-                    checkError = "Failed to check for updates: ${it.message}"
+                    checkError = "Gagal memeriksa pembaruan: ${it.message}"
                 }
             }
             isChecking = false
@@ -114,11 +114,11 @@ fun UpdaterScreen(
 
         // Current Version Info
         Material3SettingsGroup(
-            title = "Current Version",
+            title = "Versi Saat Ini",
             items = listOf(
                 Material3SettingsItem(
                     title = {
-                        Text("Version: ${BuildConfig.VERSION_NAME}")
+                        Text("Versi: ${BuildConfig.VERSION_NAME}")
                     },
                     description = {
                         val arch = BuildConfig.ARCHITECTURE
@@ -137,7 +137,7 @@ fun UpdaterScreen(
 
         // Auto Update Settings
         Material3SettingsGroup(
-            title = "Update Settings",
+            title = "Pengaturan Pembaruan",
             items = buildList {
                 add(
                     Material3SettingsItem(
@@ -175,11 +175,11 @@ fun UpdaterScreen(
 
         // APK Variant Selection
         Material3SettingsGroup(
-            title = "APK Variant",
+            title = "Varian APK",
             items = listOf(
                 Material3SettingsItem(
                     title = { Text("NanzBeatles") },
-                    description = { Text("Standard build without Google Cast") },
+                    description = { Text("Versi standar tanpa Google Cast") },
                     trailingContent = {
                         androidx.compose.material3.RadioButton(
                             selected = updateVariant == "foss",
@@ -189,8 +189,8 @@ fun UpdaterScreen(
                     onClick = { onUpdateVariantChange("foss") }
                 ),
                 Material3SettingsItem(
-                    title = { Text("NanzBeatles with Google Cast") },
-                    description = { Text("Includes Google Cast support") },
+                    title = { Text("NanzBeatles dengan Google Cast") },
+                    description = { Text("Termasuk dukungan Google Cast") },
                     trailingContent = {
                         androidx.compose.material3.RadioButton(
                             selected = updateVariant == "gms",
@@ -205,19 +205,19 @@ fun UpdaterScreen(
         Spacer(Modifier.height(16.dp))
 
         Material3SettingsGroup(
-            title = "APK Architecture",
+            title = "Arsitektur APK",
             items = listOf(
-                "automatic" to "Automatic / current device (${BuildConfig.ARCHITECTURE})",
+                "automatic" to "Otomatis / perangkat ini (${BuildConfig.ARCHITECTURE})",
                 "universal" to "Universal",
-                "arm64" to "ARM64 (manual; may be incompatible)",
-                "armeabi" to "ARMv7 (armeabi) (manual; may be incompatible)",
-                "x86" to "x86 (manual; may be incompatible)",
-                "x86_64" to "x86_64 (manual; may be incompatible)",
+                "arm64" to "ARM64 (manual)",
+                "armeabi" to "ARMv7 (armeabi) (manual)",
+                "x86" to "x86 (manual)",
+                "x86_64" to "x86_64 (manual)",
             ).map { (value, label) ->
                 Material3SettingsItem(
                     title = { Text(label) },
                     description = if (value == "automatic" || value == "universal") null else {
-                        { Text("Falls back to Universal when this APK is unavailable") }
+                        { Text("Beralih ke Universal jika APK ini tidak tersedia") }
                     },
                     trailingContent = {
                         androidx.compose.material3.RadioButton(
@@ -234,17 +234,17 @@ fun UpdaterScreen(
 
         // Manual Check
         Material3SettingsGroup(
-            title = "Check for Updates",
+            title = "Periksa Pembaruan",
             items = listOf(
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.refresh),
                     title = { 
                         if (isChecking) {
-                            Text("Checking for updates...")
+                            Text("Memeriksa pembaruan...")
                         } else if (latestVersion != null) {
-                            Text("Latest: $latestVersion")
+                            Text("Terbaru: $latestVersion")
                         } else {
-                            Text("Check for Updates")
+                            Text("Periksa Pembaruan")
                         }
                     },
                     trailingContent = {
@@ -256,7 +256,7 @@ fun UpdaterScreen(
                         } else if (updateAvailable) {
                             Icon(
                                 painter = painterResource(R.drawable.download),
-                                contentDescription = "Update available",
+                                contentDescription = "Pembaruan tersedia",
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }

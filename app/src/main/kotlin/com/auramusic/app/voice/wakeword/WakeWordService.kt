@@ -121,8 +121,8 @@ class WakeWordService : Service() {
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Aura is listening")
-            .setContentText("Say 'Hey Aura' or 'Hello Aura' to activate")
+            .setContentTitle("Beatles sedang mendengarkan")
+            .setContentText("Ucapkan 'Hei Beatles' untuk mengaktifkan")
             .setSmallIcon(R.drawable.ic_notification_icon)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
@@ -144,8 +144,8 @@ class WakeWordService : Service() {
         val mbTotal = totalBytes / (1024 * 1024)
         
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Downloading wake word model")
-            .setContentText("$mbRead MB of $mbTotal MB ($progress%)")
+            .setContentTitle("Mengunduh model kata bangun")
+            .setContentText("$mbRead MB dari $mbTotal MB ($progress%)")
             .setSmallIcon(R.drawable.download)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
@@ -174,7 +174,7 @@ class WakeWordService : Service() {
                 CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Keeps wake word detection active in background"
+                description = "Menjaga deteksi kata bangun tetap aktif di latar belakang"
                 setSound(null, null)
             }
             val notificationManager = getSystemService(NotificationManager::class.java)

@@ -253,7 +253,7 @@ fun HomeScreen(
         if (wrappedDismissed) {
             viewModel.markWrappedAsSeen()
             scope.launch {
-                snackbarHostState.showSnackbar("Found in Settings > Content")
+                snackbarHostState.showSnackbar("Ditemukan di Pengaturan > Konten")
             }
             backStackEntry?.savedStateHandle?.set("wrapped_seen", false) // Reset the value
         }

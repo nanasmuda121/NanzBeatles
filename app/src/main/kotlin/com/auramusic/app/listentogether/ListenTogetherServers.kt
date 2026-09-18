@@ -20,7 +20,7 @@ object ListenTogetherServers {
     private const val ServersJson = """
         [
           {
-            "name": "Aura Music Server",
+            "name": "NanzBeatles Server",
             "url": "wss://api.auramusic.site/ws",
             "location": "Ohio (US East)",
             "operator": "chila254"

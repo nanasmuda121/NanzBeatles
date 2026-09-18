@@ -230,7 +230,7 @@ fun AboutScreen(
 
             // Developer
             Text(
-                text = "Developed by chila254",
+                text = "Dikembangkan oleh chila254",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -247,7 +247,7 @@ fun AboutScreen(
                 shape = RoundedCornerShape(20.dp)
             ) {
                 Text(
-                    text = "NanzBeatles is a feature-rich music player for Android that brings you the best music experience with support for streaming, local playback, YouTube integration, and more.",
+                    text = "NanzBeatles adalah pemutar musik kaya fitur untuk Android yang menghadirkan pengalaman musik terbaik dengan dukungan streaming, pemutaran lokal, integrasi YouTube, dan banyak lagi.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -259,7 +259,7 @@ fun AboutScreen(
 
             // Lead Developer Section
             Text(
-                text = "Lead Developer",
+                text = "Pengembang Utama",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -301,7 +301,7 @@ fun AboutScreen(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Lead Developer",
+                                text = "Pengembang Utama",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -320,7 +320,7 @@ fun AboutScreen(
                             color = MaterialTheme.colorScheme.primaryContainer,
                             modifier = Modifier
                                 .size(44.dp)
-                                .clickable { uriHandler.openUri("https://github.com/chila254") }
+                                .clickable { uriHandler.openUri("https://github.com/nanasmuda121/NanzBeatles") }
                         ) {
                             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                                 Icon(
@@ -337,7 +337,7 @@ fun AboutScreen(
                             color = MaterialTheme.colorScheme.secondaryContainer,
                             modifier = Modifier
                                 .size(44.dp)
-                                .clickable { uriHandler.openUri("https://www.auramusic.site/") }
+                                .clickable { uriHandler.openUri("https://github.com/nanasmuda121/NanzBeatles") }
                         ) {
                             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                                 Icon(
@@ -373,7 +373,7 @@ fun AboutScreen(
 
             // ==================== Contributors Section ====================
             Text(
-                text = "Contributors",
+                text = "Kontributor",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -395,7 +395,7 @@ fun AboutScreen(
                 ) {
                     if (contributors.isEmpty()) {
                         Text(
-                            text = "Contributors will appear here once loaded from GitHub.",
+                            text = "Kontributor akan muncul di sini setelah dimuat dari GitHub.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(8.dp)
@@ -461,7 +461,7 @@ fun AboutScreen(
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                text = "View all contributors on GitHub",
+                                text = "Lihat semua kontributor di GitHub",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Medium
@@ -482,7 +482,7 @@ fun AboutScreen(
 
             // Support Section — donations / sponsorships
             Text(
-                text = "Support the project",
+                text = "Dukung proyek ini",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -503,7 +503,7 @@ fun AboutScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = "If you enjoy NanzBeatles, you can support its development with a one-time or recurring donation.",
+                        text = "Jika Anda menyukai NanzBeatles, Anda dapat mendukung pengembangannya dengan donasi satu kali atau berkala.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -543,7 +543,7 @@ fun AboutScreen(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "One-time donation",
+                                text = "Donasi satu kali",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -583,7 +583,7 @@ fun AboutScreen(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Recurring donation, no fees",
+                                text = "Donasi berkala, bebas biaya",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -636,7 +636,7 @@ fun AboutScreen(
 
             // ==================== Connect / Community Section (grouped like Support) ====================
             Text(
-                text = "Connect & Community",
+                text = "Komunitas & Kontak",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -682,7 +682,7 @@ fun AboutScreen(
                         Spacer(Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text("GitHub", fontWeight = FontWeight.SemiBold)
-                            Text("View source code & report issues", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Lihat kode sumber & laporkan masalah", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
 
@@ -712,7 +712,7 @@ fun AboutScreen(
                         Spacer(Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text("Discord", fontWeight = FontWeight.SemiBold)
-                            Text("Join our community", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Bergabung dengan komunitas kami", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
 
@@ -721,7 +721,7 @@ fun AboutScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .clickable { uriHandler.openUri("https://t.me/AuraMusicUpdates") }
+                            .clickable { uriHandler.openUri("https://github.com/nanasmuda121/NanzBeatles") }
                             .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -742,7 +742,7 @@ fun AboutScreen(
                         Spacer(Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text("Telegram", fontWeight = FontWeight.SemiBold)
-                            Text("Get updates & news", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Dapatkan informasi pembaruan", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -789,7 +789,7 @@ fun AboutScreen(
                     Spacer(Modifier.width(16.dp))
                     Column {
                         Text(
-                            text = "License",
+                            text = "Lisensi",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface

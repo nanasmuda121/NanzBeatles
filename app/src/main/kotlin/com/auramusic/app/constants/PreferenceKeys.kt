@@ -101,7 +101,6 @@ val UpdateVariantKey = stringPreferencesKey("updateVariant")
 val UpdateArchitectureKey = stringPreferencesKey("updateArchitecture")
 val LastSeenVersionKey = stringPreferencesKey("last_seen_version")
 val LastUpdateCheckTimeKey = longPreferencesKey("lastUpdateCheckTime")
-val ChangelogShownForVersionKey = stringPreferencesKey("changelog_shown_for_version")
 
 val AudioQualityKey = stringPreferencesKey("audioQuality")
 

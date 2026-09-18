@@ -60,15 +60,15 @@ object PlayerColorExtractor {
             enhanceColorVividness(fallbackDominant, 1.1f)
         }
         
-        // Create sophisticated gradient with 3 color points
+        val lum = (primaryColor.red * 0.299f + primaryColor.green * 0.587f + primaryColor.blue * 0.114f).coerceIn(0.15f, 0.65f)
+        val monoPrimary = Color(lum, lum, lum, 1f)
+        val monoDark = Color(lum * 0.45f, lum * 0.45f, lum * 0.45f, 1f)
+
+        // Create sophisticated monochrome gradient with 3 color points
         listOf(
-            primaryColor, // Start: primary vibrant color
-            primaryColor.copy(
-                red = (primaryColor.red * 0.6f).coerceAtLeast(0f),
-                green = (primaryColor.green * 0.6f).coerceAtLeast(0f),
-                blue = (primaryColor.blue * 0.6f).coerceAtLeast(0f)
-            ), // Middle: darker version of primary color
-            Color.Black // End: black
+            monoPrimary, // Start: monochrome light/mid gray
+            monoDark,    // Middle: dark charcoal
+            Color.Black  // End: pure black
         )
     }
 

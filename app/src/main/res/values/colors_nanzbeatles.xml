@@ -6,14 +6,14 @@
     <color name="widget_on_tertiary_container">#FFFFFF</color>
     <color name="widget_on_primary_container">#FFFFFF</color>
     <color name="widget_play_button_low_icon">#FFFFFF</color>
-    <color name="widget_tertiary_container">#E8DEF8</color>
-    <color name="widget_primary_container">#FFB4AB</color>
-    <color name="widget_mic_active_bg">#FFB4AB</color>
-    <color name="widget_mic_pulse_ring">#FFB4AB</color>
-    <color name="widget_mic_pulse_ring_mid">#FFB4AB</color>
-    <color name="widget_mic_pulse_ring_low">#FFB4AB</color>
-    <color name="widget_mic_pulse_ring_fade">#FFB4AB</color>
-    <color name="widget_play_button_low_bg">#FFB4AB</color>
+    <color name="widget_tertiary_container">#E0E0E0</color>
+    <color name="widget_primary_container">#E0E0E0</color>
+    <color name="widget_mic_active_bg">#E0E0E0</color>
+    <color name="widget_mic_pulse_ring">#E0E0E0</color>
+    <color name="widget_mic_pulse_ring_mid">#BDBDBD</color>
+    <color name="widget_mic_pulse_ring_low">#9E9E9E</color>
+    <color name="widget_mic_pulse_ring_fade">#757575</color>
+    <color name="widget_play_button_low_bg">#E0E0E0</color>
 
     <!-- Material theme colors -->
     <color name="colorOnSurface">#1C1B1F</color>

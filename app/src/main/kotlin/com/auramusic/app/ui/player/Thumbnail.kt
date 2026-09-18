@@ -130,7 +130,7 @@ import com.auramusic.app.constants.VideoQuality
 import com.auramusic.app.constants.VideoQualityKey
 import com.auramusic.app.listentogether.RoomRole
 import com.auramusic.app.ui.component.CastButton
-import com.auramusic.app.utils.AuraPlayerUtils
+import com.auramusic.app.utils.BeatlesPlayerUtils
 import com.auramusic.app.utils.rememberEnumPreference
 import com.auramusic.app.utils.rememberPreference
 import kotlinx.coroutines.Dispatchers
@@ -1264,7 +1264,7 @@ onClick = {
                         },
                         onClick = {
                             onVideoQualityChange(quality)
-                            AuraPlayerUtils.setPreferredVideoQuality(quality)
+                            BeatlesPlayerUtils.setPreferredVideoQuality(quality)
                             expanded = false
                             showQualityMenu = false
                         }

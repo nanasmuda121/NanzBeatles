@@ -253,12 +253,9 @@ fun PlayerSettings(
     )
     val (enableVoiceCommands, onEnableVoiceCommandsChange) = rememberPreference(EnableVoiceCommandsKey, defaultValue = true)
     val (enableVoiceWakeWord, onEnableVoiceWakeWordChange) = rememberPreference(EnableVoiceWakeWordKey, defaultValue = false)
-    val (voiceWakeWord, onVoiceWakeWordChange) = rememberPreference(VoiceWakeWordKey, defaultValue = "Aura")
+    val (voiceWakeWord, onVoiceWakeWordChange) = rememberPreference(VoiceWakeWordKey, defaultValue = "Beatles")
 
     var showAudioQualityDialog by remember {
-        mutableStateOf(false)
-    }
-    var showSubtitleLanguageDialog by remember {
         mutableStateOf(false)
     }
 
@@ -328,7 +325,7 @@ fun PlayerSettings(
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.alarm),
                     title = { Text(stringResource(R.string.alarm_title)) },
-                    description = { Text("Wake up to your downloaded, cached or playlist songs") },
+                    description = { Text("Bangun dengan lagu unduhan, cache, atau daftar putar Anda") },
                     onClick = { navController.navigate("settings/alarm") }
                 )
             )
@@ -437,7 +434,7 @@ fun PlayerSettings(
                 add(Material3SettingsItem(
                     icon = painterResource(R.drawable.music_note),
                     title = { Text("Automix") },
-                    description = { Text("DJ-style crossfade — automatically mixes songs with a smooth 4-second linear fade, starting earlier in each track") },
+                    description = { Text("Crossfade gaya DJ — otomatis mencampur lagu dengan pemudaran halus 4 detik lebih awal di setiap lagu") },
                     trailingContent = {
                         Switch(
                             checked = automixEnabled,
@@ -458,7 +455,7 @@ fun PlayerSettings(
                 if (automixEnabled) {
                     add(Material3SettingsItem(
                         icon = painterResource(R.drawable.album),
-                        title = { Text("Automix Blend Point") },
+                        title = { Text("Titik Campuran Automix") },
                         description = {
                             Column {
                                 Text("${automixBlendPercent.roundToInt()}%")
@@ -660,64 +657,6 @@ fun PlayerSettings(
                     },
                     onClick = { onSubtitlesEnabledChange(!subtitlesEnabled) }
                 ))
-                val subtitleLanguageOptions = listOf(
-                    "en" to "English",
-                    "es" to "Spanish",
-                    "fr" to "French",
-                    "de" to "German",
-                    "it" to "Italian",
-                    "pt" to "Portuguese",
-                    "ru" to "Russian",
-                    "ja" to "Japanese",
-                    "ko" to "Korean",
-                    "zh" to "Chinese",
-                    "auto" to "Auto"
-                )
-                val currentSubtitleLangLabel = subtitleLanguageOptions.find { it.first == subtitleLanguage }?.second ?: "English"
-                add(Material3SettingsItem(
-                    icon = painterResource(R.drawable.language),
-                    title = { Text(stringResource(R.string.subtitle_language)) },
-                    description = { Text(currentSubtitleLangLabel) },
-                    onClick = { showSubtitleLanguageDialog = true }
-                ))
-                if (showSubtitleLanguageDialog) {
-                    ListDialog(
-                        onDismiss = { showSubtitleLanguageDialog = false }
-                    ) {
-                        items(subtitleLanguageOptions.size) { index ->
-                            val (code, name) = subtitleLanguageOptions[index]
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable(enabled = true) {
-                                        onSubtitleLanguageChange(code)
-                                        showSubtitleLanguageDialog = false
-                                    }
-                                    .background(
-                                        if (subtitleLanguage == code) MaterialTheme.colorScheme.primaryContainer
-                                        else MaterialTheme.colorScheme.surface
-                                    )
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = name,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = if (subtitleLanguage == code) MaterialTheme.colorScheme.onPrimaryContainer
-                                    else MaterialTheme.colorScheme.onSurface
-                                )
-                                if (subtitleLanguage == code) {
-                                    Spacer(Modifier.weight(1f))
-                                    Icon(
-                                        painter = painterResource(R.drawable.check),
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
                 // Only show Cast setting in GMS builds (not in F-Droid/FOSS)
                 if (BuildConfig.CAST_AVAILABLE) {
                     add(Material3SettingsItem(
@@ -774,7 +713,7 @@ fun PlayerSettings(
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.ic_sponsor_block),
                     title = { Text("SponsorBlock") },
-                    description = { Text("Auto-skip sponsor segments in videos") },
+                    description = { Text("Lewati otomatis segmen sponsor dalam video") },
                     trailingContent = {
                         Switch(
                             checked = sponsorBlockEnabled,
@@ -794,8 +733,8 @@ fun PlayerSettings(
                 ),
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.check),
-                    title = { Text("Skip Sponsor") },
-                    description = { Text("Paid promotion, not necessarily an ad") },
+                    title = { Text("Lewati Sponsor") },
+                    description = { Text("Promosi berbayar, belum tentu iklan") },
                     trailingContent = {
                         Switch(
                             checked = sbSkipSponsor,
@@ -815,8 +754,8 @@ fun PlayerSettings(
                 ),
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.check),
-                    title = { Text("Skip Self-Promo") },
-                    description = { Text("Unpaid self-promotion or bonus content") },
+                    title = { Text("Lewati Promosi Mandiri") },
+                    description = { Text("Promosi mandiri tidak berbayar atau konten bonus") },
                     trailingContent = {
                         Switch(
                             checked = sbSkipSelfPromo,
@@ -836,8 +775,8 @@ fun PlayerSettings(
                 ),
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.check),
-                    title = { Text("Skip Interaction") },
-                    description = { Text("Subscribe, like, share reminders") },
+                    title = { Text("Lewati Pengingat Interaksi") },
+                    description = { Text("Pengingat subscribe, like, dan bagikan") },
                     trailingContent = {
                         Switch(
                             checked = sbSkipInteraction,
@@ -857,8 +796,8 @@ fun PlayerSettings(
                 ),
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.check),
-                    title = { Text("Skip Intro") },
-                    description = { Text("Intro sequences and animations") },
+                    title = { Text("Lewati Intro") },
+                    description = { Text("Bagian pembuka dan animasi intro") },
                     trailingContent = {
                         Switch(
                             checked = sbSkipIntro,
@@ -878,8 +817,8 @@ fun PlayerSettings(
                 ),
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.check),
-                    title = { Text("Skip Outro") },
-                    description = { Text("End cards and outro sequences") },
+                    title = { Text("Lewati Outro") },
+                    description = { Text("Layar akhir dan bagian penutup") },
                     trailingContent = {
                         Switch(
                             checked = sbSkipOutro,
@@ -899,8 +838,8 @@ fun PlayerSettings(
                 ),
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.check),
-                    title = { Text("Skip Preview") },
-                    description = { Text("Recap of what you have already seen") },
+                    title = { Text("Lewati Pratinjau") },
+                    description = { Text("Kilas balik dari apa yang sudah ditonton") },
                     trailingContent = {
                         Switch(
                             checked = sbSkipPreview,
@@ -920,8 +859,8 @@ fun PlayerSettings(
                 ),
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.check),
-                    title = { Text("Skip Non-Music") },
-                    description = { Text("Parts of music videos where the song is not playing") },
+                    title = { Text("Lewati Non-Musik") },
+                    description = { Text("Bagian video musik saat lagu tidak dimainkan") },
                     trailingContent = {
                         Switch(
                             checked = sbSkipMusicOffTopic,
@@ -941,8 +880,8 @@ fun PlayerSettings(
                 ),
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.check),
-                    title = { Text("Skip Filler") },
-                    description = { Text("Tangents or filler sections") },
+                    title = { Text("Lewati Bagian Pengisi") },
+                    description = { Text("Bagian pengisi atau keluar topik") },
                     trailingContent = {
                         Switch(
                             checked = sbSkipFiller,

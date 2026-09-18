@@ -8,17 +8,17 @@
     <color name="primary_container">#FF1A1A1A</color>
     <color name="on_primary_container">#FFE0E0E0</color>
 
-    <!-- Secondary Colors -->
-    <color name="secondary">#FFD7C3BE</color>
-    <color name="on_secondary">#FF41332C</color>
-    <color name="secondary_container">#FF594942</color>
-    <color name="on_secondary_container">#FFF4DDED</color>
+    <!-- Secondary Colors - Monochrome -->
+    <color name="secondary">#FFB0B0B0</color>
+    <color name="on_secondary">#FF1E1E1E</color>
+    <color name="secondary_container">#FF2A2A2A</color>
+    <color name="on_secondary_container">#FFE0E0E0</color>
 
-    <!-- Tertiary Colors -->
-    <color name="tertiary">#FFE3BF7C</color>
-    <color name="on_tertiary">#FF3E2E00</color>
-    <color name="tertiary_container">#FF594400</color>
-    <color name="on_tertiary_container">#FFFFE18C</color>
+    <!-- Tertiary Colors - Monochrome -->
+    <color name="tertiary">#FF9E9E9E</color>
+    <color name="on_tertiary">#FF121212</color>
+    <color name="tertiary_container">#FF242424</color>
+    <color name="on_tertiary_container">#FFD5D5D5</color>
 
     <!-- Background and Surface Colors - Black for dark mode -->
     <color name="background">#FF000000</color>

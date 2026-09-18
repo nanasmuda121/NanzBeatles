@@ -35,7 +35,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import com.auramusic.app.LocalPlayerConnection
-import com.auramusic.app.playback.AuraCanvasRepository
+import com.auramusic.app.playback.BeatlesCanvasRepository
 import timber.log.Timber
 
 /**
@@ -45,13 +45,13 @@ import timber.log.Timber
  * Uses a dedicated ExoPlayer (NOT the main playback player) so audio is
  * untouched. Only renders when a canvas URL is available.
  *
- * Resolution goes through [AuraCanvasRepository] which tries the community
+ * Resolution goes through [BeatlesCanvasRepository] which tries the community
  * manifest first, then the Render server (which does Spotify search + canvas
  * fetch server-side, so no Spotify keys are needed in the app).
  */
 @UnstableApi
 @Composable
-fun AuraCanvasOverlay(
+fun BeatlesCanvasOverlay(
     title: String?,
     artist: String?,
     album: String? = null,
@@ -62,7 +62,7 @@ fun AuraCanvasOverlay(
     val context = LocalContext.current
     var isVideoReady by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) { AuraCanvasRepository.warmUp() }
+    LaunchedEffect(Unit) { BeatlesCanvasRepository.warmUp() }
 
     val url = canvasUrl ?: return
 

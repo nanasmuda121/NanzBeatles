@@ -362,13 +362,9 @@ class MainActivity : ComponentActivity() {
         // Start hardware integration discovery
         hardwareIntegrationManager.start()
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            val locale = dataStore[AppLanguageKey]
-                ?.takeUnless { it == SYSTEM_DEFAULT }
-                ?.let { Locale.forLanguageTag(it) }
-                ?: Locale.getDefault()
-            setAppLocale(this, locale)
-        }
+        val indonesianLocale = Locale("id", "ID")
+        Locale.setDefault(indonesianLocale)
+        setAppLocale(this, indonesianLocale)
 
         lifecycleScope.launch {
             dataStore.data
@@ -447,7 +443,7 @@ class MainActivity : ComponentActivity() {
                                     val notif = NotificationCompat.Builder(this@MainActivity, "updates")
                                         .setSmallIcon(R.drawable.ic_notification_icon)
                                         .setContentTitle(getString(R.string.update_available_title))
-                                        .setContentText("New version ${releaseInfo.versionName} available")
+                                        .setContentText("Versi baru ${releaseInfo.versionName} tersedia")
                                         .setContentIntent(pending)
                                         .setAutoCancel(true)
                                         .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -464,7 +460,7 @@ class MainActivity : ComponentActivity() {
                             // Update last seen version
                             runBlocking {
                                 dataStore.edit { 
-                                    it[LastSeenVersionKey] = currentVersion
+                                    it[LastSeenVersionKey] = BuildConfig.VERSION_NAME
                                 }
                             }
                         }

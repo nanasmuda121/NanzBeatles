@@ -77,12 +77,23 @@ class App : Application(), SingletonImageLoader.Factory {
         // Install crash handler first
         CrashHandler.install(this)
         
+        // Enforce 100% Bahasa Indonesia
+        val indonesianLocale = Locale("id", "ID")
+        Locale.setDefault(indonesianLocale)
+        val config = resources.configuration
+        config.setLocale(indonesianLocale)
+        @Suppress("DEPRECATION")
+        resources.updateConfiguration(config, resources.displayMetrics)
+        androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
+            androidx.core.os.LocaleListCompat.forLanguageTags("id-ID")
+        )
+
         Timber.plant(Timber.DebugTree())
 
         // Initialize Paxsenix synchronously so lyrics can be fetched immediately
         com.auramusic.paxsenix.Paxsenix.init(this)
 
-        // تهيئة إعدادات التطبيق عند الإقلاع
+        // Initialize settings
         applicationScope.launch {
             initializeSettings()
             observeSettingsChanges()
@@ -94,22 +105,14 @@ class App : Application(), SingletonImageLoader.Factory {
 
     private suspend fun initializeSettings() {
         val settings = dataStore.data.first()
-        val locale = Locale.getDefault()
-        val languageTag = locale.language
+        val indonesianLocale = Locale("id", "ID")
+        Locale.setDefault(indonesianLocale)
 
         YouTube.locale = YouTubeLocale(
-            gl = settings[ContentCountryKey]?.takeIf { it != SYSTEM_DEFAULT }
-                ?: locale.country.takeIf { it in CountryCodeToName }
-                ?: "US",
-            hl = settings[ContentLanguageKey]?.takeIf { it != SYSTEM_DEFAULT }
-                ?: locale.language.takeIf { it in LanguageCodeToName }
-                ?: languageTag.takeIf { it in LanguageCodeToName }
-                ?: "en"
+            gl = settings[ContentCountryKey]?.takeIf { it != SYSTEM_DEFAULT } ?: "ID",
+            hl = "id"
         )
 
-        if (languageTag == "zh-TW") {
-            KuGou.useTraditionalChinese = true
-        }
 
         // Initialize LastFM with API keys from BuildConfig (GitHub Secrets)
         LastFM.initialize(

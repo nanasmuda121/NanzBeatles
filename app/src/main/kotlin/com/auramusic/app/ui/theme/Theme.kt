@@ -33,7 +33,7 @@ import com.materialkolor.score.Score
 val DefaultThemeColor = Color(0xFFE0E0E0)
 
 @Composable
-fun AuraMusicTheme(
+fun NanzBeatlesTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     pureBlack: Boolean = false,
     themeColor: Color = DefaultThemeColor,
@@ -44,15 +44,21 @@ fun AuraMusicTheme(
 ) {
     val context = LocalContext.current
 
+    // Convert seed color to pure monochrome (grayscale) to ensure 100% monochrome design
+    val monoSeed = remember(themeColor) {
+        val lum = themeColor.luminance()
+        Color(lum, lum, lum, 1f)
+    }
+
     // Generate clean monochrome color scheme
     val baseColorScheme = rememberDynamicColorScheme(
-        seedColor = themeColor,
+        seedColor = monoSeed,
         isDark = darkTheme,
         specVersion = ColorSpec.SpecVersion.SPEC_2025,
         style = PaletteStyle.Monochrome
     )
 
-    // Apply pureBlack modification if needed, similar to original logic
+    // Apply pureBlack modification if needed
     val colorScheme = remember(baseColorScheme, pureBlack, darkTheme) {
         if (darkTheme && pureBlack) {
             baseColorScheme.pureBlack(true)
@@ -72,13 +78,31 @@ fun AuraMusicTheme(
         AppTypography.withFontFamily(fontFamily).scaledBy(fontScale).boldedBy(fontBoldness)
     }
 
-    // Use standard MaterialTheme instead of MaterialExpressiveTheme
     MaterialTheme(
         colorScheme = colorScheme,
         typography = typography,
         content = content
     )
 }
+
+@Composable
+fun AuraMusicTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    pureBlack: Boolean = false,
+    themeColor: Color = DefaultThemeColor,
+    selectedFont: String = "OUTFIT",
+    fontScale: Float = 1f,
+    fontBoldness: Float = 0f,
+    content: @Composable () -> Unit,
+) = NanzBeatlesTheme(
+    darkTheme = darkTheme,
+    pureBlack = pureBlack,
+    themeColor = themeColor,
+    selectedFont = selectedFont,
+    fontScale = fontScale,
+    fontBoldness = fontBoldness,
+    content = content
+)
 
 fun Bitmap.extractThemeColor(): Color {
     val colorsToPopulation = Palette.from(this)
@@ -87,23 +111,13 @@ fun Bitmap.extractThemeColor(): Color {
         .swatches
         .associate { it.rgb to it.population }
     val rankedColors = Score.score(colorsToPopulation)
-    return Color(rankedColors.first())
+    val c = Color(rankedColors.first())
+    val lum = c.luminance()
+    return Color(lum, lum, lum, 1f)
 }
 
 fun Bitmap.extractGradientColors(): List<Color> {
-    val extractedColors = Palette.from(this)
-        .maximumColorCount(64)
-        .generate()
-        .swatches
-        .associate { it.rgb to it.population }
-
-    val orderedColors = Score.score(extractedColors, 2, 0xff4285f4.toInt(), true)
-        .sortedByDescending { Color(it).luminance() }
-
-    return if (orderedColors.size >= 2)
-        listOf(Color(orderedColors[0]), Color(orderedColors[1]))
-    else
-        listOf(Color(0xFF595959), Color(0xFF0D0D0D))
+    return listOf(Color(0xFF3A3A3C), Color(0xFF1C1C1E))
 }
 
 fun ColorScheme.pureBlack(apply: Boolean) =

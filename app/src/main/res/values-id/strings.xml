@@ -665,9 +665,9 @@
     <string name="enable_voice_commands">Aktifkan perintah suara</string>
     <string name="enable_voice_commands_desc">Aktifkan kontrol suara interaktif dengan hamparan animasi. Ucapkan perintah seperti \" Mainkan \", \" Berikutnya \", atau \" Cari lagu \".</string>
     <string name="enable_voice_wake_word">Kata bangun tanpa tangan</string>
-    <string name="enable_voice_wake_word_desc">Dengarkan terus \" Hei Aura \" untuk mengaktifkan perintah suara tanpa menyentuh layar. Bekerja saat aplikasi terbuka.</string>
+    <string name="enable_voice_wake_word_desc">Dengarkan terus \" Hei Beatles \" untuk mengaktifkan perintah suara tanpa menyentuh layar. Bekerja saat aplikasi terbuka.</string>
     <string name="voice_wake_word">Kata bangun khusus</string>
-    <string name="voice_wake_word_desc">Atur kata bangun kustom Anda (default: Aura)</string>
+    <string name="voice_wake_word_desc">Atur kata bangun kustom Anda (default: Beatles)</string>
     <!-- Voice feedback -->
     <string name="voice_feedback">Umpan balik suara</string>
     <string name="enable_voice_feedback">Aktifkan respons suara</string>
@@ -967,14 +967,11 @@
     <string name="check_for_updates">Periksa pembaruan</string>
     <string name="update_notifications">Notifikasi pembaruan</string>
     <string name="new_release_notifications">Beri tahu jika ada versi aplikasi baru</string>
-    <!-- Changelog -->
-    <string name="changelog">Catatan Perubahan</string>
-    <string name="changelog_empty">Belum ada rilis</string>
     <string name="view_on_github">Buka di GitHub</string>
     <string name="github_releases_url">https://github.com/nanasmuda121/update-NanzBeatles/releases</string>
     <string name="list_bullet">•</string>
     <!-- Theme colors -->
-    <string name="palette_dynamic">Dinamis</string>
+    <string name="palette_dynamic">Monokrom Dinamis</string>
     <string name="palette_crimson">Crimson</string>
     <string name="palette_rose">Mawar</string>
     <string name="palette_purple">Ungu</string>
@@ -991,18 +988,16 @@
     <string name="palette_amber">Kuning sawo</string>
     <string name="palette_orange">Oranye</string>
     <string name="palette_deep_orange">Deep Orange</string>
-    <string name="palette_brown">Coklat</string>
-    <string name="palette_grey">Abu-abu</string>
-    <string name="palette_blue_grey">Biru Abu - abu</string>
+    <string name="palette_brown">Arang</string>
+    <string name="palette_grey">Abu-abu Perak</string>
+    <string name="palette_blue_grey">Abu-abu Gelap</string>
     <!-- Theme mode -->
     <string name="cd_pure_black_mode">Mode hitam murni</string>
     <string name="cd_light_mode">Mode Lampu Hangat</string>
     <string name="cd_dark_mode">Mode gelap</string>
     <string name="cd_system_mode">Mode sistem</string>
     <string name="cd_palette_item">Item palet warna</string>
-    <string name="cd_back">Punggur</string>
-    <!-- Release notes -->
-    <string name="release_notes">Catatan rilis</string>
+    <string name="cd_back">Kembali</string>
     <!-- Crash reporter -->
     <string name="crash_title">NanzBeatles telah jatuh</string>
     <string name="crash_description">Terjadi kesalahan tak diduga!</string>

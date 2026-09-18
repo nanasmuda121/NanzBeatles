@@ -91,40 +91,40 @@ fun Modifier.liquidGlass(
 fun LiquidGlassContainer(
     enabled: Boolean,
     modifier: Modifier = Modifier,
-    cornerRadius: Dp = 18.dp,
+    cornerRadius: Dp = 24.dp,
     blurRadius: Dp = 35.dp,
     content: @Composable BoxScope.() -> Unit
 ) {
     if (enabled) {
         val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-        val baseAlpha = if (isDark) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) 0.45f else 0.40f
-        } else {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) 0.30f else 0.25f
-        }
+        val baseAlpha = if (isDark) 0.65f else 0.45f
         val borderBrush = Brush.verticalGradient(
             listOf(
-                if (isDark) Color.White.copy(alpha = 0.28f) else Color.White.copy(alpha = 0.50f),
-                if (isDark) Color.White.copy(alpha = 0.06f) else Color.White.copy(alpha = 0.15f)
+                Color.White.copy(alpha = 0.22f),
+                Color.White.copy(alpha = 0.05f)
             )
         )
         val highlightBrush = Brush.verticalGradient(
             listOf(
-                if (isDark) Color.White.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.22f),
+                Color.White.copy(alpha = 0.12f),
                 Color.Transparent
             )
         )
         Box(
             modifier = modifier
                 .clip(RoundedCornerShape(cornerRadius))
-                .border(1.dp, borderBrush, RoundedCornerShape(cornerRadius))
+                .border(
+                    width = 1.dp,
+                    brush = borderBrush,
+                    shape = RoundedCornerShape(cornerRadius)
+                )
         ) {
             // Backdrop blurred layer (Android 12+)
             Box(
                 modifier = Modifier
                     .matchParentSize()
                     .background(
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = baseAlpha),
+                        color = Color(0xFF121212).copy(alpha = baseAlpha),
                         shape = RoundedCornerShape(cornerRadius)
                     )
                     .background(

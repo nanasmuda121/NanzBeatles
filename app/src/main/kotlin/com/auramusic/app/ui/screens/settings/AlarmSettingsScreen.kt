@@ -433,10 +433,10 @@ private fun AlarmSongPickerDialog(
             }
         },
         confirmButton = {
-            Button(onClick = { onConfirm(selected.toList()) }) { Text("Done") }
+            Button(onClick = { onConfirm(selected.toList()) }) { Text("Selesai") }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text("Batal") }
         },
     )
 }

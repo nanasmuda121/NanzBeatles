@@ -78,7 +78,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.exoplayer.offline.Download
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
-import com.auramusic.app.ui.component.AuraCanvasImage
+import com.auramusic.app.ui.component.BeatlesCanvasImage
 import androidx.media3.common.util.UnstableApi
 import com.auramusic.app.LocalDatabase
 import com.auramusic.app.LocalDownloadUtil
@@ -211,7 +211,7 @@ fun AlbumScreen(
                         shape = RoundedCornerShape(3.dp)
                     ) {
                         @UnstableApi
-                        AuraCanvasImage(
+                        BeatlesCanvasImage(
                             title = albumWithSongs.album.title,
                             artist = albumWithSongs.songs.firstOrNull()?.artists?.firstOrNull()?.name,
                             staticImageUrl = albumWithSongs.album.thumbnailUrl?.toHighQualityThumbnail(),

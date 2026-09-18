@@ -463,6 +463,7 @@
     <string name="mini_player_corner_radius">Radius sudut pemain</string>
     <string name="mini_player_show_favorite">Tampilkan tombol favorit</string>
     <string name="mini_player_show_subscribe">Tampilkan tombol berlangganan</string>
+    <string name="mini_player_show_play_pause">Tampilkan tombol putar/jeda</string>
     <string name="mini_player_show_hardware">Tampilkan tombol perangkat keras</string>
     <string name="hide_player_thumbnail">Sembunyikan thumbnail di pemutar</string>
     <string name="hide_player_thumbnail_desc">Hanya tampilkan kontrol dan lirik tanpa gambar sampul</string>

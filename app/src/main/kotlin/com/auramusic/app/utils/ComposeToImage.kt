@@ -65,11 +65,10 @@ object ComposeToImage {
         val canvas = Canvas(bitmap)
 
         val defaultBackgroundColor = 0xFF121212.toInt()
-        val bgColor = backgroundColor ?: defaultBackgroundColor
-        val isLightBg = androidx.core.graphics.ColorUtils.calculateLuminance(bgColor) > 0.5
-        val defaultTextColor = if (isLightBg) 0xFF000000.toInt() else 0xFFFFFFFF.toInt()
-        val defaultSecondaryTextColor = if (isLightBg) 0xB3000000.toInt() else 0xB3FFFFFF.toInt()
+        val defaultTextColor = 0xFFFFFFFF.toInt()
+        val defaultSecondaryTextColor = 0xB3FFFFFF.toInt()
 
+        val bgColor = backgroundColor ?: defaultBackgroundColor
         val mainTextColor = textColor ?: defaultTextColor
         val secondaryTxtColor = secondaryTextColor ?: defaultSecondaryTextColor
 

@@ -81,10 +81,8 @@ import androidx.compose.ui.unit.sp
 import androidx.media3.common.Player
 import coil3.compose.AsyncImage
 import com.auramusic.app.LocalDatabase
-import com.auramusic.app.LocalHardwareIntegrationManager
 import com.auramusic.app.LocalListenTogetherManager
 import com.auramusic.app.LocalPlayerConnection
-import com.auramusic.app.hardware.ActiveHardware
 import com.auramusic.app.R
 import com.auramusic.app.constants.CropAlbumArtKey
 import com.auramusic.app.constants.DarkModeKey
@@ -97,7 +95,7 @@ import com.auramusic.app.constants.MiniPlayerHeightKey
 import com.auramusic.app.constants.MiniPlayerCornerRadiusKey
 import com.auramusic.app.constants.MiniPlayerShowFavoriteKey
 import com.auramusic.app.constants.MiniPlayerShowSubscribeKey
-import com.auramusic.app.constants.MiniPlayerShowHardwareKey
+import com.auramusic.app.constants.MiniPlayerShowPlayPauseKey
 import com.auramusic.app.constants.PureBlackMiniPlayerKey
 import com.auramusic.app.constants.SwipeSensitivityKey
 import com.auramusic.app.constants.SwipeThumbnailKey
@@ -239,7 +237,7 @@ private fun NewMiniPlayer(
     val miniPlayerCornerRadius by rememberPreference(MiniPlayerCornerRadiusKey, defaultValue = 32f)
     val showFavorite by rememberPreference(MiniPlayerShowFavoriteKey, defaultValue = true)
     val showSubscribe by rememberPreference(MiniPlayerShowSubscribeKey, defaultValue = true)
-    val showHardware by rememberPreference(MiniPlayerShowHardwareKey, defaultValue = true)
+    val showPlayPause by rememberPreference(MiniPlayerShowPlayPauseKey, defaultValue = true)
 
     val primaryColor = if (useDarkTheme) Color.White else Color.Black
     val outlineColor = if (useDarkTheme) MaterialTheme.colorScheme.outline else Color(0x33000000)
@@ -421,14 +419,6 @@ private fun NewMiniPlayer(
                     Spacer(modifier = Modifier.width(12.dp))
                 }
 
-                // Hardware Integration Button - shows smart device ecosystem
-                if (showHardware) {
-                    HardwareIntegrationButton(
-                        onClick = onHardwareIntegrationClick
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
-
                 // Subscribe button - isolated composable
                 if (showSubscribe) {
                     mediaMetadata?.artists?.firstOrNull()?.id?.let { artistId ->
@@ -440,6 +430,23 @@ private fun NewMiniPlayer(
                 // Favorite button - isolated composable
                 if (showFavorite) {
                     mediaMetadata?.let { FavoriteButton(songId = it.id) }
+                    if (showPlayPause) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                }
+
+                // Dedicated Play/Pause button
+                if (showPlayPause) {
+                    NewMiniPlayerPlayPauseButton(
+                        playbackState = playbackState,
+                        isCasting = isCasting,
+                        castHandler = castHandler,
+                        playerConnection = playerConnection,
+                        listenTogetherManager = listenTogetherManager,
+                        primaryColor = primaryColor,
+                        outlineColor = outlineColor,
+                        onSurfaceColor = onSurfaceColor
+                    )
                 }
             }
         }
@@ -539,25 +546,6 @@ private fun NewMiniPlayerPlayButton(
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize().clip(CircleShape)
-                )
-            }
-
-            // Overlay for paused state or muted (guest)
-            if (isListenTogetherGuest && isMuted || (!isListenTogetherGuest && (!effectiveIsPlaying || playbackState == Player.STATE_ENDED))) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.4f), CircleShape)
-                )
-                Icon(
-                    painter = painterResource(
-                        if (isListenTogetherGuest) {
-                            if (isMuted) R.drawable.volume_off else R.drawable.volume_up
-                        } else if (playbackState == Player.STATE_ENDED) R.drawable.replay else R.drawable.play
-                    ),
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
                 )
             }
         }
@@ -1067,25 +1055,28 @@ private fun SubscribeButton(
 }
 
 @Composable
-private fun HardwareIntegrationButton(
-    onClick: (() -> Unit)?
+private fun NewMiniPlayerPlayPauseButton(
+    playbackState: Int,
+    isCasting: Boolean,
+    castHandler: CastConnectionHandler?,
+    playerConnection: PlayerConnection,
+    listenTogetherManager: ListenTogetherManager?,
+    primaryColor: Color,
+    outlineColor: Color,
+    onSurfaceColor: Color
 ) {
-    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val primaryColor = if (isDark) Color.White else Color.Black
-    val outlineColor = if (isDark) MaterialTheme.colorScheme.outline else Color(0x33000000)
-    val onSurfaceColor = if (isDark) Color.White else Color.Black
+    val isPlaying by playerConnection.isPlaying.collectAsState()
+    val castIsPlaying by castHandler?.castIsPlaying?.collectAsState() ?: remember { mutableStateOf(false) }
+    val effectiveIsPlaying = if (isCasting) castIsPlaying else isPlaying
+    val isListenTogetherGuest = listenTogetherManager?.let { it.isInRoom && !it.isHost } ?: false
+    val isMuted by playerConnection.isMuted.collectAsState()
 
-    val hardwareManager = LocalHardwareIntegrationManager.current
-    val active by hardwareManager?.activeHardware?.collectAsState()
-        ?: remember { mutableStateOf(ActiveHardware.NONE) }
-
-    val (iconRes, description) = when (active) {
-        ActiveHardware.CAR -> R.drawable.directions_car to "Car connected"
-        ActiveHardware.BLUETOOTH -> R.drawable.headset to "Bluetooth audio"
-        ActiveHardware.NONE -> R.drawable.speaker_group to "Audio devices"
+    val (iconRes, contentDesc) = when {
+        isListenTogetherGuest -> if (isMuted) R.drawable.volume_off to "Unmute" else R.drawable.volume_up to "Mute"
+        playbackState == Player.STATE_ENDED -> R.drawable.replay to "Replay"
+        effectiveIsPlaying -> R.drawable.pause to "Pause"
+        else -> R.drawable.play to "Play"
     }
-
-    val isActive = active != ActiveHardware.NONE
 
     Box(
         contentAlignment = Alignment.Center,
@@ -1094,19 +1085,32 @@ private fun HardwareIntegrationButton(
             .clip(CircleShape)
             .border(
                 width = 1.dp,
-                color = if (isActive) primaryColor.copy(alpha = 0.6f) else outlineColor.copy(alpha = 0.3f),
+                color = outlineColor.copy(alpha = 0.3f),
                 shape = CircleShape
             )
             .background(
-                color = if (isActive) primaryColor.copy(alpha = 0.18f) else primaryColor.copy(alpha = 0.08f),
+                color = primaryColor.copy(alpha = 0.08f),
                 shape = CircleShape
             )
-            .clickable(enabled = onClick != null) { onClick?.invoke() }
+            .clickable {
+                if (isListenTogetherGuest) {
+                    playerConnection.toggleMute()
+                    return@clickable
+                }
+                if (isCasting) {
+                    if (castIsPlaying) castHandler?.pause() else castHandler?.play()
+                } else if (playbackState == Player.STATE_ENDED) {
+                    playerConnection.player.seekTo(0, 0)
+                    playerConnection.player.playWhenReady = true
+                } else {
+                    playerConnection.togglePlayPause()
+                }
+            }
     ) {
         Icon(
             painter = painterResource(iconRes),
-            contentDescription = description,
-            tint = if (isActive) primaryColor else onSurfaceColor.copy(alpha = 0.7f),
+            contentDescription = contentDesc,
+            tint = onSurfaceColor,
             modifier = Modifier.size(20.dp)
         )
     }

@@ -490,6 +490,7 @@ val MiniPlayerHeightKey = floatPreferencesKey("miniPlayerHeight")
 val MiniPlayerCornerRadiusKey = floatPreferencesKey("miniPlayerCornerRadius")
 val MiniPlayerShowFavoriteKey = booleanPreferencesKey("miniPlayerShowFavorite")
 val MiniPlayerShowSubscribeKey = booleanPreferencesKey("miniPlayerShowSubscribe")
+val MiniPlayerShowPlayPauseKey = booleanPreferencesKey("miniPlayerShowPlayPause")
 val MiniPlayerShowHardwareKey = booleanPreferencesKey("miniPlayerShowHardware")
 
 val LyricsAnimationStyleKey = stringPreferencesKey("lyricsAnimationStyle")

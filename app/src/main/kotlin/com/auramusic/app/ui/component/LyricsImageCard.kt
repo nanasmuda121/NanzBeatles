@@ -32,7 +32,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -174,9 +173,8 @@ fun LyricsImageCard(
     val defaultBgColor = if (darkBackground) Color(0xFF121212) else Color(0xFFF5F5F5)
     val backgroundSolidColor = backgroundColor ?: defaultBgColor
 
-    val isLightBg = backgroundSolidColor.luminance() > 0.5f
-    val mainTextColor = textColor ?: if (isLightBg) Color.Black else Color.White
-    val secondaryColor = secondaryTextColor ?: if (isLightBg) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.7f)
+    val mainTextColor = textColor ?: if (darkBackground) Color.White else Color.Black
+    val secondaryColor = secondaryTextColor ?: if (darkBackground) Color.White.copy(alpha = 0.7f) else Color.Black.copy(alpha = 0.7f)
 
     val painter = rememberAsyncImagePainter(
         ImageRequest.Builder(context)

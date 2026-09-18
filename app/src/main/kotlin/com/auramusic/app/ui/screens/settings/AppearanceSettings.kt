@@ -95,6 +95,7 @@ import com.auramusic.app.constants.MiniPlayerHeightKey
 import com.auramusic.app.constants.MiniPlayerCornerRadiusKey
 import com.auramusic.app.constants.MiniPlayerShowFavoriteKey
 import com.auramusic.app.constants.MiniPlayerShowSubscribeKey
+import com.auramusic.app.constants.MiniPlayerShowPlayPauseKey
 import com.auramusic.app.constants.MiniPlayerShowHardwareKey
 import com.auramusic.app.constants.LyricsLineSpacingKey
 import com.auramusic.app.constants.LyricsScrollKey
@@ -274,8 +275,8 @@ fun AppearanceSettings(
         MiniPlayerShowSubscribeKey,
         defaultValue = true
     )
-    val (miniPlayerShowHardware, onMiniPlayerShowHardwareChange) = rememberPreference(
-        MiniPlayerShowHardwareKey,
+    val (miniPlayerShowPlayPause, onMiniPlayerShowPlayPauseChange) = rememberPreference(
+        MiniPlayerShowPlayPauseKey,
         defaultValue = true
     )
     val (lyricsTextSize, onLyricsTextSizeChange) = rememberPreference(LyricsTextSizeKey, defaultValue = 24f)
@@ -1470,16 +1471,16 @@ fun AppearanceSettings(
                 )
                 add(
                     Material3SettingsItem(
-                        icon = painterResource(R.drawable.speaker_group),
-                        title = { Text(stringResource(R.string.mini_player_show_hardware)) },
+                        icon = painterResource(R.drawable.play),
+                        title = { Text(stringResource(R.string.mini_player_show_play_pause)) },
                         trailingContent = {
                             Switch(
-                                checked = miniPlayerShowHardware,
-                                onCheckedChange = onMiniPlayerShowHardwareChange,
+                                checked = miniPlayerShowPlayPause,
+                                onCheckedChange = onMiniPlayerShowPlayPauseChange,
                                 thumbContent = {
                                     Icon(
                                         painter = painterResource(
-                                            id = if (miniPlayerShowHardware) R.drawable.check else R.drawable.close
+                                            id = if (miniPlayerShowPlayPause) R.drawable.check else R.drawable.close
                                         ),
                                         contentDescription = null,
                                         modifier = Modifier.size(SwitchDefaults.IconSize)
@@ -1487,7 +1488,7 @@ fun AppearanceSettings(
                                 }
                             )
                         },
-                        onClick = { onMiniPlayerShowHardwareChange(!miniPlayerShowHardware) }
+                        onClick = { onMiniPlayerShowPlayPauseChange(!miniPlayerShowPlayPause) }
                     )
                 )
             }

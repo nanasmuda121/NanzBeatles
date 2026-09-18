@@ -21,7 +21,7 @@
             android:banner="@mipmap/tv_banner"
             android:launchMode="singleTask"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
-            android:theme="@style/Theme.AuraMusic">
+            android:theme="@style/Theme.NanzBeatles">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

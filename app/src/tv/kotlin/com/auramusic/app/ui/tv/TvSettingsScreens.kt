@@ -621,7 +621,7 @@ import kotlin.math.roundToInt
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        text = "Auramusic Project (C) 2026",
+                        text = "NanzBeatles (C) 2026",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

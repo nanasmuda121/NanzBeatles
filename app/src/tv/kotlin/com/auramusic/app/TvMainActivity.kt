@@ -166,6 +166,15 @@ class TvMainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
+        try {
+            val idLocale = java.util.Locale("id", "ID")
+            java.util.Locale.setDefault(idLocale)
+            val config = resources.configuration
+            config.setLocale(idLocale)
+            @Suppress("DEPRECATION")
+            resources.updateConfiguration(config, resources.displayMetrics)
+        } catch (_: Exception) {}
+
         // Initialize sync on TV launch
         lifecycleScope.launch {
             syncUtils.tryAutoSync()
@@ -197,12 +206,12 @@ class TvMainActivity : ComponentActivity() {
               val contentCountry by rememberPreference(ContentCountryKey, SYSTEM_DEFAULT)
               YouTube.locale = YouTubeLocale(
                   gl = contentCountry.takeIf { it != SYSTEM_DEFAULT }
-                      ?: Locale.getDefault().country.takeIf { it in CountryCodeToName }
-                      ?: "US",
-                  hl = "en",
+                      ?: java.util.Locale.getDefault().country.takeIf { it in CountryCodeToName }
+                      ?: "ID",
+                  hl = "id",
               )
 
-              AuraMusicTheme(
+              com.auramusic.app.ui.theme.NanzBeatlesTheme(
                   darkTheme = useDarkTheme,
                   pureBlack = pureBlack,
                   themeColor = themeColor,

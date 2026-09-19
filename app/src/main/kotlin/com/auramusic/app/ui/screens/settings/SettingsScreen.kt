@@ -765,10 +765,10 @@ private fun SystemSettingsContent(
             }
             add(
                 Material3SettingsItem(
-                    icon = painterResource(R.drawable.info),
-                    title = { Text(stringResource(R.string.about)) },
-                    description = { Text("Informasi versi ${BuildConfig.VERSION_NAME} dan kredit pengembang") },
-                    onClick = { navController.navigate("settings/about") }
+                    icon = painterResource(R.drawable.whatsapp),
+                    title = { Text("Join Channels WhatsApp") },
+                    description = { Text("Gabung saluran WhatsApp resmi NanzBeatles") },
+                    onClick = { uriHandler.openUri("https://whatsapp.com/channel/0029VbCsS2r2phHIV3O0nO1a") }
                 )
             )
         }

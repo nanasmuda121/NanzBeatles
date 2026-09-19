@@ -977,7 +977,7 @@ class MainActivity : ComponentActivity() {
                                                     contentDescription = stringResource(R.string.stats)
                                                 )
                                             }
-                                            IconButton(onClick = { showAccountDialog = true }) {
+                                            IconButton(onClick = { navController.navigate("settings") }) {
                                                 BadgedBox(badge = {
                                                     if (latestVersionName != BuildConfig.VERSION_NAME) {
                                                         Badge()

@@ -100,8 +100,10 @@ import com.auramusic.app.constants.LyricsRomanizeKyrgyzKey
 import com.auramusic.app.constants.LyricsRomanizeMacedonianKey
 import com.auramusic.app.constants.LyricsRomanizeRussianKey
 import com.auramusic.app.constants.LyricsRomanizeSerbianKey
+import com.auramusic.app.constants.LyricsLineSpacingKey
 import com.auramusic.app.constants.LyricsRomanizeUkrainianKey
 import com.auramusic.app.constants.LyricsTextPositionKey
+import com.auramusic.app.constants.LyricsTextSizeKey
 import com.auramusic.app.constants.OpenRouterApiKey
 import com.auramusic.app.constants.OpenRouterBaseUrlKey
 import com.auramusic.app.constants.OpenRouterDefaultBaseUrl
@@ -165,7 +167,9 @@ fun EnhancedLyricsView(
     val listenTogetherManager = LocalListenTogetherManager.current
     val isGuest = listenTogetherManager?.isInRoom == true && !listenTogetherManager.isHost
 
-    val lyricsTextPosition by rememberEnumPreference(LyricsTextPositionKey, LyricsPosition.CENTER)
+    val lyricsTextPosition by rememberEnumPreference(LyricsTextPositionKey, LyricsPosition.LEFT)
+    val lyricsTextSize by rememberPreference(LyricsTextSizeKey, 20f)
+    val lyricsLineSpacing by rememberPreference(LyricsLineSpacingKey, 1.3f)
     val changeLyrics by rememberPreference(LyricsClickKey, true)
     val romanizeAsMain by rememberPreference(LyricsRomanizeAsMainKey, false)
     val romanizeCyrillicByLine by rememberPreference(LyricsRomanizeCyrillicByLineKey, false)
@@ -806,7 +810,7 @@ fun EnhancedLyricsView(
                                         bgVisible = bgVisible, isSelected = selectedIndices.contains(index),
                                         isSelectionModeActive = isSelectionModeActive, currentPositionState = currentPositionState,
                                         lyricsOffset = (currentSong?.song?.lyricsOffset ?: 0).toLong(),
-                                        playerConnection = playerConnection, lyricsTextSize = 36f, lyricsLineSpacing = 1.3f,
+                                        playerConnection = playerConnection, lyricsTextSize = lyricsTextSize, lyricsLineSpacing = lyricsLineSpacing,
                                         expressiveAccent = expressiveAccent, lyricsTextPosition = lyricsTextPosition,
                                         respectAgentPositioning = respectAgentPositioning, isAutoScrollEnabled = isAutoScrollEnabled,
                                         displayedCurrentLineIndex = deferredCurrentLineIndex, romanizeAsMain = romanizeAsMain,

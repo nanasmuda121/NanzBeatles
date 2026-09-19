@@ -216,7 +216,7 @@ fun AppearanceSettings(
     )
     val (lyricsPosition, onLyricsPositionChange) = rememberEnumPreference(
         LyricsTextPositionKey,
-        defaultValue = LyricsPosition.CENTER
+        defaultValue = LyricsPosition.LEFT
     )
     val (lyricsClick, onLyricsClickChange) = rememberPreference(LyricsClickKey, defaultValue = true)
     val (lyricsScroll, onLyricsScrollChange) = rememberPreference(
@@ -279,7 +279,7 @@ fun AppearanceSettings(
         MiniPlayerShowPlayPauseKey,
         defaultValue = true
     )
-    val (lyricsTextSize, onLyricsTextSizeChange) = rememberPreference(LyricsTextSizeKey, defaultValue = 24f)
+    val (lyricsTextSize, onLyricsTextSizeChange) = rememberPreference(LyricsTextSizeKey, defaultValue = 20f)
     val (lyricsLineSpacing, onLyricsLineSpacingChange) = rememberPreference(LyricsLineSpacingKey, defaultValue = 1.3f)
     val (lyricsGlowEffect, onLyricsGlowEffectChange) = rememberPreference(LyricsGlowEffectKey, defaultValue = false)
     val (instrumentalGapMs, onInstrumentalGapMsChange) = rememberPreference(LyricsInstrumentalGapMsKey, defaultValue = 5000)
@@ -483,7 +483,7 @@ fun AppearanceSettings(
             buttons = {
                 TextButton(
                     onClick = { 
-                        tempTextSize = 24f
+                        tempTextSize = 20f
                     }
                 ) {
                     Text(stringResource(R.string.reset))

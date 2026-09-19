@@ -250,7 +250,7 @@ fun OriginalLyrics(
     val listenTogetherManager = LocalListenTogetherManager.current
     val isGuest = listenTogetherManager?.isInRoom == true && !listenTogetherManager.isHost
 
-    val lyricsTextPosition by rememberEnumPreference(LyricsTextPositionKey, LyricsPosition.CENTER)
+    val lyricsTextPosition by rememberEnumPreference(LyricsTextPositionKey, LyricsPosition.LEFT)
     val changeLyrics by rememberPreference(LyricsClickKey, true)
     val scrollLyrics by rememberPreference(LyricsScrollKey, true)
 
@@ -273,7 +273,7 @@ fun OriginalLyrics(
     val lyricsGlowEffect by rememberPreference(LyricsGlowEffectKey, false)
     val enhancedLyrics by rememberPreference(EnhancedLyricsKey, true)
     val lyricsAnimationStyle by rememberEnumPreference(LyricsAnimationStyleKey, LyricsAnimationStyle.NONE)
-    val baseLyricsTextSize by rememberPreference(LyricsTextSizeKey, 24f)
+    val baseLyricsTextSize by rememberPreference(LyricsTextSizeKey, 20f)
     val lyricsTextSize = baseLyricsTextSize
     val lyricsLineSpacing by rememberPreference(LyricsLineSpacingKey, 1.3f)
     val instrumentalGapMs by rememberPreference(LyricsInstrumentalGapMsKey, 5000)

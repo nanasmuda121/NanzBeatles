@@ -22,7 +22,7 @@ android {
     ndkVersion = "27.0.12077973"
 
     defaultConfig {
-        applicationId = "com.nanz.beatles"
+        applicationId = "com.nanzbeatles.nanas"
         minSdk = 23
         targetSdk = 36
         versionCode = 200

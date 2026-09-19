@@ -214,7 +214,7 @@ constructor(
         )
         val providerOrder = preferences[LyricsProviderOrderKey] ?: defaultOrder
         val preferredProvider = preferences[PreferredLyricsProviderKey]
-            .toEnum(PreferredLyricsProvider.BETTER_LYRICS)
+            .toEnum(PreferredLyricsProvider.SIMPMUSIC)
 
         val preferredInstance = providerInstanceOf(preferredProvider)
 

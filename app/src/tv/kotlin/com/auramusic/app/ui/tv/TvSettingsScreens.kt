@@ -1485,7 +1485,7 @@ fun TvPlaybackSettingsScreen(
     )
     val (preferredProvider, onPreferredProviderChange) = rememberEnumPreference(
         key = com.auramusic.app.constants.PreferredLyricsProviderKey,
-        defaultValue = PreferredLyricsProvider.BETTER_LYRICS,
+        defaultValue = PreferredLyricsProvider.SIMPMUSIC,
     )
     val (enableKugou, onEnableKugouChange) = rememberPreference(
         key = com.auramusic.app.constants.EnableKugouKey,

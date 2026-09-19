@@ -510,9 +510,12 @@
     <string name="lyrics_custom_font_selected">Font kustom dipilih · ketuk untuk mengubah</string>
     <string name="disabled">Nonaktifkan</string>
     <!-- Appearance settings -->
+    <string name="settings_section_general">Umum</string>
+    <string name="settings_tab_all">Semua</string>
     <string name="settings_section_ui">Antarmuka</string>
     <string name="settings_section_player_content">Pemutar &amp; Konten</string>
     <string name="settings_section_privacy">Privasi</string>
+    <string name="settings_section_privacy_data">Privasi &amp; Data</string>
     <string name="settings_section_storage">Penyimpanan</string>
     <string name="settings_section_system">Sistem</string>
     <string name="mini_player">Pemutar mini</string>

@@ -49,12 +49,12 @@ jobs:
           mkdir -p app/keystore
           if [ -n "$DEBUG_KEYSTORE" ]; then
             echo "$DEBUG_KEYSTORE" | base64 -d > app/keystore/debug.keystore
-          else
+          elif [ ! -f app/keystore/debug.keystore ]; then
             keytool -genkey -v -keystore app/keystore/debug.keystore -alias nanzbeatlesdebug -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=NanzBeatlesDebug, OU=Dev, O=Nanz, L=Jakarta, S=Jakarta, C=ID"
           fi
           if [ -n "$RELEASE_KEYSTORE" ]; then
             echo "$RELEASE_KEYSTORE" | base64 -d > app/keystore/release.keystore
-          else
+          elif [ ! -f app/keystore/release.keystore ]; then
             keytool -genkey -v -keystore app/keystore/release.keystore -alias nanzbeatles -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=NanzBeatles, OU=Dev, O=Nanz, L=Jakarta, S=Jakarta, C=ID"
           fi
 

@@ -55,7 +55,7 @@ captures/
 # Uncomment the following lines if you do not want to check your keystore files in.
 #*.jks
 #*.keystore
-app/keystore/
+# app/keystore/
 app/debug.keystore
 app/release.keystore
 app/persistent-debug.keystore

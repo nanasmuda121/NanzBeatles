@@ -8,7 +8,7 @@
 extern "C" {
 
 JNIEXPORT jstring JNICALL
-Java_com_auramusic_app_recognition_VibraSignature_fromI16(
+Java_com_nanzbeatles_nanas_recognition_VibraSignature_fromI16(
         JNIEnv* env,
         jobject /* this */,
         jbyteArray /* samples */) {

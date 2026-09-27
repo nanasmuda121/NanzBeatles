@@ -1,0 +1,142 @@
+/**
+ * Auramusic Project (C) 2026
+ * Licensed under GPL-3.0 | See git history for contributors
+ */
+
+package com.nanzbeatles.nanas.notifications
+
+import android.Manifest
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
+import androidx.datastore.preferences.core.edit
+import com.nanzbeatles.nanas.MainActivity
+import com.nanzbeatles.nanas.R
+import com.nanzbeatles.nanas.constants.LastSeenSubscribedReleaseIdsKey
+import com.nanzbeatles.nanas.constants.NewReleaseNotificationsEnabledKey
+import com.nanzbeatles.nanas.db.MusicDatabase
+import com.nanzbeatles.nanas.utils.dataStore
+import com.nanzbeatles.nanas.utils.get
+import com.nanzbeatles.nanas.utils.reportException
+import com.nanzbeatles.innertube.YouTube
+import com.nanzbeatles.innertube.models.AlbumItem
+import kotlinx.coroutines.flow.first
+
+object NewReleaseNotificationChecker {
+    const val CHANNEL_ID = "new_releases"
+
+    private const val NOTIFICATION_ID = 2304
+    private const val MAX_SEEN_RELEASE_IDS = 300
+
+    suspend fun check(context: Context, database: MusicDatabase) {
+        if (!context.dataStore.get(NewReleaseNotificationsEnabledKey, true)) return
+
+        val subscribedArtists = database.artistsBookmarkedByNameAsc().first()
+        val subscribedIds = subscribedArtists
+            .flatMap { artist -> listOfNotNull(artist.id, artist.artist.channelId) }
+            .toSet()
+        if (subscribedIds.isEmpty()) return
+
+        val matchingAlbums = YouTube.newReleaseAlbums()
+            .getOrElse { throwable ->
+                reportException(throwable)
+                return
+            }
+            .filter { album ->
+                album.artists.orEmpty().any { it.id in subscribedIds }
+            }
+            .distinctBy { it.id }
+        val currentIds = matchingAlbums.map { it.id }.toSet()
+
+        val preferences = context.dataStore.data.first()
+        val seenRaw = preferences[LastSeenSubscribedReleaseIdsKey]
+        if (seenRaw == null) {
+            saveSeenReleaseIds(context, currentIds)
+            return
+        }
+
+        val seenIds = seenRaw.split(',').filter { it.isNotBlank() }.toSet()
+        val newAlbums = matchingAlbums.filter { it.id !in seenIds }
+        if (newAlbums.isNotEmpty()) {
+            showNotification(context, newAlbums)
+        }
+
+        saveSeenReleaseIds(context, currentIds + seenIds)
+    }
+
+    private suspend fun saveSeenReleaseIds(context: Context, ids: Set<String>) {
+        context.dataStore.edit { settings ->
+            settings[LastSeenSubscribedReleaseIdsKey] = ids.take(MAX_SEEN_RELEASE_IDS).joinToString(",")
+        }
+    }
+
+    private suspend fun showNotification(context: Context, albums: List<AlbumItem>) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
+        val title = if (albums.size == 1) {
+            context.getString(R.string.new_release_notification_title_single)
+        } else {
+            context.getString(R.string.new_release_notification_title_multiple, albums.size)
+        }
+        val content = albums.firstOrNull()?.let { album ->
+            val artist = album.artists.orEmpty().joinToString { it.name }
+            if (artist.isBlank()) album.title else "${album.title} • $artist"
+        } ?: context.getString(R.string.new_releases)
+
+        val playIntent = createPlayFirstReleaseIntent(context, albums)
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            NOTIFICATION_ID,
+            playIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification_icon)
+            .setContentTitle(title)
+            .setContentText(content)
+            .setStyle(
+                NotificationCompat.InboxStyle().also { style ->
+                    albums.take(5).forEach { album ->
+                        val artist = album.artists.orEmpty().joinToString { it.name }
+                        style.addLine(if (artist.isBlank()) album.title else "${album.title} • $artist")
+                    }
+                }
+            )
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build()
+
+        NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+    }
+
+    private suspend fun createPlayFirstReleaseIntent(context: Context, albums: List<AlbumItem>): Intent {
+        albums.forEach { album ->
+            val firstSong = YouTube.albumSongs(album.playlistId, album).getOrNull()?.firstOrNull()
+            if (firstSong != null) {
+                return Intent(Intent.ACTION_VIEW).apply {
+                    setClass(context, MainActivity::class.java)
+                    data = Uri.parse("https://music.youtube.com/watch?v=${firstSong.id}&list=${album.playlistId}")
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                }
+            }
+        }
+
+        return Intent(Intent.ACTION_VIEW).apply {
+            setClass(context, MainActivity::class.java)
+            data = Uri.parse(albums.firstOrNull()?.shareLink ?: "auramusic://home")
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+    }
+}

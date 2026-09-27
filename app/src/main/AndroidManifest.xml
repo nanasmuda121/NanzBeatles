@@ -181,6 +181,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data android:scheme="auramusic" android:host="play" />
+                <data android:scheme="nanzbeatles" android:host="play" />
             </intent-filter>
             
             <meta-data
@@ -242,6 +243,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="auramusicdiscord" />
+                <data android:scheme="nanzbeatlesdiscord" />
                 <data android:host="oauth2" />
             </intent-filter>
         </activity>
@@ -293,7 +295,7 @@
             android:name=".notifications.NewReleaseNotificationReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.auramusic.app.notifications.ACTION_CHECK_NEW_RELEASES" />
+                <action android:name="com.nanzbeatles.nanas.notifications.ACTION_CHECK_NEW_RELEASES" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
@@ -316,11 +318,11 @@
             android:label="@string/widget_music_player">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.auramusic.app.widget.PLAY_PAUSE" />
-                <action android:name="com.auramusic.app.widget.LIKE" />
-                <action android:name="com.auramusic.app.widget.NEXT" />
-                <action android:name="com.auramusic.app.widget.PREVIOUS" />
-                <action android:name="com.auramusic.app.widget.UPDATE_WIDGET" />
+                <action android:name="com.nanzbeatles.nanas.widget.PLAY_PAUSE" />
+                <action android:name="com.nanzbeatles.nanas.widget.LIKE" />
+                <action android:name="com.nanzbeatles.nanas.widget.NEXT" />
+                <action android:name="com.nanzbeatles.nanas.widget.PREVIOUS" />
+                <action android:name="com.nanzbeatles.nanas.widget.UPDATE_WIDGET" />
             </intent-filter>
 
             <meta-data
@@ -335,10 +337,10 @@
             android:label="@string/widget_compact_square">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.auramusic.app.widget.COMPACT_SQUARE_PLAY_PAUSE" />
-                <action android:name="com.auramusic.app.widget.COMPACT_SQUARE_PREVIOUS" />
-                <action android:name="com.auramusic.app.widget.COMPACT_SQUARE_NEXT" />
-                <action android:name="com.auramusic.app.widget.COMPACT_SQUARE_UPDATE" />
+                <action android:name="com.nanzbeatles.nanas.widget.COMPACT_SQUARE_PLAY_PAUSE" />
+                <action android:name="com.nanzbeatles.nanas.widget.COMPACT_SQUARE_PREVIOUS" />
+                <action android:name="com.nanzbeatles.nanas.widget.COMPACT_SQUARE_NEXT" />
+                <action android:name="com.nanzbeatles.nanas.widget.COMPACT_SQUARE_UPDATE" />
             </intent-filter>
 
             <meta-data
@@ -353,9 +355,9 @@
             android:label="@string/widget_compact_wide">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.auramusic.app.widget.COMPACT_WIDE_PLAY_PAUSE" />
-                <action android:name="com.auramusic.app.widget.COMPACT_WIDE_LIKE" />
-                <action android:name="com.auramusic.app.widget.COMPACT_WIDE_UPDATE" />
+                <action android:name="com.nanzbeatles.nanas.widget.COMPACT_WIDE_PLAY_PAUSE" />
+                <action android:name="com.nanzbeatles.nanas.widget.COMPACT_WIDE_LIKE" />
+                <action android:name="com.nanzbeatles.nanas.widget.COMPACT_WIDE_UPDATE" />
             </intent-filter>
 
             <meta-data
@@ -369,9 +371,9 @@
             android:exported="true"
             android:directBootAware="false">
             <intent-filter>
-                <action android:name="com.auramusic.app.alarm.ACTION_FIRE" />
-                <action android:name="com.auramusic.app.alarm.ACTION_SNOOZE" />
-                <action android:name="com.auramusic.app.alarm.ACTION_DISMISS" />
+                <action android:name="com.nanzbeatles.nanas.alarm.ACTION_FIRE" />
+                <action android:name="com.nanzbeatles.nanas.alarm.ACTION_SNOOZE" />
+                <action android:name="com.nanzbeatles.nanas.alarm.ACTION_DISMISS" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
@@ -382,7 +384,7 @@
         <!-- Google Cast Options Provider -->
         <meta-data
             android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
-            android:value="com.auramusic.app.cast.CastOptionsProvider" />
+            android:value="com.nanzbeatles.nanas.cast.CastOptionsProvider" />
     </application>
 
 </manifest>

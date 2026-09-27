@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.auramusic.paxsenix"
+    namespace = "com.nanzbeatles.paxsenix"
     compileSdk = 36
 
     defaultConfig {

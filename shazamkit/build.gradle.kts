@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.auramusic.shazamkit"
+    namespace = "com.nanzbeatles.shazamkit"
     compileSdk = 36
 
     defaultConfig {

@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.auramusic.kugou"
+    namespace = "com.nanzbeatles.kugou"
     compileSdk = 36
 
     defaultConfig {

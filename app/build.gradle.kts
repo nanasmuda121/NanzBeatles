@@ -17,7 +17,7 @@ plugins {
 
 
 android {
-    namespace = "com.auramusic.app"
+    namespace = "com.nanzbeatles.nanas"
     compileSdk = 36
     ndkVersion = "27.0.12077973"
 

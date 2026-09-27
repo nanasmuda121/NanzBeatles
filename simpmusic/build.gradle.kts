@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.auramusic.simpmusic"
+    namespace = "com.nanzbeatles.simpmusic"
     compileSdk = 36
 
     defaultConfig {

@@ -76,9 +76,9 @@
 -dontwarn com.atilika.kuromoji.**
 
 # Innertube / YouTube models
--keep class com.auramusic.innertube.models.** { *; }
+-keep class com.nanzbeatles.innertube.models.** { *; }
 
 # App entities and DAOs
--keep class com.auramusic.app.db.entities.** { *; }
--keep class com.auramusic.app.db.dao.** { *; }
--keep class com.auramusic.app.db.MusicDatabase { *; }
+-keep class com.nanzbeatles.nanas.db.entities.** { *; }
+-keep class com.nanzbeatles.nanas.db.dao.** { *; }
+-keep class com.nanzbeatles.nanas.db.MusicDatabase { *; }

@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.auramusic.betterlyrics"
+    namespace = "com.nanzbeatles.betterlyrics"
     compileSdk = 36
 
     defaultConfig {

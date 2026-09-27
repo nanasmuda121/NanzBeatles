@@ -1,0 +1,353 @@
+/**
+ * Auramusic Project (C) 2026
+ * Licensed under GPL-3.0 | See git history for contributors
+ */
+
+package com.nanzbeatles.nanas.ui.screens.wrapped
+
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import com.nanzbeatles.innertube.YouTube
+import com.nanzbeatles.innertube.models.AccountInfo
+import com.nanzbeatles.nanas.constants.ArtistSongSortType
+import com.nanzbeatles.nanas.db.DatabaseDao
+import com.nanzbeatles.nanas.db.entities.Artist
+import com.nanzbeatles.nanas.db.entities.PlaylistEntity
+import com.nanzbeatles.nanas.db.entities.SongWithStats
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import timber.log.Timber
+import java.io.File
+import java.io.FileOutputStream
+import java.time.LocalDateTime
+import java.util.Calendar
+import java.util.UUID
+
+sealed class PlaylistCreationState {
+    object Idle : PlaylistCreationState()
+    object Creating : PlaylistCreationState()
+    object Success : PlaylistCreationState()
+}
+
+class WrappedManager(
+    private val databaseDao: DatabaseDao,
+    private val context: Context
+) {
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
+    private val _state = MutableStateFlow(WrappedState())
+    val state = _state.asStateFlow()
+
+    fun createPlaylist(imageResName: String) {
+        if (_state.value.playlistCreationState != PlaylistCreationState.Idle) return
+
+        _state.update { it.copy(playlistCreationState = PlaylistCreationState.Creating) }
+        scope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    // Use the same date range as prepare() - previous month
+                    val previousMonth = java.time.LocalDate.now().minusMonths(1)
+                    val year = previousMonth.year
+                    val month = previousMonth.monthValue - 1 // Calendar months are 0-based
+
+                    val fromTimestamp = Calendar.getInstance().apply {
+                        set(year, month, 1, 0, 0, 0)
+                    }.timeInMillis
+                    val toTimestamp = Calendar.getInstance().apply {
+                        set(year, month, getActualMaximum(Calendar.DAY_OF_MONTH), 23, 59, 59)
+                    }.timeInMillis
+                    val allSongs = databaseDao.mostPlayedSongsStats(fromTimestamp, toTimeStamp = toTimestamp, limit = -1).first()
+
+                    val playlistId = UUID.randomUUID().toString()
+
+                    val drawableId = context.resources.getIdentifier(imageResName, "drawable", context.packageName)
+                    val bitmap = BitmapFactory.decodeResource(context.resources, drawableId)
+                    val file = File(context.cacheDir, "$playlistId.png")
+                    FileOutputStream(file).use {
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+                    }
+
+                    val newPlaylist = PlaylistEntity(
+                        id = playlistId,
+                        name = WrappedConstants.PLAYLIST_NAME,
+                        thumbnailUrl = file.toURI().toString(),
+                        bookmarkedAt = LocalDateTime.now(),
+                        isEditable = true
+                    )
+                    databaseDao.insert(newPlaylist)
+
+                    val createdPlaylist = databaseDao.playlist(playlistId).first()
+                    if (createdPlaylist != null) {
+                        val songIds = allSongs.map { it.id }
+                        databaseDao.addSongToPlaylist(createdPlaylist, songIds)
+                    } else {
+                        Timber.tag("WrappedManager")
+                            .e("Failed to retrieve created playlist with id: $playlistId")
+                    }
+                }
+                _state.update { it.copy(playlistCreationState = PlaylistCreationState.Success) }
+            } catch (e: Exception) {
+                Timber.tag("WrappedManager").e(e, "Error saving wrapped playlist")
+                _state.update { it.copy(playlistCreationState = PlaylistCreationState.Idle) }
+            }
+        }
+    }
+
+    private suspend fun generatePlaylistMap() {
+        val topSongs = _state.value.topSongs
+        val topArtists = _state.value.topArtists
+        if (topSongs.isEmpty()) {
+            Timber.tag("WrappedManager").w("Cannot generate playlist map, top songs list is empty.")
+            _state.update { it.copy(trackMap = emptyMap()) }
+            return
+        }
+
+        withContext(Dispatchers.IO) {
+            val playlistMap = mutableMapOf<WrappedScreenType, String>()
+
+            // Intro Part: Random song from top 6-30
+            val introSongPool = topSongs.subList(5, topSongs.size)
+            val introSong = introSongPool.randomOrNull()?.id ?: topSongs.last().id
+            playlistMap[WrappedScreenType.Welcome] = introSong
+            playlistMap[WrappedScreenType.MinutesTease] = introSong
+            playlistMap[WrappedScreenType.MinutesReveal] = introSong
+
+            // Music Part: Top 1 song
+            val topSong = topSongs.first()
+            playlistMap[WrappedScreenType.TotalSongs] = topSong.id
+            playlistMap[WrappedScreenType.TopSongReveal] = topSong.id
+            playlistMap[WrappedScreenType.Top5Songs] = topSong.id
+
+            // Album Part: Random song from top album
+            val topAlbum = _state.value.topAlbum
+            val albumSong = topAlbum?.let { album ->
+                val albumSongs = databaseDao.albumSongs(album.id).first()
+                albumSongs.randomOrNull()?.id
+            } ?: topSong.id // Fallback to top song if no album songs
+            playlistMap[WrappedScreenType.TotalAlbums] = albumSong
+            playlistMap[WrappedScreenType.TopAlbumReveal] = albumSong
+            playlistMap[WrappedScreenType.Top5Albums] = albumSong
+
+            // Artist Part: Top artist's song with specific rule
+            val topArtist = topArtists.firstOrNull()
+            // Use the same date range as prepare() - previous month
+            val previousMonth = java.time.LocalDate.now().minusMonths(1)
+            val year = previousMonth.year
+            val month = previousMonth.monthValue - 1 // Calendar months are 0-based
+
+            val fromTimestamp = Calendar.getInstance().apply {
+                set(year, month, 1, 0, 0, 0)
+            }.timeInMillis
+            val toTimestamp = Calendar.getInstance().apply {
+                set(year, month, getActualMaximum(Calendar.DAY_OF_MONTH), 23, 59, 59)
+            }.timeInMillis
+
+            val artistSong = topArtist?.let { artist ->
+                val artistTopSongs = databaseDao.artistSongs(
+                    artistId = artist.id,
+                    sortType = ArtistSongSortType.PLAY_TIME,
+                    descending = true,
+                    fromTimeStamp = fromTimestamp,
+                    toTimeStamp = toTimestamp
+                ).first()
+                if (artistTopSongs.isNotEmpty()) {
+                    val artistTopSong = artistTopSongs.first()
+                    if (artistTopSong.id == topSong.id) {
+                        // Overlap: Use the artist's second song.
+                        // If a second song doesn't exist, use a random song from their list.
+                        artistTopSongs.getOrNull(1)?.id ?: artistTopSongs.filter { it.id != topSong.id }.randomOrNull()?.id ?: artistTopSong.id
+                    } else {
+                        artistTopSong.id
+                    }
+                } else {
+                    // Data anomaly: Fallback to the user's top song.
+                    topSong.id
+                }
+            } ?: topSong.id // Fallback if no top artist.
+            playlistMap[WrappedScreenType.TotalArtists] = artistSong
+            playlistMap[WrappedScreenType.TopArtistReveal] = artistSong
+            playlistMap[WrappedScreenType.Top5Artists] = artistSong
+            
+            // Top Artist Albums Part: Use a song from top artist albums
+            val topArtistAlbumSong = _state.value.topArtistAlbums.firstOrNull()?.let { album ->
+                val albumSongs = databaseDao.albumSongs(album.id).first()
+                albumSongs.randomOrNull()?.id
+            } ?: artistSong // Fallback to artist song
+            playlistMap[WrappedScreenType.TopArtistAlbums] = topArtistAlbumSong
+
+            // End Part
+            val endSongPool = topSongs.subList(2, 5)
+            val endSong = endSongPool.randomOrNull()?.id ?: topSongs[2].id
+            playlistMap[WrappedScreenType.DayOfWeek] = endSong
+            playlistMap[WrappedScreenType.TimeOfDay] = endSong
+            playlistMap[WrappedScreenType.RepeatOffender] = topSong.id
+            playlistMap[WrappedScreenType.DiscoveryScore] = endSong
+            playlistMap[WrappedScreenType.Comparison] = endSong
+            playlistMap[WrappedScreenType.ShareCard] = endSong
+            playlistMap[WrappedScreenType.Playlist] = endSong
+            playlistMap[WrappedScreenType.Conclusion] = "2-p9DM2Xvsc"
+
+            Timber.tag("WrappedManager").d("Generated Playlist Map: $playlistMap")
+            _state.update { it.copy(trackMap = playlistMap) }
+        }
+    }
+
+    suspend fun prepare() {
+        if (_state.value.isDataReady) return
+        Timber.tag("WrappedManager").d("Starting Wrapped data preparation")
+
+        // Get previous month for wrapped data
+        val previousMonth = java.time.LocalDate.now().minusMonths(1)
+        val year = previousMonth.year
+        val month = previousMonth.monthValue - 1 // Calendar months are 0-based
+
+        val fromTimestamp = Calendar.getInstance().apply {
+            set(year, month, 1, 0, 0, 0)
+        }.timeInMillis
+
+        val toTimestamp = Calendar.getInstance().apply {
+            set(year, month, getActualMaximum(Calendar.DAY_OF_MONTH), 23, 59, 59)
+        }.timeInMillis
+
+        withContext(Dispatchers.IO) {
+            val accountInfoDeferred = async { YouTube.accountInfo().getOrNull() }
+            val topSongsDeferred = async { databaseDao.mostPlayedSongsStats(fromTimestamp, toTimeStamp = toTimestamp, limit = 30).first() }
+            val topArtistsDeferred = async { databaseDao.mostPlayedArtists(fromTimestamp, toTimeStamp = toTimestamp, limit = 5).first() }
+            val topAlbumsDeferred = async { databaseDao.mostPlayedAlbums(fromTimestamp, toTimeStamp = toTimestamp, limit = 5).first() }
+            val uniqueSongCountDeferred = async { databaseDao.getUniqueSongCountInRange(fromTimestamp, toTimestamp).first() }
+            val uniqueArtistCountDeferred = async { databaseDao.getUniqueArtistCountInRange(fromTimestamp, toTimestamp).first() }
+            val uniqueAlbumCountDeferred = async { databaseDao.getUniqueAlbumCountInRange(fromTimestamp, toTimestamp).first() }
+            val totalPlayTimeMsDeferred = async { databaseDao.getTotalPlayTimeInRange(fromTimestamp, toTimestamp).first() ?: 0L }
+
+            // New stats
+            val eventsDeferred = async { databaseDao.getEventsInRange(fromTimestamp, toTimestamp).first() }
+            val mostReplayedSongIdDeferred = async { databaseDao.getMostReplayedSongInRange(fromTimestamp, toTimestamp).first() }
+            val newArtistCountDeferred = async { databaseDao.getNewArtistCountInRange(fromTimestamp, toTimestamp).first() }
+
+            // Previous month for comparison
+            val prevMonth = java.time.LocalDate.now().minusMonths(2)
+            val prevYear = prevMonth.year
+            val prevCalMonth = prevMonth.monthValue - 1
+            val prevFromTimestamp = Calendar.getInstance().apply {
+                set(prevYear, prevCalMonth, 1, 0, 0, 0)
+            }.timeInMillis
+            val prevToTimestamp = Calendar.getInstance().apply {
+                set(prevYear, prevCalMonth, getActualMaximum(Calendar.DAY_OF_MONTH), 23, 59, 59)
+            }.timeInMillis
+            val prevMonthMinutesDeferred = async {
+                (databaseDao.getTotalPlayTimeInRange(prevFromTimestamp, prevToTimestamp).first() ?: 0L) / 1000 / 60
+            }
+            val prevMonthUniqueSongsDeferred = async { databaseDao.getUniqueSongCountInRange(prevFromTimestamp, prevToTimestamp).first() }
+            val prevMonthUniqueArtistsDeferred = async { databaseDao.getUniqueArtistCountInRange(prevFromTimestamp, prevToTimestamp).first() }
+
+            val results = awaitAll(
+                accountInfoDeferred,
+                topSongsDeferred,
+                topArtistsDeferred,
+                topAlbumsDeferred,
+                uniqueSongCountDeferred,
+                uniqueArtistCountDeferred,
+                uniqueAlbumCountDeferred,
+                totalPlayTimeMsDeferred
+            )
+
+            val events = eventsDeferred.await()
+            val mostReplayedSongId = mostReplayedSongIdDeferred.await()
+            val newArtistCount = newArtistCountDeferred.await()
+            val prevMonthMinutes = prevMonthMinutesDeferred.await()
+            val prevMonthUniqueSongs = prevMonthUniqueSongsDeferred.await()
+            val prevMonthUniqueArtists = prevMonthUniqueArtistsDeferred.await()
+
+            @Suppress("UNCHECKED_CAST")
+            val topSongsResult = results[1] as List<SongWithStats>
+            @Suppress("UNCHECKED_CAST")
+            val topAlbumsResult = results[3] as List<com.nanzbeatles.nanas.db.entities.Album>
+            @Suppress("UNCHECKED_CAST")
+            val topArtistsResult = results[2] as List<Artist>
+
+            // Calculate listening by day of week (1=Mon..7=Sun)
+            val dayOfWeekMinutes = mutableMapOf<Int, Long>()
+            events.forEach { event ->
+                val dayOfWeek = event.timestamp.dayOfWeek.value
+                dayOfWeekMinutes[dayOfWeek] = (dayOfWeekMinutes[dayOfWeek] ?: 0L) + event.playTime
+            }
+            val listeningByDayOfWeek = dayOfWeekMinutes.mapValues { it.value / 1000 / 60 }
+
+            // Calculate listening by time of day
+            val timeOfDayMinutes = mutableMapOf<String, Long>()
+            events.forEach { event ->
+                val hour = event.timestamp.hour
+                val timeOfDay = when (hour) {
+                    in 5..11 -> "Morning"
+                    in 12..16 -> "Afternoon"
+                    in 17..21 -> "Evening"
+                    else -> "Night"
+                }
+                timeOfDayMinutes[timeOfDay] = (timeOfDayMinutes[timeOfDay] ?: 0L) + event.playTime
+            }
+            val listeningByTimeOfDay = timeOfDayMinutes.mapValues { it.value / 1000 / 60 }
+
+            // Find repeat offender song
+            val repeatOffenderSong = mostReplayedSongId?.let { songId ->
+                topSongsResult.find { it.id == songId }
+            } ?: topSongsResult.firstOrNull()
+
+            // Calculate month over month change
+            val currentMinutes = (results[7] as Long) / 1000 / 60
+            val monthOverMonthChange = if (prevMonthMinutes > 0) {
+                ((currentMinutes - prevMonthMinutes).toFloat() / prevMonthMinutes) * 100
+            } else {
+                0f
+            }
+
+            // Get albums for top artist
+            val topArtistId = topArtistsResult.firstOrNull()?.id
+            val topArtistAlbumsDeferred = async {
+                if (topArtistId != null) {
+                    databaseDao.getAlbumsPlayedByArtist(topArtistId, fromTimestamp, toTimestamp, 10).first()
+                } else {
+                    emptyList()
+                }
+            }
+            val topArtistAlbumsResult = topArtistAlbumsDeferred.await()
+            
+            _state.update {
+                it.copy(
+                    accountInfo = results[0] as AccountInfo?,
+                    topSongs = topSongsResult,
+                    topArtists = topArtistsResult,
+                    top5Albums = topAlbumsResult,
+                    topAlbum = topAlbumsResult.firstOrNull(),
+                    uniqueSongCount = results[4] as Int,
+                    uniqueArtistCount = results[5] as Int,
+                    totalAlbums = results[6] as Int,
+                    totalMinutes = currentMinutes,
+                    topArtistAlbums = topArtistAlbumsResult,
+                    listeningByDayOfWeek = listeningByDayOfWeek,
+                    listeningByTimeOfDay = listeningByTimeOfDay,
+                    repeatOffenderSong = repeatOffenderSong,
+                    discoveryScore = newArtistCount,
+                    totalPlayCount = events.size,
+                    previousMonthMinutes = prevMonthMinutes,
+                    previousMonthUniqueSongs = prevMonthUniqueSongs,
+                    previousMonthUniqueArtists = prevMonthUniqueArtists,
+                    monthOverMonthChange = monthOverMonthChange
+                )
+            }
+        }
+
+        generatePlaylistMap()
+        _state.update { it.copy(isDataReady = true) }
+        Timber.tag("WrappedManager").d("Wrapped data preparation finished")
+    }
+}

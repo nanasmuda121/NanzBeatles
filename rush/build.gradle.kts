@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.auramusic.rush"
+    namespace = "com.nanzbeatles.rush"
     compileSdk = 36
 
     defaultConfig {

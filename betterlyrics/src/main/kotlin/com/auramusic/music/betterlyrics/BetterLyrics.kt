@@ -1,6 +1,6 @@
-package com.auramusic.music.betterlyrics
+package com.nanzbeatles.music.betterlyrics
 
-import com.auramusic.music.betterlyrics.models.TTMLResponse
+import com.nanzbeatles.music.betterlyrics.models.TTMLResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.okhttp.OkHttp

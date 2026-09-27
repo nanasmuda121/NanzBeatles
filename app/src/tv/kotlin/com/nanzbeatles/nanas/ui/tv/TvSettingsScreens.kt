@@ -1,0 +1,2111 @@
+/**
+ * Auramusic Project (C) 2026
+ * Licensed under GPL-3.0 | See git history for contributors
+ */
+
+package com.nanzbeatles.nanas.ui.tv
+
+import android.annotation.SuppressLint
+import android.webkit.CookieManager
+import android.webkit.JavascriptInterface
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.FastForward
+import androidx.compose.material.icons.filled.Lyrics
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.QueueMusic
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.CleaningServices
+import androidx.compose.material.icons.automirrored.filled.Login
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.res.painterResource
+import com.nanzbeatles.nanas.R
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import coil3.compose.AsyncImage
+import com.nanzbeatles.nanas.BuildConfig
+import com.nanzbeatles.nanas.constants.AccountChannelHandleKey
+import com.nanzbeatles.nanas.constants.AccountEmailKey
+import com.nanzbeatles.nanas.constants.AccountNameKey
+import com.nanzbeatles.nanas.constants.AudioNormalizationKey
+import com.nanzbeatles.nanas.constants.AutomixEnabledKey
+import com.nanzbeatles.nanas.constants.AutomixBlendPercentKey
+import com.nanzbeatles.nanas.constants.AudioQuality
+import com.nanzbeatles.nanas.constants.AudioQualityKey
+import com.nanzbeatles.nanas.constants.CrossfadeDurationKey
+import com.nanzbeatles.nanas.constants.CrossfadeEnabledKey
+import com.nanzbeatles.nanas.constants.DataSyncIdKey
+import com.nanzbeatles.nanas.constants.EnableLastFMScrobblingKey
+import com.nanzbeatles.nanas.constants.InnerTubeCookieKey
+import com.nanzbeatles.nanas.constants.LastFMSessionKey
+import com.nanzbeatles.nanas.constants.LastFMUseNowPlaying
+import com.nanzbeatles.nanas.constants.LastFMUseSendLikes
+import com.nanzbeatles.nanas.constants.LastFMUsernameKey
+import com.nanzbeatles.nanas.constants.LateNightModeKey
+import com.nanzbeatles.nanas.constants.PreferredLyricsProvider
+import com.nanzbeatles.nanas.constants.SeekExtraSeconds
+import com.nanzbeatles.nanas.constants.SkipSilenceKey
+import com.nanzbeatles.nanas.constants.VideoModeEnabledKey
+import com.nanzbeatles.nanas.constants.VisitorDataKey
+import com.nanzbeatles.nanas.utils.rememberEnumPreference
+import com.nanzbeatles.nanas.utils.rememberPreference
+import com.nanzbeatles.nanas.utils.reportException
+import com.nanzbeatles.nanas.viewmodels.AccountSettingsViewModel
+import com.nanzbeatles.nanas.viewmodels.HomeViewModel
+import com.nanzbeatles.innertube.YouTube
+import com.nanzbeatles.innertube.utils.parseCookieString
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicReference
+import kotlin.math.roundToInt
+
+/* -------------------------- Login (WebView) -------------------------- */
+
+@SuppressLint("SetJavaScriptEnabled")
+@OptIn(DelicateCoroutinesApi::class)
+@Composable
+ fun TvLoginScreen(onBackClick: () -> Unit, focusRequester: FocusRequester? = null, onNavigateUp: (() -> Unit)? = null) {
+    BackHandler { onBackClick() }
+    var visitorData by rememberPreference(VisitorDataKey, "")
+    var dataSyncId by rememberPreference(DataSyncIdKey, "")
+    var innerTubeCookie by rememberPreference(InnerTubeCookieKey, "")
+    var accountName by rememberPreference(AccountNameKey, "")
+    var accountEmail by rememberPreference(AccountEmailKey, "")
+    var accountChannelHandle by rememberPreference(AccountChannelHandleKey, "")
+
+    val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
+    val context = LocalContext.current
+
+    var webView: WebView? = null
+    val backFocus = focusRequester ?: remember { FocusRequester() }
+    var webViewFocused by remember { mutableStateOf(false) }
+    val lastAccountInfoFetchSession = remember { AtomicReference<String?>(null) }
+    val latestCookie = remember { AtomicReference(innerTubeCookie) }
+    val latestVisitorData = remember { AtomicReference(visitorData) }
+    val latestDataSyncId = remember { AtomicReference(dataSyncId) }
+
+    fun refreshAccountInfoIfReady() {
+        val cookie = latestCookie.get().takeIf { "SAPISID" in parseCookieString(it) } ?: return
+        val normalizedDataSyncId = latestDataSyncId.get()
+            .substringBefore("||")
+            .takeIf { it.isNotBlank() && it != "null" }
+        val sessionKey = "$cookie|${normalizedDataSyncId.orEmpty()}"
+        if (lastAccountInfoFetchSession.get() == sessionKey) return
+        lastAccountInfoFetchSession.set(sessionKey)
+
+        YouTube.cookie = cookie
+        YouTube.visitorData = latestVisitorData.get().takeIf { it.isNotBlank() }
+        YouTube.dataSyncId = normalizedDataSyncId
+
+        coroutineScope.launch {
+            YouTube.accountInfo().onSuccess {
+                accountName = it.name
+                accountEmail = it.email.orEmpty()
+                accountChannelHandle = it.channelHandle.orEmpty()
+            }.onFailure {
+                lastAccountInfoFetchSession.set(null)
+                reportException(it)
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        runCatching { backFocus.requestFocus() }
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background,
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            AndroidView(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 95.dp)
+                    .focusRequester(remember { FocusRequester() })
+                    .onFocusChanged { state ->
+                        webViewFocused = state.isFocused
+                    }
+                    .onPreviewKeyEvent { event ->
+                        // Forward D-pad events to WebView for form navigation
+                        if (event.type == KeyEventType.KeyDown) {
+                            when (event.key) {
+                                Key.DirectionDown, Key.DirectionUp,
+                                Key.DirectionLeft, Key.DirectionRight -> {
+                                    webView?.let { wv ->
+                                        // Inject JavaScript to simulate focus navigation in the web form
+                                        val direction = when (event.key) {
+                                            Key.DirectionDown -> "next"
+                                            Key.DirectionUp -> "previous"
+                                            Key.DirectionLeft -> "previous"
+                                            Key.DirectionRight -> "next"
+                                            else -> "next"
+                                        }
+                                        wv.evaluateJavascript("""
+                                            (function() {
+                                                var focused = document.activeElement;
+                                                var elements = Array.from(document.querySelectorAll('input:not([type="hidden"]), button, [role="button"], a, [tabindex]:not([tabindex="-1"])'));
+                                                elements = elements.filter(function(e) { return e.offsetParent !== null; });
+                                                if (elements.length === 0) return;
+                                                var idx = elements.indexOf(focused);
+                                                if (idx < 0) { elements[0].focus(); return; }
+                                                var nextIdx = '$direction' === 'next' ? idx + 1 : idx - 1;
+                                                if (nextIdx >= 0 && nextIdx < elements.length) {
+                                                    elements[nextIdx].focus();
+                                                    elements[nextIdx].scrollIntoView({behavior: 'smooth', block: 'center'});
+                                                }
+                                            })();
+                                        """, null)
+                                        true
+                                    } ?: false
+                                }
+                                Key.DirectionCenter, Key.Enter -> {
+                                    webView?.let { wv ->
+                                        wv.evaluateJavascript("""
+                                            (function() {
+                                                var focused = document.activeElement;
+                                                if (!focused) return;
+                                                if (focused.tagName === 'BUTTON' || focused.getAttribute('role') === 'button') {
+                                                    focused.click();
+                                                } else if (focused.tagName === 'INPUT') {
+                                                    var nextBtn = document.querySelector('#identifierNext button, #passwordNext button, button[type="submit"]');
+                                                    if (nextBtn) { nextBtn.click(); } else { focused.form?.submit(); }
+                                                } else if (focused.tagName === 'A') {
+                                                    focused.click();
+                                                }
+                                            })();
+                                        """, null)
+                                        true
+                                    } ?: false
+                                }
+                                Key.Back -> {
+                                    webView?.let { wv ->
+                                        if (wv.canGoBack()) {
+                                            wv.goBack()
+                                            true
+                                        } else {
+                                            onBackClick()
+                                            true
+                                        }
+                                    } ?: false
+                                }
+                                else -> false
+                            }
+                        } else {
+                            false
+                        }
+                    },
+                factory = { ctx ->
+                    WebView(ctx).apply {
+                        CookieManager.getInstance().setAcceptCookie(true)
+                        CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+                        webViewClient = object : WebViewClient() {
+                            override fun onPageFinished(view: WebView, url: String?) {
+                                // Inject D-pad navigation helper script
+                                view.evaluateJavascript("""
+                                    (function() {
+                                        var style = document.createElement('style');
+                                        style.textContent = '*:focus { outline: 3px solid #1a73e8 !important; outline-offset: 2px; }';
+                                        document.head.appendChild(style);
+                                        setTimeout(function() {
+                                            var input = document.querySelector('input[type="email"], input[type="text"], input[type="tel"], input[type="password"]');
+                                            if (input) { input.focus(); input.scrollIntoView({behavior:'smooth',block:'center'}); }
+                                        }, 1500);
+                                    })();
+                                """, null)
+
+                                view.loadUrl("javascript:Android.onRetrieveVisitorData((window.ytcfg&&ytcfg.get&&ytcfg.get('VISITOR_DATA'))||(window.yt&&yt.config_&&yt.config_.VISITOR_DATA)||'')")
+                                view.loadUrl("javascript:Android.onRetrieveDataSyncId((window.ytcfg&&ytcfg.get&&ytcfg.get('DATASYNC_ID'))||(window.yt&&yt.config_&&yt.config_.DATASYNC_ID)||'')")
+
+                                if (url?.startsWith("https://music.youtube.com") == true) {
+                                    CookieManager.getInstance().flush()
+                                    val cookie = CookieManager.getInstance().getCookie(url).orEmpty()
+                                    latestCookie.set(cookie)
+                                    innerTubeCookie = cookie
+                                    YouTube.cookie = cookie
+                                    refreshAccountInfoIfReady()
+                                }
+                            }
+                        }
+                        settings.apply {
+                            javaScriptEnabled = true
+                            setSupportZoom(true)
+                            builtInZoomControls = true
+                            displayZoomControls = false
+                            // Enable DOM storage for Google login
+                            domStorageEnabled = true
+                            databaseEnabled = true
+                            // Allow mixed content for login pages
+                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                        }
+                        addJavascriptInterface(object {
+                            @JavascriptInterface
+                            fun onRetrieveVisitorData(newVisitorData: String?) {
+                                if (!newVisitorData.isNullOrBlank() && newVisitorData != "null") {
+                                    latestVisitorData.set(newVisitorData)
+                                    visitorData = newVisitorData
+                                    YouTube.visitorData = newVisitorData
+                                    refreshAccountInfoIfReady()
+                                }
+                            }
+
+                            @JavascriptInterface
+                            fun onRetrieveDataSyncId(newDataSyncId: String?) {
+                                val normalizedDataSyncId = newDataSyncId
+                                    ?.substringBefore("||")
+                                    ?.takeIf { it.isNotBlank() && it != "null" }
+                                if (normalizedDataSyncId != null) {
+                                    latestDataSyncId.set(normalizedDataSyncId)
+                                    dataSyncId = normalizedDataSyncId
+                                    YouTube.dataSyncId = normalizedDataSyncId
+                                    refreshAccountInfoIfReady()
+                                }
+                            }
+                        }, "Android")
+                        // Make WebView focusable for D-pad navigation
+                        isFocusable = true
+                        isFocusableInTouchMode = true
+                        requestFocus()
+                        webView = this
+                        loadUrl("https://accounts.google.com/ServiceLogin?continue=https%3A%2F%2Fmusic.youtube.com")
+                    }
+                }
+            )
+
+            // Top bar with back button + title
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
+                    .padding(horizontal = 24.dp, vertical = 12.dp)
+                    .onPreviewKeyEvent { event ->
+                        if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
+                            onNavigateUp?.invoke()
+                            true
+                        } else if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionDown) {
+                            // Move focus to WebView
+                            webView?.requestFocus()
+                            true
+                        } else {
+                            false
+                        }
+                    },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                var backFocused by remember { mutableStateOf(false) }
+                IconButton(
+                    onClick = onBackClick,
+                    modifier = Modifier
+                        .size(56.dp)
+                        .focusRequester(backFocus)
+                        .onFocusChanged { backFocused = it.isFocused }
+                        .border(
+                            width = if (backFocused) 3.dp else 0.dp,
+                            color = if (backFocused) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            shape = CircleShape,
+                        ),
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                Spacer(Modifier.size(16.dp))
+                Text(
+                    text = "Sign in to YouTube Music",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
+    }
+
+    BackHandler(enabled = webView?.canGoBack() == true) {
+        webView?.goBack()
+    }
+}
+
+/* -------------------------- Account Settings -------------------------- */
+
+@Composable
+ fun TvAccountSettingsScreen(
+     onBackClick: () -> Unit,
+     onLoginClick: () -> Unit,
+     focusRequester: FocusRequester? = null,
+     onNavigateUp: (() -> Unit)? = null,
+ ) {
+    BackHandler { onBackClick() }
+    val context = LocalContext.current
+    val (innerTubeCookie, onInnerTubeCookieChange) = rememberPreference(InnerTubeCookieKey, "")
+    val isLoggedIn = remember(innerTubeCookie) {
+        "SAPISID" in parseCookieString(innerTubeCookie)
+    }
+
+    val homeViewModel: HomeViewModel = hiltViewModel()
+    val accountSettingsViewModel: AccountSettingsViewModel = hiltViewModel()
+    val accountName by homeViewModel.accountName.collectAsState()
+    val accountImageUrl by homeViewModel.accountImageUrl.collectAsState()
+
+    var backButtonFocused by remember { mutableStateOf(false) }
+    val firstFocus = focusRequester ?: remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
+                    if (backButtonFocused) {
+                        onNavigateUp?.invoke()
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            },
+        contentPadding = PaddingValues(start = 64.dp, top = 95.dp, end = 64.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        item {
+            TvSettingsHeader(
+                title = "Account",
+                onBackClick = onBackClick,
+                focusRequester = firstFocus,
+                onFocusChange = { backButtonFocused = it },
+            )
+        }
+
+        item {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 4.dp,
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(20.dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (isLoggedIn && accountImageUrl != null) {
+                            AsyncImage(
+                                model = accountImageUrl,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape),
+                            )
+                        } else {
+                            Text(
+                                text = accountName.firstOrNull()?.uppercase() ?: "?",
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (isLoggedIn) accountName.ifEmpty { "Signed in" } else "Not signed in",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = if (isLoggedIn)
+                                "Library, liked songs, playlists and subscriptions sync from YouTube Music"
+                            else
+                                "Sign in to sync your liked songs, albums, playlists and subscriptions",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
+
+        item {
+            TvSettingsCategoryItem(
+                title = if (isLoggedIn) "Sign out" else "Sign in to YouTube Music",
+                subtitle = if (isLoggedIn)
+                    "Disconnect your account and clear synced content"
+                else
+                    "Use your Google account to sign in",
+                onClick = {
+                    if (isLoggedIn) {
+                        accountSettingsViewModel.logoutAndClearSyncedContent(
+                            context,
+                            onInnerTubeCookieChange,
+                        )
+                    } else {
+                        onLoginClick()
+                    }
+                },
+                icon = if (isLoggedIn)
+                    androidx.compose.material.icons.Icons.AutoMirrored.Filled.Logout
+                else
+                    androidx.compose.material.icons.Icons.AutoMirrored.Filled.Login,
+            )
+        }
+
+        if (isLoggedIn) {
+            item {
+                TvSettingsCategoryItem(
+                    title = "Refresh library",
+                    subtitle = "Re-sync liked songs, playlists, and subscribed artists",
+                    onClick = {
+                        // Re-fetching is automatic on Library screen visit
+                    },
+                    icon = androidx.compose.material.icons.Icons.Filled.Refresh,
+                )
+            }
+        }
+    }
+}
+
+/* -------------------------- About -------------------------- */
+
+ @Composable
+ fun TvAboutScreen(onBackClick: () -> Unit, focusRequester: FocusRequester? = null, onNavigateUp: (() -> Unit)? = null) {
+    BackHandler { onBackClick() }
+    val firstFocus = focusRequester ?: remember { FocusRequester() }
+     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+     var backButtonFocused by remember { mutableStateOf(false) }
+
+     LazyColumn(
+         modifier = Modifier
+             .fillMaxSize()
+             .onPreviewKeyEvent { event ->
+                 if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
+                     if (backButtonFocused) {
+                         onNavigateUp?.invoke()
+                         true
+                     } else {
+                         false
+                     }
+                 } else {
+                     false
+                 }
+             },
+         contentPadding = PaddingValues(start = 48.dp, top = 95.dp, end = 48.dp, bottom = 16.dp),
+         verticalArrangement = Arrangement.spacedBy(24.dp),
+     ) {
+        item {
+            TvSettingsHeader(
+                title = "About",
+                onBackClick = onBackClick,
+                focusRequester = firstFocus,
+                onFocusChange = { backButtonFocused = it },
+            )
+        }
+
+        item {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 4.dp,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                     Text(
+                         text = "NanzBeatles Tv",
+                         style = MaterialTheme.typography.headlineMedium,
+                         fontWeight = FontWeight.Bold,
+                         color = MaterialTheme.colorScheme.onSurface,
+                     )
+                    Text(
+                        text = "v${BuildConfig.VERSION_NAME}",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = if (BuildConfig.DEBUG) "DEBUG" else "RELEASE",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "${BuildConfig.ARCHITECTURE.uppercase()} • FOSS TV",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = "Licensed under GPL-3.0",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = "NanzBeatles (C) 2026",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/* -------------------------- Storage -------------------------- */
+
+@Composable
+ fun TvStorageSettingsScreen(onBackClick: () -> Unit, focusRequester: FocusRequester? = null, onNavigateUp: (() -> Unit)? = null) {
+    BackHandler { onBackClick() }
+    val context = LocalContext.current
+    val firstFocus = focusRequester ?: remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    var backButtonFocused by remember { mutableStateOf(false) }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
+                    if (backButtonFocused) {
+                        onNavigateUp?.invoke()
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            },
+        contentPadding = PaddingValues(start = 48.dp, top = 95.dp, end = 48.dp, bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        item {
+            TvSettingsHeader(
+                title = "Storage",
+                onBackClick = onBackClick,
+                focusRequester = firstFocus,
+                onFocusChange = { backButtonFocused = it },
+            )
+        }
+
+        item {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 4.dp,
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Text(
+                        text = "Storage Management",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+
+                    Text(
+                        text = "NanzBeatles TV is designed to prevent storage accumulation like Spotify TV. " +
+                            "Lyrics are fetched fresh each time and not cached to disk. Image cache is bounded to prevent growth.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+
+        item {
+            TvSettingsCategoryItem(
+                title = "Clear Cache",
+                subtitle = "Clear image cache and temporary files",
+                onClick = {
+                    // Note: In a real implementation, this would call the clearAccumulatedStorage function
+                    // For now, just show a message or implement the clearing logic
+                },
+                icon = Icons.Filled.CleaningServices,
+            )
+        }
+    }
+}
+
+/* -------------------------- Updater -------------------------- */
+
+@Composable
+ fun TvUpdaterScreen(onBackClick: () -> Unit, focusRequester: FocusRequester? = null, onNavigateUp: (() -> Unit)? = null) {
+    BackHandler { onBackClick() }
+    val firstFocus = focusRequester ?: remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    var backButtonFocused by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    var isChecking by remember { mutableStateOf(false) }
+    var releaseInfo by remember { mutableStateOf<com.nanzbeatles.nanas.utils.ReleaseInfo?>(null) }
+    var hasUpdate by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    fun runCheck(force: Boolean) {
+        if (isChecking) return
+        scope.launch {
+            isChecking = true
+            error = null
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                com.nanzbeatles.nanas.utils.Updater
+                    .checkForUpdate(forceRefresh = force)
+                    .onSuccess { (info, available) ->
+                        releaseInfo = info
+                        hasUpdate = available
+                    }
+                    .onFailure {
+                        error = it.message ?: "Failed to check for updates"
+                    }
+            }
+            isChecking = false
+        }
+    }
+
+    // Always check on screen open so a freshly published TV release surfaces
+    // here without the user having to manually press refresh.
+    LaunchedEffect(Unit) { runCheck(force = false) }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
+                    if (backButtonFocused) {
+                        onNavigateUp?.invoke()
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            },
+        contentPadding = PaddingValues(start = 48.dp, top = 95.dp, end = 48.dp, bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        item {
+            TvSettingsHeader(
+                title = "Updates",
+                onBackClick = onBackClick,
+                focusRequester = firstFocus,
+                onFocusChange = { backButtonFocused = it },
+            )
+        }
+
+        // Current version
+        item {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = "Installed version",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = "NanzBeatles Tv v${BuildConfig.VERSION_NAME}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+        }
+
+        // Update status
+        item {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 4.dp,
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    when {
+                        isChecking -> {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp,
+                                )
+                                Spacer(Modifier.width(12.dp))
+                                Text(
+                                    text = "Checking for updates…",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                            }
+                        }
+                        error != null -> {
+                            Text(
+                                text = error!!,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                        releaseInfo == null -> {
+                            Text(
+                                text = "No release information available.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        hasUpdate -> {
+                            Text(
+                                text = "Update available",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            Text(
+                                text = "${releaseInfo?.versionName} • released ${
+                                    releaseInfo?.releaseDate?.take(10) ?: ""
+                                }",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            val notes = releaseInfo?.description?.takeIf { it.isNotBlank() }
+                            if (notes != null) {
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = notes,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 8,
+                                )
+                            }
+                        }
+                        else -> {
+                            Text(
+                                text = "You're on the latest version",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = "Latest released: ${releaseInfo?.versionName}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Action buttons
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                TvUpdaterButton(
+                    label = if (isChecking) "Checking…" else "Check again",
+                    onClick = { runCheck(force = true) },
+                    primary = false,
+                )
+                if (hasUpdate && releaseInfo != null) {
+                    TvUpdaterButton(
+                        label = "Download NanzBeatles Tv",
+                        onClick = {
+                            val info = releaseInfo ?: return@TvUpdaterButton
+                            val url = com.nanzbeatles.nanas.utils.Updater
+                                .getDownloadUrlForCurrentVariant(info, preferredVariant = "tv")
+                            if (url != null) {
+                                runCatching {
+                                    val intent = android.content.Intent(
+                                        android.content.Intent.ACTION_VIEW,
+                                        android.net.Uri.parse(url),
+                                    ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    context.startActivity(intent)
+                                }
+                            }
+                        },
+                        primary = true,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TvUpdaterButton(
+    label: String,
+    onClick: () -> Unit,
+    primary: Boolean,
+) {
+    var focused by remember { mutableStateOf(false) }
+    Surface(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .onFocusChanged { focused = it.isFocused }
+            .border(
+                width = if (focused) 3.dp else 0.dp,
+                color = if (focused) MaterialTheme.colorScheme.primary else Color.Transparent,
+                shape = RoundedCornerShape(12.dp),
+            )
+            .clickable(onClick = onClick),
+        color = if (primary) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 4.dp,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = if (primary) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 14.dp),
+        )
+    }
+}
+
+/* -------------------------- Last.fm Settings -------------------------- */
+
+@Composable
+fun TvLastFMSettingsScreen(
+    onBackClick: () -> Unit,
+    focusRequester: FocusRequester? = null,
+    onNavigateUp: (() -> Unit)? = null,
+) {
+    BackHandler { onBackClick() }
+    val coroutineScope = rememberCoroutineScope()
+
+    var lastfmUsername by rememberPreference(LastFMUsernameKey, "")
+    var lastfmSession by rememberPreference(LastFMSessionKey, "")
+    val isLoggedIn = remember(lastfmSession) { lastfmSession != "" }
+
+    val (useNowPlaying, onUseNowPlayingChange) = rememberPreference(key = LastFMUseNowPlaying, defaultValue = false)
+    val (lastfmScrobbling, onLastfmScrobblingChange) = rememberPreference(key = EnableLastFMScrobblingKey, defaultValue = false)
+    val (useSendLikes, onUseSendLikes) = rememberPreference(key = LastFMUseSendLikes, defaultValue = false)
+
+    var showLoginDialog by remember { mutableStateOf(false) }
+    var isLoggingIn by remember { mutableStateOf(false) }
+    var loginError by remember { mutableStateOf<String?>(null) }
+    var tempUsername by remember { mutableStateOf("") }
+    var tempPassword by remember { mutableStateOf("") }
+
+    // Login dialog for TV
+    if (showLoginDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { if (!isLoggingIn) { showLoginDialog = false; loginError = null } },
+            title = { Text("Login to Last.fm") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = tempUsername,
+                        onValueChange = { tempUsername = it; loginError = null },
+                        label = { Text("Username") },
+                        singleLine = true,
+                        enabled = !isLoggingIn,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = tempPassword,
+                        onValueChange = { tempPassword = it; loginError = null },
+                        label = { Text("Password") },
+                        singleLine = true,
+                        enabled = !isLoggingIn,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    loginError?.let {
+                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
+                    if (isLoggingIn) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.size(8.dp))
+                            Text("Logging in...", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        if (tempUsername.isBlank() || tempPassword.isBlank()) { loginError = "Enter username and password"; return@TextButton }
+                        isLoggingIn = true; loginError = null
+                        coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            try {
+                                com.nanzbeatles.lastfm.LastFM.getMobileSession(tempUsername, tempPassword)
+                                    .onSuccess { auth ->
+                                        lastfmUsername = auth.session.name
+                                        lastfmSession = auth.session.key
+                                        com.nanzbeatles.lastfm.LastFM.sessionKey = auth.session.key
+                                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { isLoggingIn = false; showLoginDialog = false }
+                                    }
+                                    .onFailure {
+                                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { isLoggingIn = false; loginError = "Login failed. Check credentials." }
+                                    }
+                            } catch (e: Exception) {
+                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { isLoggingIn = false; loginError = "Error: ${e.message}" }
+                            }
+                        }
+                    },
+                    enabled = !isLoggingIn
+                ) { Text("Login") }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { if (!isLoggingIn) { showLoginDialog = false; loginError = null } }) { Text("Cancel") }
+            },
+        )
+    }
+
+    var backButtonFocused by remember { mutableStateOf(false) }
+    val firstFocus = focusRequester ?: remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
+                    if (backButtonFocused) { onNavigateUp?.invoke(); true } else false
+                } else false
+            },
+        contentPadding = PaddingValues(start = 64.dp, top = 95.dp, end = 64.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        item {
+            TvSettingsHeader(
+                title = "Last.fm Integration",
+                onBackClick = onBackClick,
+                focusRequester = firstFocus,
+                onFocusChange = { backButtonFocused = it },
+            )
+        }
+
+        // Account
+        item {
+            TvSettingsRow(
+                title = if (isLoggedIn) lastfmUsername else "Not Logged In",
+                icon = { Icon(Icons.Filled.MusicNote, null, modifier = Modifier.size(24.dp)) },
+                trailing = {
+                    if (isLoggedIn) {
+                        OutlinedButton(onClick = { lastfmSession = ""; lastfmUsername = ""; com.nanzbeatles.lastfm.LastFM.sessionKey = null }) { Text("Logout") }
+                    } else {
+                        OutlinedButton(onClick = { showLoginDialog = true }) { Text("Login") }
+                    }
+                },
+            )
+        }
+
+        // Scrobbling toggle
+        item {
+            TvSettingsToggle(
+                title = "Enable Scrobbling",
+                checked = lastfmScrobbling,
+                onCheckedChange = onLastfmScrobblingChange,
+                enabled = isLoggedIn,
+            )
+        }
+
+        // Now Playing toggle
+        item {
+            TvSettingsToggle(
+                title = "Send Now Playing",
+                checked = useNowPlaying,
+                onCheckedChange = onUseNowPlayingChange,
+                enabled = isLoggedIn && lastfmScrobbling,
+            )
+        }
+
+        // Sync likes toggle
+        item {
+            TvSettingsToggle(
+                title = "Sync Loved Songs",
+                checked = useSendLikes,
+                onCheckedChange = onUseSendLikes,
+                enabled = isLoggedIn && lastfmScrobbling,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TvSettingsRow(title: String, icon: @Composable (() -> Unit)? = null, trailing: @Composable (() -> Unit)? = null) {
+    var focused by remember { mutableStateOf(false) }
+    Surface(
+        modifier = Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused }
+            .border(width = if (focused) 3.dp else 0.dp, color = if (focused) MaterialTheme.colorScheme.primary else Color.Transparent, shape = RoundedCornerShape(12.dp)),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 4.dp,
+    ) {
+        Row(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            icon?.invoke()
+            Text(title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+            trailing?.invoke()
+        }
+    }
+}
+
+@Composable
+private fun TvSettingsToggle(title: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit, enabled: Boolean = true) {
+    var focused by remember { mutableStateOf(false) }
+    Surface(
+        modifier = Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused }
+            .clickable(enabled = enabled) { onCheckedChange(!checked) }
+            .border(width = if (focused) 3.dp else 0.dp, color = if (focused) MaterialTheme.colorScheme.primary else Color.Transparent, shape = RoundedCornerShape(12.dp)),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 4.dp,
+    ) {
+        Row(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f), color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+            Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
+        }
+    }
+}
+
+/* -------------------------- Playback Settings -------------------------- */
+
+@Composable
+fun TvPlaybackSettingsScreen(
+    onBackClick: () -> Unit,
+    focusRequester: FocusRequester? = null,
+    onNavigateUp: (() -> Unit)? = null,
+) {
+    BackHandler { onBackClick() }
+    val (audioQuality, onAudioQualityChange) = rememberEnumPreference(
+        com.nanzbeatles.nanas.constants.AudioQualityKey,
+        com.nanzbeatles.nanas.constants.AudioQuality.AUTO,
+    )
+    val (audioNormalization, onAudioNormalizationChange) = rememberPreference(
+        com.nanzbeatles.nanas.constants.AudioNormalizationKey, true,
+    )
+    val (skipSilence, onSkipSilenceChange) = rememberPreference(
+        com.nanzbeatles.nanas.constants.SkipSilenceKey, false,
+    )
+    val (lateNightMode, onLateNightModeChange) = rememberPreference(
+        com.nanzbeatles.nanas.constants.LateNightModeKey, false,
+    )
+    val (crossfadeEnabled, onCrossfadeEnabledChange) = rememberPreference(
+        com.nanzbeatles.nanas.constants.CrossfadeEnabledKey, false,
+    )
+    val (crossfadeDuration, onCrossfadeDurationChange) = rememberPreference(
+        com.nanzbeatles.nanas.constants.CrossfadeDurationKey, 5f,
+    )
+    val (automixEnabled, onAutomixEnabledChange) = rememberPreference(
+        AutomixEnabledKey,
+        defaultValue = false,
+    )
+    val (automixBlendPercent, onAutomixBlendPercentChange) = rememberPreference(
+        AutomixBlendPercentKey,
+        defaultValue = 90f,
+    )
+    val (videoModeEnabled, onVideoModeEnabledChange) = rememberPreference(
+        com.nanzbeatles.nanas.constants.VideoModeEnabledKey, true,
+    )
+    val (seekExtraSeconds, onSeekExtraSecondsChange) = rememberPreference(
+        com.nanzbeatles.nanas.constants.SeekExtraSeconds, false,
+    )
+
+    val firstFocus = focusRequester ?: remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    var backButtonFocused by remember { mutableStateOf(false) }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
+                    if (backButtonFocused) {
+                        onNavigateUp?.invoke()
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            },
+        contentPadding = PaddingValues(start = 48.dp, top = 95.dp, end = 48.dp, bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        item {
+            TvSettingsHeader(
+                title = "Playback",
+                onBackClick = onBackClick,
+                focusRequester = firstFocus,
+                onFocusChange = { backButtonFocused = it },
+            )
+        }
+
+        item {
+            Text(
+                text = "AUDIO",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            )
+        }
+
+        item {
+            TvSettingsCategoryItem(
+                title = "Audio Quality",
+                subtitle = when (audioQuality) {
+                    com.nanzbeatles.nanas.constants.AudioQuality.AUTO -> "Automatic (recommended)"
+                    com.nanzbeatles.nanas.constants.AudioQuality.HIGH -> "High quality"
+                    com.nanzbeatles.nanas.constants.AudioQuality.LOW -> "Low quality (saves data)"
+                },
+                onClick = {
+                    val next = when (audioQuality) {
+                        com.nanzbeatles.nanas.constants.AudioQuality.AUTO -> com.nanzbeatles.nanas.constants.AudioQuality.HIGH
+                        com.nanzbeatles.nanas.constants.AudioQuality.HIGH -> com.nanzbeatles.nanas.constants.AudioQuality.LOW
+                        com.nanzbeatles.nanas.constants.AudioQuality.LOW -> com.nanzbeatles.nanas.constants.AudioQuality.AUTO
+                    }
+                    onAudioQualityChange(next)
+                },
+                icon = Icons.Filled.Tune,
+            )
+        }
+
+        item {
+            TvContentToggleRow(
+                title = "Audio Normalization",
+                subtitle = "Normalize volume levels across songs",
+                checked = audioNormalization,
+                onCheckedChange = onAudioNormalizationChange,
+                icon = Icons.Filled.Tune,
+            )
+        }
+
+        item {
+            TvContentToggleRow(
+                title = "Skip Silence",
+                subtitle = "Automatically skip silent parts of songs",
+                checked = skipSilence,
+                onCheckedChange = onSkipSilenceChange,
+                icon = Icons.Filled.FastForward,
+            )
+        }
+
+        item {
+            TvContentToggleRow(
+                title = "Late Night Mode",
+                subtitle = "Reduce volume differences for quiet listening",
+                checked = lateNightMode,
+                onCheckedChange = onLateNightModeChange,
+                icon = Icons.Filled.DarkMode,
+            )
+        }
+
+        item {
+            Text(
+                text = "CROSSFADE",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 8.dp).padding(top = 12.dp, bottom = 4.dp),
+            )
+        }
+
+        item {
+            TvContentToggleRow(
+                title = "Crossfade",
+                subtitle = "Smooth transitions between songs",
+                checked = crossfadeEnabled,
+                onCheckedChange = onCrossfadeEnabledChange,
+                icon = Icons.Filled.Tune,
+            )
+        }
+
+        if (crossfadeEnabled) {
+            item {
+                TvSliderRow(
+                    title = "Crossfade Duration",
+                    subtitle = "${crossfadeDuration.toInt()} seconds",
+                    value = crossfadeDuration,
+                    valueRange = 1f..12f,
+                    steps = 10,
+                    onValueChange = onCrossfadeDurationChange,
+                )
+            }
+        }
+
+        // Automix toggle
+        item {
+            TvSettingsToggle(
+                title = "Automix",
+                checked = automixEnabled,
+                onCheckedChange = onAutomixEnabledChange,
+            )
+        }
+
+        if (automixEnabled) {
+            item {
+                TvSliderRow(
+                    title = "Automix Blend Point",
+                    subtitle = "${automixBlendPercent.roundToInt()}%",
+                    value = automixBlendPercent,
+                    valueRange = 50f..100f,
+                    steps = 9,
+                    onValueChange = onAutomixBlendPercentChange,
+                )
+            }
+        }
+
+        item {
+            Text(
+                text = "OTHER",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 8.dp).padding(top = 12.dp, bottom = 4.dp),
+            )
+        }
+
+        item {
+            TvContentToggleRow(
+                title = "Video Mode",
+                subtitle = "Play music videos when available",
+                checked = videoModeEnabled,
+                onCheckedChange = onVideoModeEnabledChange,
+                icon = Icons.Filled.MusicNote,
+            )
+        }
+
+        item {
+            val (enhancedLyrics, onEnhancedLyricsChange) = rememberPreference(
+                com.nanzbeatles.nanas.constants.EnhancedLyricsKey, true,
+            )
+            TvContentToggleRow(
+                title = "Enhanced Lyrics",
+                subtitle = "Synced highlighting, romanization and word-by-word animation",
+                checked = enhancedLyrics,
+                onCheckedChange = onEnhancedLyricsChange,
+                icon = Icons.Filled.Lyrics,
+            )
+        }
+
+        item {
+            TvContentToggleRow(
+                title = "Seek Extra Seconds",
+                subtitle = "Show 10-second seek buttons on player",
+                checked = seekExtraSeconds,
+                onCheckedChange = onSeekExtraSecondsChange,
+                icon = Icons.Filled.FastForward,
+            )
+        }
+
+        item {
+            Text(
+                text = "SPONSORBLOCK",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 8.dp).padding(top = 12.dp, bottom = 4.dp),
+            )
+        }
+
+        item {
+            val (sbEnabled, onSbEnabledChange) = rememberPreference(
+                com.nanzbeatles.nanas.constants.SponsorBlockEnabledKey, false,
+            )
+            TvContentToggleRow(
+                title = "SponsorBlock",
+                subtitle = if (sbEnabled) "Auto-skip sponsor segments in videos" else "Skip sponsor segments (powered by SponsorBlock)",
+                checked = sbEnabled,
+                onCheckedChange = onSbEnabledChange,
+                icon = Icons.Filled.Block,
+            )
+        }
+
+        item {
+            val (sbSponsor, onSbSponsorChange) = rememberPreference(
+                com.nanzbeatles.nanas.constants.SponsorBlockSkipSponsorKey, true,
+            )
+            val (sbSelfPromo, onSbSelfPromoChange) = rememberPreference(
+                com.nanzbeatles.nanas.constants.SponsorBlockSkipSelfPromoKey, true,
+            )
+            val (sbInteraction, onSbInteractionChange) = rememberPreference(
+                com.nanzbeatles.nanas.constants.SponsorBlockSkipInteractionKey, true,
+            )
+            val (sbIntro, onSbIntroChange) = rememberPreference(
+                com.nanzbeatles.nanas.constants.SponsorBlockSkipIntroKey, true,
+            )
+            val (sbOutro, onSbOutroChange) = rememberPreference(
+                com.nanzbeatles.nanas.constants.SponsorBlockSkipOutroKey, true,
+            )
+            val (sbPreview, onSbPreviewChange) = rememberPreference(
+                com.nanzbeatles.nanas.constants.SponsorBlockSkipPreviewKey, true,
+            )
+            val (sbMusicOffTopic, onSbMusicOffTopicChange) = rememberPreference(
+                com.nanzbeatles.nanas.constants.SponsorBlockSkipMusicOffTopicKey, true,
+            )
+            val (sbFiller, onSbFillerChange) = rememberPreference(
+                com.nanzbeatles.nanas.constants.SponsorBlockSkipFillerKey, true,
+            )
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp)),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 4.dp,
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(
+                        text = "Skip Categories",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = "Choose which segment types to auto-skip",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    TvContentToggleRow(title = "Sponsor", subtitle = "Paid promotion, not necessarily an ad", checked = sbSponsor, onCheckedChange = onSbSponsorChange, icon = Icons.Filled.Tune)
+                    TvContentToggleRow(title = "Self-promotion", subtitle = "Unpaid self-promotion", checked = sbSelfPromo, onCheckedChange = onSbSelfPromoChange, icon = Icons.Filled.Tune)
+                    TvContentToggleRow(title = "Interaction reminder", subtitle = "Subscribe, like, etc.", checked = sbInteraction, onCheckedChange = onSbInteractionChange, icon = Icons.Filled.Tune)
+                    TvContentToggleRow(title = "Intro", subtitle = "Intro sequences", checked = sbIntro, onCheckedChange = onSbIntroChange, icon = Icons.Filled.Tune)
+                    TvContentToggleRow(title = "Outro", subtitle = "End cards/outro", checked = sbOutro, onCheckedChange = onSbOutroChange, icon = Icons.Filled.Tune)
+                    TvContentToggleRow(title = "Preview", subtitle = "Recap of what you've seen", checked = sbPreview, onCheckedChange = onSbPreviewChange, icon = Icons.Filled.Tune)
+                    TvContentToggleRow(title = "Non-music", subtitle = "Parts where the song is not playing", checked = sbMusicOffTopic, onCheckedChange = onSbMusicOffTopicChange, icon = Icons.Filled.Tune)
+                    TvContentToggleRow(title = "Filler", subtitle = "Tangents or filler sections", checked = sbFiller, onCheckedChange = onSbFillerChange, icon = Icons.Filled.Tune)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+  fun TvContentSettingsScreen(onBackClick: () -> Unit, focusRequester: FocusRequester? = null, onNavigateUp: (() -> Unit)? = null) {
+    BackHandler { onBackClick() }
+
+    // Auto-load-more matches the mobile "Auto load more songs" toggle: when
+    // the queue reaches the end the app will automatically extend it with
+    // related items.
+    val (autoLoadMore, onAutoLoadMoreChange) = rememberPreference(
+        key = com.nanzbeatles.nanas.constants.AutoLoadMoreKey,
+        defaultValue = true,
+    )
+    // SimilarContent matches the mobile "Enable similar content" toggle and
+    // controls whether similar songs are surfaced in the queue.
+    val (similarContentEnabled, onSimilarContentEnabledChange) = rememberPreference(
+        key = com.nanzbeatles.nanas.constants.SimilarContent,
+        defaultValue = true
+    )
+    val (preferredProvider, onPreferredProviderChange) = rememberEnumPreference(
+        key = com.nanzbeatles.nanas.constants.PreferredLyricsProviderKey,
+        defaultValue = PreferredLyricsProvider.SIMPMUSIC,
+    )
+    val (enableKugou, onEnableKugouChange) = rememberPreference(
+        key = com.nanzbeatles.nanas.constants.EnableKugouKey,
+        defaultValue = true,
+    )
+    val (enableLrclib, onEnableLrclibChange) = rememberPreference(
+        key = com.nanzbeatles.nanas.constants.EnableLrcLibKey,
+        defaultValue = true,
+    )
+    val (enableBetterLyrics, onEnableBetterLyricsChange) = rememberPreference(
+        key = com.nanzbeatles.nanas.constants.EnableBetterLyricsKey,
+        defaultValue = true,
+    )
+    val (enableSimpMusic, onEnableSimpMusicChange) = rememberPreference(
+        key = com.nanzbeatles.nanas.constants.EnableSimpMusicKey,
+        defaultValue = true,
+    )
+    val (enableRushLyrics, onEnableRushLyricsChange) = rememberPreference(
+        key = com.nanzbeatles.nanas.constants.EnableRushLyricsKey,
+        defaultValue = true,
+    )
+    val (enableMusixmatch, onEnableMusixmatchChange) = rememberPreference(
+        key = com.nanzbeatles.nanas.constants.EnableMusixmatchKey,
+        defaultValue = true,
+    )
+
+    val firstFocus = focusRequester ?: remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    var backButtonFocused by remember { mutableStateOf(false) }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
+                    if (backButtonFocused) {
+                        onNavigateUp?.invoke()
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            },
+        contentPadding = PaddingValues(start = 48.dp, top = 95.dp, end = 48.dp, bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        item {
+            TvSettingsHeader(
+                title = "Content",
+                onBackClick = onBackClick,
+                focusRequester = firstFocus,
+                onFocusChange = { backButtonFocused = it },
+            )
+        }
+
+        item {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 4.dp,
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Text(
+                        text = "Queue Behavior",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+
+                    Text(
+                        text = "Configure how the app behaves when playing songs from Quick Picks, Keep Listening, albums, playlists, and artist pages.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+
+        // Auto load more songs
+        item {
+            TvContentToggleRow(
+                title = "Auto load more songs",
+                subtitle = "Automatically add more songs when the end of the queue is reached, if possible",
+                checked = autoLoadMore,
+                onCheckedChange = onAutoLoadMoreChange,
+                icon = Icons.AutoMirrored.Filled.QueueMusic,
+            )
+        }
+
+        // Enable similar content
+        item {
+            TvContentToggleRow(
+                title = "Enable similar content",
+                subtitle = "Show similar songs in the queue",
+                checked = similarContentEnabled,
+                onCheckedChange = onSimilarContentEnabledChange,
+                icon = Icons.Filled.Tune,
+            )
+        }
+
+        item {
+            Text(
+                text = "LYRICS",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 8.dp).padding(top = 12.dp, bottom = 4.dp),
+            )
+        }
+
+        item {
+            TvSettingsCategoryItem(
+                title = "Preferred lyrics provider",
+                subtitle = preferredProvider.tvLabel,
+                onClick = {
+                    val providers = PreferredLyricsProvider.values()
+                    val nextIndex = (providers.indexOf(preferredProvider) + 1) % providers.size
+                    onPreferredProviderChange(providers[nextIndex])
+                },
+                icon = Icons.Filled.Lyrics,
+            )
+        }
+
+        item {
+            TvContentToggleRow(
+                title = "BetterLyrics",
+                subtitle = "Allow BetterLyrics results",
+                checked = enableBetterLyrics,
+                onCheckedChange = onEnableBetterLyricsChange,
+                icon = Icons.Filled.Lyrics,
+            )
+        }
+
+        item {
+            TvContentToggleRow(
+                title = "RushLyrics",
+                subtitle = "Allow RushLyrics results",
+                checked = enableRushLyrics,
+                onCheckedChange = onEnableRushLyricsChange,
+                icon = Icons.Filled.Lyrics,
+            )
+        }
+
+        item {
+            TvContentToggleRow(
+                title = "LrcLib",
+                subtitle = "Allow LrcLib results",
+                checked = enableLrclib,
+                onCheckedChange = onEnableLrclibChange,
+                icon = Icons.Filled.Lyrics,
+            )
+        }
+
+        item {
+            TvContentToggleRow(
+                title = "KuGou",
+                subtitle = "Allow KuGou results",
+                checked = enableKugou,
+                onCheckedChange = onEnableKugouChange,
+                icon = Icons.Filled.Lyrics,
+            )
+        }
+
+        item {
+            TvContentToggleRow(
+                title = "SimpMusic",
+                subtitle = "Allow SimpMusic results",
+                checked = enableSimpMusic,
+                onCheckedChange = onEnableSimpMusicChange,
+                icon = Icons.Filled.Lyrics,
+            )
+        }
+
+        item {
+            TvContentToggleRow(
+                title = "Musixmatch",
+                subtitle = "Allow synced, rich-synced, and plain Musixmatch results",
+                checked = enableMusixmatch,
+                onCheckedChange = onEnableMusixmatchChange,
+                icon = Icons.Filled.Lyrics,
+            )
+        }
+    }
+}
+
+private val PreferredLyricsProvider.tvLabel: String
+    get() = when (this) {
+        PreferredLyricsProvider.LRCLIB -> "LrcLib"
+        PreferredLyricsProvider.KUGOU -> "KuGou"
+        PreferredLyricsProvider.BETTER_LYRICS -> "BetterLyrics"
+        PreferredLyricsProvider.SIMPMUSIC -> "SimpMusic"
+        PreferredLyricsProvider.RUSH_LYRICS -> "RushLyrics"
+        PreferredLyricsProvider.PAXSENIX -> "Paxsenix"
+        PreferredLyricsProvider.MUSIXMATCH -> "Musixmatch"
+    }
+
+/**
+ * Standard focusable, clickable toggle row used inside the TV Content
+ * settings screen. Wraps a Surface + Switch and routes both card clicks
+ * and direct switch toggles to [onCheckedChange].
+ */
+@Composable
+private fun TvContentToggleRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+) {
+    var rowFocused by remember { mutableStateOf(false) }
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .onFocusChanged { rowFocused = it.isFocused }
+            .border(
+                width = if (rowFocused) 3.dp else 0.dp,
+                color = if (rowFocused) MaterialTheme.colorScheme.primary else Color.Transparent,
+                shape = RoundedCornerShape(16.dp),
+            )
+            .clickable { onCheckedChange(!checked) },
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 4.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+            )
+        }
+    }
+}
+
+@Composable
+fun TvSliderRow(
+    title: String,
+    subtitle: String,
+    value: Float,
+    valueRange: ClosedFloatingPointRange<Float>,
+    steps: Int = 0,
+    onValueChange: (Float) -> Unit,
+) {
+    var rowFocused by remember { mutableStateOf(false) }
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .onFocusChanged { rowFocused = it.isFocused }
+            .border(
+                width = if (rowFocused) 3.dp else 0.dp,
+                color = if (rowFocused) MaterialTheme.colorScheme.primary else Color.Transparent,
+                shape = RoundedCornerShape(16.dp),
+            )
+            .focusable()
+            .onPreviewKeyEvent { event ->
+                // Allow D-pad left/right to adjust slider, but let down/up pass through
+                if (event.type == KeyEventType.KeyDown) {
+                    when (event.key) {
+                        Key.DirectionLeft -> {
+                            val step = (valueRange.endInclusive - valueRange.start) / 10f
+                            onValueChange((value - step).coerceAtLeast(valueRange.start))
+                            true
+                        }
+                        Key.DirectionRight -> {
+                            val step = (valueRange.endInclusive - valueRange.start) / 10f
+                            onValueChange((value + step).coerceAtMost(valueRange.endInclusive))
+                            true
+                        }
+                        else -> false
+                    }
+                } else false
+            },
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 4.dp,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            Slider(
+                value = value,
+                onValueChange = onValueChange,
+                valueRange = valueRange,
+                steps = steps,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusProperties { canFocus = false },
+            )
+        }
+    }
+}
+
+@Composable
+private fun TvPlaceholderSettings(
+    title: String,
+    body: String,
+    onBackClick: () -> Unit,
+    focusRequester: FocusRequester? = null,
+    onNavigateUp: (() -> Unit)? = null,
+) {
+    val firstFocus = focusRequester ?: remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    var backButtonFocused by remember { mutableStateOf(false) }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
+                    if (backButtonFocused) {
+                        onNavigateUp?.invoke()
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            },
+        contentPadding = PaddingValues(start = 48.dp, top = 95.dp, end = 48.dp, bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        item {
+            TvSettingsHeader(
+                title = title,
+                onBackClick = onBackClick,
+                focusRequester = firstFocus,
+                onFocusChange = { backButtonFocused = it },
+            )
+        }
+        item {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+            ) {
+                Text(
+                    text = body,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(24.dp),
+                )
+            }
+        }
+    }
+}
+
+/* -------------------------- Shared header -------------------------- */
+
+@Composable
+fun TvSettingsHeader(
+    title: String,
+    onBackClick: () -> Unit,
+    focusRequester: FocusRequester? = null,
+    onFocused: (() -> Unit)? = null,
+    onFocusChange: ((Boolean) -> Unit)? = null,
+) {
+    val backFocus = focusRequester ?: remember { FocusRequester() }
+    if (focusRequester == null) {
+        LaunchedEffect(Unit) { runCatching { backFocus.requestFocus() } }
+    }
+    var focused by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (focused) 1.06f else 1f,
+        label = "tvBackScale",
+    )
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(
+            onClick = onBackClick,
+            modifier = Modifier
+                .size(64.dp)
+                .focusRequester(backFocus)
+                .onFocusChanged { state ->
+                    focused = state.isFocused
+                    onFocusChange?.invoke(state.isFocused)
+                    if (state.isFocused) onFocused?.invoke()
+                }
+                .graphicsLayer { scaleX = scale; scaleY = scale }
+                .border(
+                    width = if (focused) 3.dp else 0.dp,
+                    color = if (focused) MaterialTheme.colorScheme.primary else Color.Transparent,
+                    shape = CircleShape,
+                ),
+        ) {
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back",
+                tint = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.size(32.dp),
+            )
+        }
+
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+
+        Spacer(modifier = Modifier.size(64.dp))
+    }
+}
+
+/* -------------------------- System Settings -------------------------- */
+
+@Composable
+fun TvSystemSettingsScreen(
+    onBackClick: () -> Unit,
+    focusRequester: FocusRequester? = null,
+    onNavigateUp: (() -> Unit)? = null,
+) {
+    BackHandler { onBackClick() }
+    val (hdmiCecEnabled, onHdmiCecEnabledChange) = rememberPreference(
+        com.nanzbeatles.nanas.constants.TvHdmiCecEnabledKey, true,
+    )
+    val (autoPlayOnBoot, onAutoPlayOnBootChange) = rememberPreference(
+        com.nanzbeatles.nanas.constants.TvAutoPlayOnBootKey, false,
+    )
+    val (screenSaverTimeout, onScreenSaverTimeoutChange) = rememberPreference(
+        com.nanzbeatles.nanas.constants.TvScreenSaverTimeoutKey, 0,
+    )
+    val (audioOutput, onAudioOutputChange) = rememberPreference(
+        com.nanzbeatles.nanas.constants.TvAudioOutputKey, "auto",
+    )
+
+    val firstFocus = focusRequester ?: remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    var backButtonFocused by remember { mutableStateOf(false) }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
+                    if (backButtonFocused) {
+                        onNavigateUp?.invoke()
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            },
+        contentPadding = PaddingValues(start = 48.dp, top = 95.dp, end = 48.dp, bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        item {
+            TvSettingsHeader(
+                title = "System",
+                onBackClick = onBackClick,
+                focusRequester = firstFocus,
+                onFocusChange = { backButtonFocused = it },
+            )
+        }
+
+        item {
+            Text(
+                text = "TV INTEGRATION",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            )
+        }
+
+        item {
+            TvContentToggleRow(
+                title = "HDMI-CEC Control",
+                subtitle = "Allow TV remote to control playback via HDMI-CEC",
+                checked = hdmiCecEnabled,
+                onCheckedChange = onHdmiCecEnabledChange,
+                icon = Icons.Filled.Tune,
+            )
+        }
+
+        item {
+            TvContentToggleRow(
+                title = "Auto-play on Boot",
+                subtitle = "Resume playback when the TV starts",
+                checked = autoPlayOnBoot,
+                onCheckedChange = onAutoPlayOnBootChange,
+                icon = Icons.Filled.PlayArrow,
+            )
+        }
+
+        item {
+            val (keepScreenOn, onKeepScreenOnChange) = rememberPreference(
+                com.nanzbeatles.nanas.constants.KeepScreenOn, false,
+            )
+            TvContentToggleRow(
+                title = "Keep Screen On",
+                subtitle = "Prevent screen from dimming while music plays",
+                checked = keepScreenOn,
+                onCheckedChange = onKeepScreenOnChange,
+                icon = Icons.Filled.DarkMode,
+            )
+        }
+
+        item {
+            TvSettingsCategoryItem(
+                title = "Screen Saver Timeout",
+                subtitle = when (screenSaverTimeout) {
+                    0 -> "Never"
+                    5 -> "5 minutes"
+                    10 -> "10 minutes"
+                    15 -> "15 minutes"
+                    30 -> "30 minutes"
+                    60 -> "1 hour"
+                    else -> "Disabled"
+                },
+                onClick = {
+                    val next = when (screenSaverTimeout) {
+                        0 -> 5
+                        5 -> 10
+                        10 -> 15
+                        15 -> 30
+                        30 -> 60
+                        else -> 0
+                    }
+                    onScreenSaverTimeoutChange(next)
+                },
+                icon = Icons.Filled.DarkMode,
+            )
+        }
+
+        item {
+            Text(
+                text = "AUDIO OUTPUT",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
+            )
+        }
+
+        item {
+            TvSettingsCategoryItem(
+                title = "Audio Output",
+                subtitle = when (audioOutput) {
+                    "auto" -> "Automatic (system default)"
+                    "tv_speakers" -> "TV Speakers"
+                    "optical" -> "Optical / S/PDIF"
+                    "hdmi_arc" -> "HDMI ARC"
+                    else -> "Automatic"
+                },
+                onClick = {
+                    val next = when (audioOutput) {
+                        "auto" -> "tv_speakers"
+                        "tv_speakers" -> "optical"
+                        "optical" -> "hdmi_arc"
+                        else -> "auto"
+                    }
+                    onAudioOutputChange(next)
+                },
+                icon = Icons.Filled.MusicNote,
+            )
+        }
+    }
+}

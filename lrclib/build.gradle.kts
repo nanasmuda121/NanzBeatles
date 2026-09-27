@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.auramusic.lrclib"
+    namespace = "com.nanzbeatles.lrclib"
     compileSdk = 36
 
     defaultConfig {

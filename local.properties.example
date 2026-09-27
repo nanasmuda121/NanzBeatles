@@ -1,4 +1,4 @@
-# Local Configuration for AuraMusic
+# Local Configuration for NanzBeatles
 # Copy this file to local.properties and fill in your actual values
 # DO NOT commit local.properties to version control
 
@@ -23,13 +23,13 @@ debug.persistent.keyPassword=android
 # Release Keystore (for Google Play release builds)
 release.storeFile=app/keystore/release.keystore
 release.storePassword=YOUR_KEYSTORE_PASSWORD_HERE
-release.keyAlias=auramusic
+release.keyAlias=nanzbeatles
 release.keyPassword=YOUR_KEY_PASSWORD_HERE
 
 # Default Debug Keystore
 debug.storeFile=app/keystore/debug.keystore
 debug.storePassword=android
-debug.keyAlias=auramusicdebug
+debug.keyAlias=nanzbeatlesdebug
 debug.keyPassword=android
 
 # ============================================================================

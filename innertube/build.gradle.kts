@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.auramusic.innertube"
+    namespace = "com.nanzbeatles.innertube"
     compileSdk = 36
 
     defaultConfig {

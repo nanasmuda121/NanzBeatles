@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.auramusic.musixmatch"
+    namespace = "com.nanzbeatles.musixmatch"
     compileSdk = 36
 
     defaultConfig {

@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.auramusic.lastfm"
+    namespace = "com.nanzbeatles.lastfm"
     compileSdk = 36
 
     defaultConfig {

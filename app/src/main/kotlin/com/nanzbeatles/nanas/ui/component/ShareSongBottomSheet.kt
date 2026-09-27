@@ -25,9 +25,16 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
+import com.nanzbeatles.nanas.LocalDatabase
+import com.nanzbeatles.nanas.LocalPlayerConnection
+import com.nanzbeatles.nanas.lyrics.LyricsEntry
+import com.nanzbeatles.nanas.lyrics.LyricsUtils
+import com.nanzbeatles.nanas.models.MediaMetadata
+import kotlinx.coroutines.flow.firstOrNull
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -61,8 +68,18 @@ fun ShareSongBottomSheet(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    val database = LocalDatabase.current
     var cardFile by remember { mutableStateOf<File?>(null) }
     var isGenerating by remember { mutableStateOf(true) }
+    var showLyricVideoDialog by remember { mutableStateOf(false) }
+    var lyricsEntries by remember { mutableStateOf<List<LyricsEntry>?>(null) }
+
+    LaunchedEffect(songData.id) {
+        val entity = database.lyrics(songData.id).firstOrNull()
+        if (entity != null && entity.lyrics.isNotBlank()) {
+            lyricsEntries = LyricsUtils.parseLyrics(entity.lyrics)
+        }
+    }
 
     // Pre-generate the share card when the sheet opens
     LaunchedEffect(songData) {
@@ -218,6 +235,60 @@ fun ShareSongBottomSheet(
                             .fillMaxWidth()
                             .padding(horizontal = 24.dp, vertical = 16.dp)
                     ) {
+                        // "Buat Video Lirik" button
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp))
+                                .clickable { showLyricVideoDialog = true },
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .background(MaterialTheme.colorScheme.primary, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.movie),
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                                Spacer(Modifier.width(14.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Buat Video Lirik",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                    Text(
+                                        text = "Ekspor video Canvas piringan berputar & audio",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                                    )
+                                }
+                                Icon(
+                                    painter = painterResource(R.drawable.navigate_next),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(Modifier.height(20.dp))
+
                         Text(
                             "Bagikan ke",
                             style = MaterialTheme.typography.titleMedium,
@@ -261,6 +332,28 @@ fun ShareSongBottomSheet(
                 }
             }
         }
+    }
+
+    if (showLyricVideoDialog) {
+        val metadata = remember(songData) {
+            MediaMetadata(
+                id = songData.id,
+                title = songData.title,
+                artists = listOf(MediaMetadata.Artist(name = songData.artist, id = null)),
+                duration = (songData.duration ?: 0L).toInt(),
+                thumbnailUrl = songData.thumbnailUrl,
+                album = songData.album?.let { MediaMetadata.Album(id = "", title = it) }
+            )
+        }
+        val playerConnection = LocalPlayerConnection.current
+        val currentPosition = playerConnection?.player?.currentPosition ?: 0L
+
+        LyricVideoCreationDialog(
+            mediaMetadata = metadata,
+            lyrics = lyricsEntries,
+            currentPlaybackPositionMs = currentPosition,
+            onDismiss = { showLyricVideoDialog = false }
+        )
     }
 }
 

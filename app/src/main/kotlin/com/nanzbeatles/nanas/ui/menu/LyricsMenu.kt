@@ -58,10 +58,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.nanzbeatles.nanas.LocalDatabase
+import com.nanzbeatles.nanas.LocalPlayerConnection
 import com.nanzbeatles.nanas.R
 import com.nanzbeatles.nanas.db.entities.LyricsEntity
 import com.nanzbeatles.nanas.db.entities.SongEntity
+import com.nanzbeatles.nanas.lyrics.LyricsUtils
 import com.nanzbeatles.nanas.models.MediaMetadata
+import com.nanzbeatles.nanas.ui.component.LyricVideoCreationDialog
 import com.nanzbeatles.nanas.ui.component.DefaultDialog
 import com.nanzbeatles.nanas.ui.component.ListDialog
 import com.nanzbeatles.nanas.ui.component.Material3MenuGroup
@@ -113,6 +116,26 @@ fun LyricsMenu(
                     )
                 }
             },
+        )
+    }
+
+    var showLyricVideoDialog by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    if (showLyricVideoDialog) {
+        val rawLyrics = lyricsProvider()?.lyrics.orEmpty()
+        val parsedEntries = remember(rawLyrics) {
+            if (rawLyrics.isNotBlank()) LyricsUtils.parseLyrics(rawLyrics) else emptyList()
+        }
+        val playerConnection = LocalPlayerConnection.current
+        val currentPosition = playerConnection?.player?.currentPosition ?: 0L
+
+        LyricVideoCreationDialog(
+            mediaMetadata = mediaMetadataProvider(),
+            lyrics = parsedEntries,
+            currentPlaybackPositionMs = currentPosition,
+            onDismiss = { showLyricVideoDialog = false }
         )
     }
 
@@ -416,6 +439,21 @@ fun LyricsMenu(
         item {
             Material3MenuGroup(
                 items = buildList {
+                    add(
+                        Material3MenuItemData(
+                            title = { Text("Buat Video Lirik") },
+                            icon = {
+                                Icon(
+                                    painter = painterResource(R.drawable.movie),
+                                    contentDescription = null,
+                                )
+                            },
+                            onClick = {
+                                showLyricVideoDialog = true
+                            }
+                        )
+                    )
+
                     // Add "Translate with AI" option if auto-translate is disabled
                     if (!autoTranslateLyrics && openRouterApiKey.isNotBlank()) {
                         add(

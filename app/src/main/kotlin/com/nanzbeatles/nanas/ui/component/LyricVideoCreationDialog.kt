@@ -27,11 +27,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -41,6 +43,7 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -164,9 +167,62 @@ fun LyricVideoCreationDialog(
                             textAlign = TextAlign.Center
                         )
 
-                        Spacer(Modifier.height(20.dp))
+                        var isSavedToGallery by remember { mutableStateOf(false) }
+
+                        Spacer(Modifier.height(18.dp))
+
+                        // Primary Save to Gallery Button
+                        Button(
+                            onClick = {
+                                val uri = LyricVideoShareUtils.saveVideoToGallery(
+                                    context = context,
+                                    videoFile = generatedVideoFile!!,
+                                    songTitle = mediaMetadata.title,
+                                    songArtist = artistNames
+                                )
+                                if (uri != null) {
+                                    isSavedToGallery = true
+                                    Toast.makeText(context, "Video berhasil disimpan ke Galeri (Movies/NanzBeatles)!", Toast.LENGTH_LONG).show()
+                                } else {
+                                    Toast.makeText(context, "Gagal menyimpan video ke Galeri", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isSavedToGallery) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Icon(
+                                painter = painterResource(if (isSavedToGallery) R.drawable.check else R.drawable.download),
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = if (isSavedToGallery) "Tersimpan di Galeri" else "Unduh / Simpan ke Galeri",
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Spacer(Modifier.height(16.dp))
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                        ) {
+                            HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
+                            Text(
+                                text = "  atau bagikan ke  ",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
+                        }
+
+                        Spacer(Modifier.height(14.dp))
                         Text(
-                            text = "Bagikan ke:",
+                            text = "Pilih Platform:",
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.SemiBold
                         )

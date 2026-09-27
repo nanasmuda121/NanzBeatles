@@ -6,7 +6,6 @@
 package com.nanzbeatles.nanas.playback
 
 import com.nanzbeatles.nanas.App
-import com.nanzbeatles.nanas.utils.YTPlayerUtils
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.okhttp.OkHttp
@@ -291,10 +290,9 @@ object BeatlesCanvasRepository {
         artist: String?,
         album: String? = null,
         durationMs: Long? = null,
-        videoId: String? = null,
     ): String? {
-        if (title.isNullOrBlank() && artist.isNullOrBlank() && album.isNullOrBlank() && videoId.isNullOrBlank()) return null
-        val key = listOf(title, artist, album, durationMs?.toString(), videoId).joinToString("\u0001") { normalize(it ?: "") }
+        if (title.isNullOrBlank() && artist.isNullOrBlank() && album.isNullOrBlank()) return null
+        val key = listOf(title, artist, album, durationMs?.toString()).joinToString("\u0001") { normalize(it ?: "") }
         val now = System.currentTimeMillis()
         synchronized(resultCache) {
             val hit = resultCache[key]
@@ -315,31 +313,12 @@ object BeatlesCanvasRepository {
         // 2) Remote (Render server, if active)
         warmUp()
         val remoteHit = remoteLookup(title, artist, album, durationMs)
-        if (remoteHit != null) {
-            synchronized(resultCache) {
-                resultCache[key] = CacheEntry(remoteHit, now + POSITIVE_TTL_MS)
-            }
-            return remoteHit
-        }
-
-        // 3) Video Stream Fallback (YouTube Visualizer / Music Video stream)
-        if (!videoId.isNullOrBlank()) {
-            val videoStreamHit = runCatching {
-                YTPlayerUtils.getVideoStreamUrl(videoId).getOrNull()
-            }.getOrNull()
-
-            if (videoStreamHit != null) {
-                Timber.d("AuraCanvas: fallback to video stream for $videoId")
-                synchronized(resultCache) {
-                    resultCache[key] = CacheEntry(videoStreamHit, now + (3 * 60 * 60 * 1000L)) // 3h TTL
-                }
-                return videoStreamHit
-            }
-        }
-
         synchronized(resultCache) {
-            resultCache[key] = CacheEntry(null, now + NEGATIVE_TTL_MS)
+            resultCache[key] = CacheEntry(
+                remoteHit,
+                now + if (remoteHit != null) POSITIVE_TTL_MS else NEGATIVE_TTL_MS,
+            )
         }
-        return null
+        return remoteHit
     }
 }

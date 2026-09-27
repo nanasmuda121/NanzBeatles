@@ -76,7 +76,20 @@ object LyricVideoEncoder {
             encoder.configure(videoFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
             encoder.start()
 
-            val renderer = LyricVideoRenderer(VIDEO_WIDTH, VIDEO_HEIGHT, config.caseBitmap).apply {
+            val artistHandle = if (config.songArtist.isNotBlank()) {
+                val clean = config.songArtist.trim()
+                if (clean.startsWith("@")) clean else "@$clean"
+            } else {
+                "@NanzBeatles"
+            }
+
+            val renderer = LyricVideoRenderer(
+                width = VIDEO_WIDTH,
+                height = VIDEO_HEIGHT,
+                caseBitmap = config.caseBitmap,
+                brandText = "NanzBeatles",
+                artistHandle = artistHandle
+            ).apply {
                 setCoverBitmap(config.coverBitmap)
             }
 
@@ -267,59 +280,73 @@ object LyricVideoEncoder {
                 try {
                     muxer.addTrack(audioFormat)
                 } catch (e: Exception) {
-                    Timber.tag(TAG).w(e, "Muxer does not support audio format: $audioFormat")
+                    Timber.tag(TAG).e(e, "Muxer does not support audio format: $audioFormat")
                     -1
                 }
             } else -1
-            muxer.start()
 
-            // 1. Copy Video Track
-            val buffer = ByteBuffer.allocateDirect(1024 * 1024)
-            val bufferInfo = MediaCodec.BufferInfo()
-
-            while (true) {
-                buffer.clear()
-                val sampleSize = videoExtractor.readSampleData(buffer, 0)
-                if (sampleSize < 0) break
-
-                bufferInfo.offset = 0
-                bufferInfo.size = sampleSize
-                bufferInfo.presentationTimeUs = videoExtractor.sampleTime
-                bufferInfo.flags = videoExtractor.sampleFlags
-
-                muxer.writeSampleData(outVideoTrack, buffer, bufferInfo)
-                videoExtractor.advance()
+            if (outAudioTrack == -1 || audioTrack == -1) {
+                error("Format audio tidak didukung oleh MediaMuxer atau trek audio tidak ditemukan. Pastikan stream audio AAC/MP4 tersedia.")
             }
 
-            // 2. Copy Audio Track Trimmed
-            if (outAudioTrack != -1 && audioTrack != -1) {
-                val startUs = startTimeMs * 1000L
-                val endUs = (startTimeMs + durationMs) * 1000L
+            muxer.start()
 
-                audioExtractor.seekTo(startUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
-                var firstSampleTimeUs = -1L
+            // Seek audio to starting point
+            val startUs = startTimeMs * 1000L
+            val endUs = (startTimeMs + durationMs) * 1000L
 
-                while (true) {
-                    buffer.clear()
-                    val sampleSize = audioExtractor.readSampleData(buffer, 0)
-                    if (sampleSize < 0) break
+            audioExtractor.seekTo(startUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
+            while (audioExtractor.sampleTime in 0 until startUs) {
+                audioExtractor.advance()
+            }
+            val firstAudioSampleTimeUs = if (audioExtractor.sampleTime >= 0) audioExtractor.sampleTime else startUs
 
-                    val sampleTime = audioExtractor.sampleTime
-                    if (sampleTime > endUs) break
+            // Interleaved copying: Video & Audio in presentation timestamp order
+            val videoBuffer = ByteBuffer.allocateDirect(1024 * 1024)
+            val audioBuffer = ByteBuffer.allocateDirect(256 * 1024)
+            val videoInfo = MediaCodec.BufferInfo()
+            val audioInfo = MediaCodec.BufferInfo()
 
-                    if (sampleTime >= startUs) {
-                        if (firstSampleTimeUs == -1L) {
-                            firstSampleTimeUs = sampleTime
-                        }
+            var videoDone = false
+            var audioDone = false
 
-                        bufferInfo.offset = 0
-                        bufferInfo.size = sampleSize
-                        bufferInfo.presentationTimeUs = maxOf(0L, sampleTime - firstSampleTimeUs)
-                        bufferInfo.flags = audioExtractor.sampleFlags
+            while (!videoDone || !audioDone) {
+                val currentVideoTime = if (!videoDone) videoExtractor.sampleTime else Long.MAX_VALUE
+                val rawAudioTime = if (!audioDone) audioExtractor.sampleTime else Long.MAX_VALUE
+                val currentAudioTime = if (rawAudioTime in 0..endUs) {
+                    maxOf(0L, rawAudioTime - firstAudioSampleTimeUs)
+                } else {
+                    Long.MAX_VALUE
+                }
 
-                        muxer.writeSampleData(outAudioTrack, buffer, bufferInfo)
+                if (!videoDone && (audioDone || currentVideoTime <= currentAudioTime)) {
+                    videoBuffer.clear()
+                    val sampleSize = videoExtractor.readSampleData(videoBuffer, 0)
+                    if (sampleSize < 0) {
+                        videoDone = true
+                    } else {
+                        videoInfo.offset = 0
+                        videoInfo.size = sampleSize
+                        videoInfo.presentationTimeUs = videoExtractor.sampleTime
+                        videoInfo.flags = videoExtractor.sampleFlags
+                        muxer.writeSampleData(outVideoTrack, videoBuffer, videoInfo)
+                        videoExtractor.advance()
                     }
-                    audioExtractor.advance()
+                } else if (!audioDone) {
+                    audioBuffer.clear()
+                    val sampleSize = audioExtractor.readSampleData(audioBuffer, 0)
+                    val sampleTime = audioExtractor.sampleTime
+
+                    if (sampleSize < 0 || sampleTime > endUs) {
+                        audioDone = true
+                    } else {
+                        audioInfo.offset = 0
+                        audioInfo.size = sampleSize
+                        audioInfo.presentationTimeUs = maxOf(0L, sampleTime - firstAudioSampleTimeUs)
+                        audioInfo.flags = audioExtractor.sampleFlags
+                        muxer.writeSampleData(outAudioTrack, audioBuffer, audioInfo)
+                        audioExtractor.advance()
+                    }
                 }
             }
 

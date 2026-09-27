@@ -40,7 +40,7 @@ class LyricVideoRenderer(
     val height: Int = 720,
     private val caseBitmap: Bitmap? = null,
     private val brandText: String = "NanzBeatles",
-    private val artistHandle: String = "@Xxxtentaction"
+    private val artistHandle: String = "@NanzBeatles"
 ) {
 
     // Paints
@@ -95,17 +95,24 @@ class LyricVideoRenderer(
         strokeWidth = height * 0.007f // ~5px on 720p
     }
 
-    private val lyricsPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    private val lyricsActivePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE
-        textSize = height * 0.078f // ~56px on 720p
-        typeface = Typeface.create("sans-serif-bold", Typeface.BOLD)
+        textSize = height * 0.074f // ~53px on 720p
+        typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
         textAlign = Paint.Align.LEFT
         setShadowLayer(10f, 0f, 3f, Color.parseColor("#A0000000"))
     }
 
-    private val lyricsSecondaryPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.argb(170, 255, 255, 255)
-        textSize = height * 0.045f
+    private val lyricsUpcomingPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.argb(95, 255, 255, 255)
+        textSize = height * 0.074f
+        typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
+        textAlign = Paint.Align.LEFT
+    }
+
+    private val lyricsNextLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.argb(90, 255, 255, 255)
+        textSize = height * 0.044f // ~32px
         typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
         textAlign = Paint.Align.LEFT
     }
@@ -359,11 +366,16 @@ class LyricVideoRenderer(
     }
 
     private fun renderArtistHandle(canvas: Canvas) {
+        val handle = if (artistHandle.isNotBlank()) {
+            if (artistHandle.startsWith("@")) artistHandle else "@$artistHandle"
+        } else {
+            "@NanzBeatles"
+        }
         canvas.save()
         // Rotate 90 degrees clockwise at handle position so text flows top to bottom
         canvas.translate(handleX, discCenterY)
         canvas.rotate(90f)
-        canvas.drawText(artistHandle, 0f, 0f, handlePaint)
+        canvas.drawText(handle, 0f, 0f, handlePaint)
         canvas.restore()
     }
 
@@ -395,6 +407,11 @@ class LyricVideoRenderer(
         }
     }
 
+    private data class TimedWord(
+        val text: String,
+        val progress: Float
+    )
+
     private fun renderLyrics(
         canvas: Canvas,
         currentTimeMs: Long,
@@ -402,34 +419,164 @@ class LyricVideoRenderer(
         songTitle: String,
         songArtist: String
     ) {
-        // Find active lyrics entry
-        val activeEntry = lyrics?.findLast { it.time <= currentTimeMs && it.text.isNotBlank() }
-        val activeText = activeEntry?.text?.trim()
+        val activeIndex = lyrics?.indexOfLast { it.time <= currentTimeMs && it.text.isNotBlank() } ?: -1
+        val activeEntry = if (activeIndex >= 0) lyrics?.get(activeIndex) else null
+        val nextEntry = if (activeIndex >= 0 && activeIndex + 1 < (lyrics?.size ?: 0)) {
+            lyrics?.subList(activeIndex + 1, lyrics.size)?.firstOrNull { it.text.isNotBlank() }
+        } else null
 
-        if (!activeText.isNullOrEmpty()) {
-            val lines = wrapText(activeText, lyricsMaxWidth, lyricsPaint, maxLines = 2)
-            val lineHeight = lyricsPaint.textSize * 1.25f
+        if (activeEntry != null) {
+            val timedWords = mutableListOf<TimedWord>()
+            val wordTimings = activeEntry.words?.filter { it.text.isNotBlank() }
 
-            var currentY = lyricsY - ((lines.size - 1) * lineHeight / 2f)
-            for (line in lines) {
-                canvas.drawText(line, lyricsX, currentY, lyricsPaint)
+            if (!wordTimings.isNullOrEmpty()) {
+                // Syllable / word-by-word timestamps from provider
+                for (w in wordTimings) {
+                    val wStartMs = (w.startTime * 1000).toLong()
+                    val wEndMs = (w.endTime * 1000).toLong()
+                    val wDur = (wEndMs - wStartMs).coerceAtLeast(1L)
+                    val prog = when {
+                        currentTimeMs >= wEndMs -> 1f
+                        currentTimeMs < wStartMs -> 0f
+                        else -> ((currentTimeMs - wStartMs).toFloat() / wDur).coerceIn(0f, 1f)
+                    }
+                    timedWords.add(TimedWord(w.text, prog))
+                }
+            } else {
+                // Progressive word highlight for standard LRC lines
+                val rawWords = activeEntry.text.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+                val lineStartMs = activeEntry.time
+                val lineEndMs = nextEntry?.time?.takeIf { it > lineStartMs } ?: activeEntry.effectiveEndTime(3500L)
+                val lineDur = (lineEndMs - lineStartMs).coerceAtLeast(400L)
+                val lineProgress = ((currentTimeMs - lineStartMs).toFloat() / lineDur).coerceIn(0f, 1f)
+
+                val count = rawWords.size
+                for ((idx, w) in rawWords.withIndex()) {
+                    val wStart = idx.toFloat() / count
+                    val wEnd = (idx + 1).toFloat() / count
+                    val prog = when {
+                        lineProgress >= wEnd -> 1f
+                        lineProgress <= wStart -> 0f
+                        else -> ((lineProgress - wStart) / (wEnd - wStart)).coerceIn(0f, 1f)
+                    }
+                    timedWords.add(TimedWord(w, prog))
+                }
+            }
+
+            // Wrap words into at most 2 visual lines
+            val linesOfWords = wrapTimedWords(timedWords, lyricsMaxWidth, lyricsActivePaint, maxLines = 2)
+            val lineHeight = lyricsActivePaint.textSize * 1.30f
+            val totalActiveHeight = linesOfWords.size * lineHeight
+            var currentY = lyricsY - (totalActiveHeight / 2f) + (lyricsActivePaint.textSize * 0.85f)
+            val spaceWidth = lyricsActivePaint.measureText(" ")
+
+            for (line in linesOfWords) {
+                var curX = lyricsX
+                for (tw in line) {
+                    val wordWidth = lyricsActivePaint.measureText(tw.text)
+
+                    when {
+                        tw.progress >= 1f -> {
+                            // Fully sung: pure glowing white
+                            canvas.drawText(tw.text, curX, currentY, lyricsActivePaint)
+                        }
+                        tw.progress <= 0f -> {
+                            // Upcoming: dimmed translucent white
+                            canvas.drawText(tw.text, curX, currentY, lyricsUpcomingPaint)
+                        }
+                        else -> {
+                            // Actively being sung: smooth linear gradient wipe!
+                            val sweepPaint = Paint(lyricsActivePaint).apply {
+                                val pSpread = 0.08f
+                                val p0 = (tw.progress - pSpread).coerceAtLeast(0f)
+                                val p1 = (tw.progress + pSpread).coerceAtMost(1f)
+                                shader = LinearGradient(
+                                    curX, 0f, curX + wordWidth, 0f,
+                                    intArrayOf(Color.WHITE, Color.WHITE, Color.argb(95, 255, 255, 255), Color.argb(95, 255, 255, 255)),
+                                    floatArrayOf(0f, p0, p1, 1f),
+                                    Shader.TileMode.CLAMP
+                                )
+                            }
+                            canvas.drawText(tw.text, curX, currentY, sweepPaint)
+                        }
+                    }
+                    curX += wordWidth + spaceWidth
+                }
                 currentY += lineHeight
+            }
+
+            // Draw Next Upcoming Lyric Line in subtle dim font (Apple Music style preview)
+            if (nextEntry != null && nextEntry.text.isNotBlank()) {
+                val nextLineText = nextEntry.text.trim()
+                val nextLines = wrapText(nextLineText, lyricsMaxWidth, lyricsNextLinePaint, maxLines = 1)
+                if (nextLines.isNotEmpty()) {
+                    canvas.drawText(nextLines[0], lyricsX, currentY + (height * 0.025f), lyricsNextLinePaint)
+                }
             }
         } else {
             // Instrumental or pre-intro section
-            val titleLines = wrapText(songTitle, lyricsMaxWidth, lyricsPaint, maxLines = 2)
-            val lineHeight = lyricsPaint.textSize * 1.2f
-            var currentY = lyricsY - (lineHeight / 2f)
+            val titleLines = wrapText(songTitle, lyricsMaxWidth, lyricsActivePaint, maxLines = 2)
+            val lineHeight = lyricsActivePaint.textSize * 1.25f
+            var currentY = lyricsY - (lineHeight / 2f) + (lyricsActivePaint.textSize * 0.85f)
 
             for (line in titleLines) {
-                canvas.drawText(line, lyricsX, currentY, lyricsPaint)
+                canvas.drawText(line, lyricsX, currentY, lyricsActivePaint)
                 currentY += lineHeight
             }
 
             if (songArtist.isNotBlank()) {
-                canvas.drawText(songArtist, lyricsX, currentY + (height * 0.04f), lyricsSecondaryPaint)
+                canvas.drawText(songArtist, lyricsX, currentY + (height * 0.025f), lyricsNextLinePaint)
             }
         }
+    }
+
+    private fun wrapTimedWords(
+        words: List<TimedWord>,
+        maxWidth: Float,
+        paint: Paint,
+        maxLines: Int
+    ): List<List<TimedWord>> {
+        val lines = mutableListOf<MutableList<TimedWord>>()
+        var currentLine = mutableListOf<TimedWord>()
+        var currentLineWidth = 0f
+        val spaceWidth = paint.measureText(" ")
+
+        for (word in words) {
+            val wordWidth = paint.measureText(word.text)
+            val addedWidth = if (currentLine.isEmpty()) wordWidth else spaceWidth + wordWidth
+
+            if (currentLineWidth + addedWidth <= maxWidth || currentLine.isEmpty()) {
+                currentLine.add(word)
+                currentLineWidth += addedWidth
+            } else {
+                lines.add(currentLine)
+                if (lines.size == maxLines - 1) {
+                    val remaining = words.subList(words.indexOf(word), words.size)
+                    val lastLine = mutableListOf<TimedWord>()
+                    var lastLineWidth = 0f
+                    for (rw in remaining) {
+                        val rwWidth = paint.measureText(rw.text)
+                        val rAdded = if (lastLine.isEmpty()) rwWidth else spaceWidth + rwWidth
+                        if (lastLineWidth + rAdded <= maxWidth || lastLine.isEmpty()) {
+                            lastLine.add(rw)
+                            lastLineWidth += rAdded
+                        } else {
+                            break
+                        }
+                    }
+                    lines.add(lastLine)
+                    return lines
+                }
+                currentLine = mutableListOf(word)
+                currentLineWidth = wordWidth
+            }
+        }
+
+        if (currentLine.isNotEmpty() && lines.size < maxLines) {
+            lines.add(currentLine)
+        }
+
+        return lines
     }
 
     /**

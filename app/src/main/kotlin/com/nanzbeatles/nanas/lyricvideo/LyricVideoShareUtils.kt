@@ -35,6 +35,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import android.content.ContentValues
+import android.media.MediaScannerConnection
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
@@ -45,23 +51,25 @@ object LyricVideoShareUtils {
     private const val TAG = "LyricVideoShareUtils"
 
     /**
-     * Checks if the given local file is a valid, readable audio file that MediaExtractor can open.
+     * Checks if the given local file is a valid, readable AAC audio file that MediaExtractor and MediaMuxer can handle.
      */
     fun isValidAudioFile(file: File): Boolean {
         if (!file.exists() || file.length() < 32 * 1024L) return false
         val extractor = MediaExtractor()
         return try {
             extractor.setDataSource(file.absolutePath)
-            var hasAudio = false
+            var hasAacAudio = false
             for (i in 0 until extractor.trackCount) {
                 val format = extractor.getTrackFormat(i)
                 val mime = format.getString(MediaFormat.KEY_MIME) ?: ""
-                if (mime.startsWith("audio/")) {
-                    hasAudio = true
+                if (mime.equals(MediaFormat.MIMETYPE_AUDIO_AAC, ignoreCase = true) ||
+                    mime.contains("mp4a", ignoreCase = true) ||
+                    mime.startsWith("audio/mp4", ignoreCase = true)) {
+                    hasAacAudio = true
                     break
                 }
             }
-            hasAudio
+            hasAacAudio
         } catch (e: Exception) {
             Timber.tag(TAG).w(e, "Audio file validation failed for: ${file.absolutePath}")
             false
@@ -342,6 +350,64 @@ object LyricVideoShareUtils {
             if (platform != ShareUtils.SharePlatform.GENERIC) {
                 shareLyricVideo(context, videoFile, songTitle, songArtist, ShareUtils.SharePlatform.GENERIC)
             }
+        }
+    }
+
+    /**
+     * Saves the generated lyric video MP4 directly to the device Gallery (Movies/NanzBeatles).
+     */
+    fun saveVideoToGallery(
+        context: Context,
+        videoFile: File,
+        songTitle: String,
+        songArtist: String
+    ): Uri? {
+        if (!videoFile.exists() || videoFile.length() == 0L) return null
+        return try {
+            val safeTitle = songTitle.replace(Regex("[^a-zA-Z0-9_-]"), "_").take(40)
+            val fileName = "NanzBeatles_${safeTitle}_${System.currentTimeMillis()}.mp4"
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.Video.Media.DISPLAY_NAME, fileName)
+                    put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+                    put(MediaStore.Video.Media.RELATIVE_PATH, Environment.DIRECTORY_MOVIES + "/NanzBeatles")
+                    put(MediaStore.Video.Media.IS_PENDING, 1)
+                }
+
+                val resolver = context.contentResolver
+                val uri = resolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues)
+                    ?: return null
+
+                resolver.openOutputStream(uri)?.use { outStream ->
+                    videoFile.inputStream().use { inStream ->
+                        inStream.copyTo(outStream)
+                    }
+                }
+
+                contentValues.clear()
+                contentValues.put(MediaStore.Video.Media.IS_PENDING, 0)
+                resolver.update(uri, contentValues, null, null)
+                uri
+            } else {
+                @Suppress("DEPRECATION")
+                val moviesDir = File(
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
+                    "NanzBeatles"
+                ).apply { mkdirs() }
+                val targetFile = File(moviesDir, fileName)
+                videoFile.copyTo(targetFile, overwrite = true)
+                MediaScannerConnection.scanFile(
+                    context,
+                    arrayOf(targetFile.absolutePath),
+                    arrayOf("video/mp4"),
+                    null
+                )
+                Uri.fromFile(targetFile)
+            }
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "Failed to save video to gallery")
+            null
         }
     }
 }

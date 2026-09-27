@@ -497,6 +497,14 @@
     <string name="lyrics_glow_effect_desc">Aktifkan efek cahaya pada baris lirik saat ini</string>
     <string name="enhanced_lyrics">Lirik yang disempurnakan</string>
     <string name="enhanced_lyrics_desc">Aktifkan lirik yang disempurnakan dengan indikator intro bergelombang dan indikator gap</string>
+    <string name="lyrics_display_style">Tampilan lirik</string>
+    <string name="lyrics_display_style_desc">Pilih gaya tampilan lirik (Normal, Keren, Apple Music)</string>
+    <string name="lyrics_style_normal">Normal (Sebelum diubah)</string>
+    <string name="lyrics_style_normal_desc">Tampilan lirik klasik standar</string>
+    <string name="lyrics_style_keren">Keren (Setelah diubah)</string>
+    <string name="lyrics_style_keren_desc">Tampilan modern dengan animasi lirik dan gelombang</string>
+    <string name="lyrics_style_apple_music">Apple Music</string>
+    <string name="lyrics_style_apple_music_desc">Tampilan bergaya Apple Music dengan latar blur dinamis dan fokus lirik</string>
     <string name="lyrics_click_change">Lirik klik untuk mengubah</string>
     <string name="lyrics_auto_scroll">Gulir otomatis lirik</string>
     <string name="auto_scroll">Gulir otomatis</string>

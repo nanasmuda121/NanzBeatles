@@ -69,6 +69,8 @@ import com.nanzbeatles.nanas.constants.DefaultOpenTabKey
 import com.nanzbeatles.nanas.constants.DynamicThemeKey
 import com.nanzbeatles.nanas.constants.EnableDynamicIconKey
 import com.nanzbeatles.nanas.constants.EnhancedLyricsKey
+import com.nanzbeatles.nanas.constants.LyricsDisplayStyle
+import com.nanzbeatles.nanas.constants.LyricsDisplayStyleKey
 import com.nanzbeatles.nanas.constants.EnableHighRefreshRateKey
 import com.nanzbeatles.nanas.constants.GridItemSize
 import com.nanzbeatles.nanas.constants.GridItemsSizeKey
@@ -286,6 +288,11 @@ fun AppearanceSettings(
     val (connectedLines, onConnectedLinesChange) = rememberPreference(LyricsConnectedLinesKey, defaultValue = true)
     val (lyricsFont, onLyricsFontChange) = rememberEnumPreference(LyricsFontKey, defaultValue = LyricsFont.SYSTEM_DEFAULT)
     val (enhancedLyrics, onEnhancedLyricsChange) = rememberPreference(EnhancedLyricsKey, defaultValue = false)
+    val (lyricsDisplayStyle, onLyricsDisplayStyleChange) = rememberEnumPreference(
+        key = LyricsDisplayStyleKey,
+        defaultValue = if (enhancedLyrics) LyricsDisplayStyle.KEREN else LyricsDisplayStyle.NORMAL
+    )
+    var showLyricsDisplayStyleDialog by rememberSaveable { mutableStateOf(false) }
 
     val (sliderStyle, onSliderStyleChange) = rememberEnumPreference(
         SliderStyleKey,
@@ -636,6 +643,27 @@ fun AppearanceSettings(
                     PlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
                     PlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
                     PlayerBackgroundStyle.ANIMATED_GRADIENT -> stringResource(R.string.player_background_animated_gradient)
+                }
+            }
+        )
+    }
+
+    if (showLyricsDisplayStyleDialog) {
+        EnumDialog(
+            onDismiss = { showLyricsDisplayStyleDialog = false },
+            onSelect = {
+                onLyricsDisplayStyleChange(it)
+                onEnhancedLyricsChange(it != LyricsDisplayStyle.NORMAL)
+                showLyricsDisplayStyleDialog = false
+            },
+            title = stringResource(R.string.lyrics_display_style),
+            current = lyricsDisplayStyle,
+            values = listOf(LyricsDisplayStyle.NORMAL, LyricsDisplayStyle.KEREN, LyricsDisplayStyle.APPLE_MUSIC),
+            valueText = {
+                when (it) {
+                    LyricsDisplayStyle.NORMAL -> stringResource(R.string.lyrics_style_normal)
+                    LyricsDisplayStyle.KEREN -> stringResource(R.string.lyrics_style_keren)
+                    LyricsDisplayStyle.APPLE_MUSIC -> stringResource(R.string.lyrics_style_apple_music)
                 }
             }
         )
@@ -1946,36 +1974,28 @@ fun AppearanceSettings(
                     onClick = { onLyricsGlowEffectChange(!lyricsGlowEffect) }
                 ) else null,
                 Material3SettingsItem(
-                    icon = painterResource(R.drawable.lyrics),
-                    title = { Text(stringResource(R.string.enhanced_lyrics)) },
-                    description = { Text(stringResource(R.string.enhanced_lyrics_desc)) },
-                    trailingContent = {
-                        Switch(
-                            checked = enhancedLyrics,
-                            onCheckedChange = onEnhancedLyricsChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (enhancedLyrics) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
+                    icon = painterResource(R.drawable.palette),
+                    title = { Text(stringResource(R.string.lyrics_display_style)) },
+                    description = {
+                        Text(
+                            when (lyricsDisplayStyle) {
+                                LyricsDisplayStyle.NORMAL -> stringResource(R.string.lyrics_style_normal)
+                                LyricsDisplayStyle.KEREN -> stringResource(R.string.lyrics_style_keren)
+                                LyricsDisplayStyle.APPLE_MUSIC -> stringResource(R.string.lyrics_style_apple_music)
                             }
                         )
                     },
-                    onClick = { onEnhancedLyricsChange(!enhancedLyrics) }
+                    onClick = { showLyricsDisplayStyleDialog = true }
                 ),
-                // Text size: hidden when Enhanced Lyrics is enabled — text size
-                // is baked into the enhanced renderer for its motion calibration.
-                if (!enhancedLyrics) Material3SettingsItem(
+                // Text size: shown only in Normal mode
+                if (lyricsDisplayStyle == LyricsDisplayStyle.NORMAL) Material3SettingsItem(
                     icon = painterResource(R.drawable.lyrics),
                     title = { Text(stringResource(R.string.lyrics_text_size)) },
                     description = { Text("${lyricsTextSize.roundToInt()} sp") },
                     onClick = { showLyricsTextSizeDialog = true }
                 ) else null,
-                // Line spacing: hidden when Enhanced Lyrics is enabled (same reason).
-                if (!enhancedLyrics) Material3SettingsItem(
+                // Line spacing: shown only in Normal mode
+                if (lyricsDisplayStyle == LyricsDisplayStyle.NORMAL) Material3SettingsItem(
                     icon = painterResource(R.drawable.lyrics),
                     title = { Text(stringResource(R.string.lyrics_line_spacing)) },
                     description = { Text("${String.format("%.1f", lyricsLineSpacing)}x") },

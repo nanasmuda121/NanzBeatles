@@ -139,6 +139,8 @@ import com.nanzbeatles.nanas.constants.LyricsFont
 import com.nanzbeatles.nanas.constants.LyricsFontKey
 import com.nanzbeatles.nanas.constants.LyricsGlowEffectKey
 import com.nanzbeatles.nanas.constants.EnhancedLyricsKey
+import com.nanzbeatles.nanas.constants.LyricsDisplayStyle
+import com.nanzbeatles.nanas.constants.LyricsDisplayStyleKey
 import com.nanzbeatles.nanas.constants.LyricsInstrumentalGapMsKey
 import com.nanzbeatles.nanas.constants.LyricsLineSpacingKey
 import com.nanzbeatles.nanas.constants.LyricsRomanizeBelarusianKey
@@ -203,10 +205,11 @@ import kotlinx.coroutines.withContext
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Top-level Lyrics composable that dispatches between the Enhanced Lyrics
- * renderer (word-by-word, liquid glow, springs) and the original renderer
- * based on the [EnhancedLyricsKey] user preference. The public signature
- * stays unchanged so existing callers don't need to be updated.
+ * Top-level Lyrics composable that dispatches between:
+ * 1. NORMAL (Original/classic view before changes)
+ * 2. KEREN (Enhanced word-by-word view with dynamic animations)
+ * 3. APPLE_MUSIC (Apple Music style immersive blurred backdrop & focus lyrics)
+ * based on the [LyricsDisplayStyleKey] user preference.
  */
 @Composable
 fun Lyrics(
@@ -215,21 +218,37 @@ fun Lyrics(
     showLyrics: Boolean,
     disableInteractiveFeatures: Boolean = false
 ) {
-    val enhancedLyrics by rememberPreference(EnhancedLyricsKey, true)
-    if (enhancedLyrics) {
-        EnhancedLyricsView(
-            sliderPositionProvider = sliderPositionProvider,
-            modifier = modifier,
-            showLyrics = showLyrics,
-            disableInteractiveFeatures = disableInteractiveFeatures,
-        )
-    } else {
-        OriginalLyrics(
-            sliderPositionProvider = sliderPositionProvider,
-            modifier = modifier,
-            showLyrics = showLyrics,
-            disableInteractiveFeatures = disableInteractiveFeatures,
-        )
+    val legacyEnhancedLyrics by rememberPreference(EnhancedLyricsKey, true)
+    val lyricsDisplayStyle by rememberEnumPreference(
+        key = LyricsDisplayStyleKey,
+        defaultValue = if (legacyEnhancedLyrics) LyricsDisplayStyle.KEREN else LyricsDisplayStyle.NORMAL
+    )
+
+    when (lyricsDisplayStyle) {
+        LyricsDisplayStyle.NORMAL -> {
+            OriginalLyrics(
+                sliderPositionProvider = sliderPositionProvider,
+                modifier = modifier,
+                showLyrics = showLyrics,
+                disableInteractiveFeatures = disableInteractiveFeatures,
+            )
+        }
+        LyricsDisplayStyle.KEREN -> {
+            EnhancedLyricsView(
+                sliderPositionProvider = sliderPositionProvider,
+                modifier = modifier,
+                showLyrics = showLyrics,
+                disableInteractiveFeatures = disableInteractiveFeatures,
+            )
+        }
+        LyricsDisplayStyle.APPLE_MUSIC -> {
+            AppleMusicLyricsView(
+                sliderPositionProvider = sliderPositionProvider,
+                modifier = modifier,
+                showLyrics = showLyrics,
+                disableInteractiveFeatures = disableInteractiveFeatures,
+            )
+        }
     }
 }
 

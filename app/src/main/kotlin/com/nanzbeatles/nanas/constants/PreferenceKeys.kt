@@ -452,6 +452,12 @@ val LyricsRomanizePunjabiKey = booleanPreferencesKey("lyricsRomanizePunjabi")
 val LyricsRomanizeAsMainKey = booleanPreferencesKey("lyricsRomanizeAsMain")
 val LyricsRomanizeCyrillicByLineKey = booleanPreferencesKey("lyricsRomanizeCyrillicByLine")
 val EnhancedLyricsKey = booleanPreferencesKey("enhancedLyrics")
+val LyricsDisplayStyleKey = stringPreferencesKey("lyricsDisplayStyle")
+enum class LyricsDisplayStyle {
+    NORMAL,
+    KEREN,
+    APPLE_MUSIC,
+}
 val TranslateLyricsKey = booleanPreferencesKey("translateLyrics")
 val VideoLyricsOffsetKey = intPreferencesKey("videoLyricsOffset")
 val VideoLyricsEnabledKey = booleanPreferencesKey("videoLyricsEnabled")

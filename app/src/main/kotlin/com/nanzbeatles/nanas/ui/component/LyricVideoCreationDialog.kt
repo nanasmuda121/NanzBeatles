@@ -135,7 +135,7 @@ fun LyricVideoCreationDialog(
                     if (generatedVideoFile != null) {
                         // --- STATE 3: COMPLETED ---
                         Icon(
-                            painter = painterResource(R.drawable.check_circle),
+                            painter = painterResource(R.drawable.check),
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(56.dp)
@@ -147,8 +147,9 @@ fun LyricVideoCreationDialog(
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center
                         )
+                        val artistNames = mediaMetadata.artists.joinToString { it.name }
                         Text(
-                            text = "${mediaMetadata.title} • ${mediaMetadata.artist}",
+                            text = "${mediaMetadata.title} • $artistNames",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
@@ -182,7 +183,7 @@ fun LyricVideoCreationDialog(
                                         context,
                                         generatedVideoFile!!,
                                         mediaMetadata.title,
-                                        mediaMetadata.artist,
+                                        artistNames,
                                         p.platform
                                     )
                                 }
@@ -199,7 +200,7 @@ fun LyricVideoCreationDialog(
                                         context,
                                         generatedVideoFile!!,
                                         mediaMetadata.title,
-                                        mediaMetadata.artist,
+                                        artistNames,
                                         p.platform
                                     )
                                 }

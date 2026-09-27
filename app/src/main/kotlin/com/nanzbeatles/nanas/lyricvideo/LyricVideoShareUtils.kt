@@ -66,7 +66,7 @@ object LyricVideoShareUtils {
         onProgress?.invoke("Memeriksa cache audio lokal...", 0.05f)
 
         // 1. Check downloadCache
-        if (downloadCache != null && downloadCache.isCached(mediaId, 0L, C.LENGTH_UNSET)) {
+        if (downloadCache != null && downloadCache.keys.contains(mediaId)) {
             Timber.tag(TAG).d("Audio found in downloadCache, extracting...")
             onProgress?.invoke("Membaca audio dari unduhan offline...", 0.10f)
             if (copyFromCache(downloadCache, mediaId, targetAudioFile)) {
@@ -75,7 +75,7 @@ object LyricVideoShareUtils {
         }
 
         // 2. Check playerCache
-        if (playerCache != null && playerCache.isCached(mediaId, 0L, C.LENGTH_UNSET)) {
+        if (playerCache != null && playerCache.keys.contains(mediaId)) {
             Timber.tag(TAG).d("Audio found in playerCache, extracting...")
             onProgress?.invoke("Membaca audio dari buffer pemutar...", 0.10f)
             if (copyFromCache(playerCache, mediaId, targetAudioFile)) {

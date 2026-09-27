@@ -127,17 +127,23 @@ object LyricVideoEncoder {
                                 config.songArtist
                             )
 
-                            // Copy Bitmap to Image YUV
-                            val inputImage = encoder.getInputImage(inputBufferIndex)
+                            // Copy Bitmap to Image YUV or InputBuffer NV12
+                            val inputImage = try { encoder.getInputImage(inputBufferIndex) } catch (e: Exception) { null }
+                            frameBitmap.getPixels(argbPixels, 0, VIDEO_WIDTH, 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT)
                             if (inputImage != null) {
-                                frameBitmap.getPixels(argbPixels, 0, VIDEO_WIDTH, 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT)
                                 copyArgbToImageYuv(argbPixels, inputImage, VIDEO_WIDTH, VIDEO_HEIGHT)
+                            } else {
+                                val inputBuffer = encoder.getInputBuffer(inputBufferIndex)
+                                if (inputBuffer != null) {
+                                    copyArgbToNv12(argbPixels, inputBuffer, VIDEO_WIDTH, VIDEO_HEIGHT)
+                                }
                             }
 
+                            val frameBytesSize = (VIDEO_WIDTH * VIDEO_HEIGHT * 3) / 2
                             encoder.queueInputBuffer(
                                 inputBufferIndex,
                                 0,
-                                0,
+                                frameBytesSize,
                                 presentationTimeUs,
                                 0
                             )
@@ -187,6 +193,10 @@ object LyricVideoEncoder {
 
             frameBitmap.recycle()
 
+            if (!tempVideoFile.exists() || tempVideoFile.length() < 1024L) {
+                error("Perangkat tidak dapat menghasilkan rekaman video. Silakan periksa izin atau coba lagi.")
+            }
+
             onProgress("Menggabungkan audio & video...", 0.88f)
 
             // Step 4: Final Muxing with Original Audio Track
@@ -224,6 +234,9 @@ object LyricVideoEncoder {
         var muxer: MediaMuxer? = null
 
         try {
+            if (!videoFile.exists() || videoFile.length() < 1024L) {
+                error("Berkas video sementara tidak valid (${videoFile.length()} bytes)")
+            }
             videoExtractor.setDataSource(videoFile.absolutePath)
             val videoTrack = selectFirstTrack(videoExtractor, "video/")
             if (videoTrack == -1) error("Video track not found in rendered video")
@@ -250,7 +263,14 @@ object LyricVideoEncoder {
 
             muxer = MediaMuxer(outputFile.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
             val outVideoTrack = muxer.addTrack(videoFormat)
-            val outAudioTrack = if (audioFormat != null) muxer.addTrack(audioFormat) else -1
+            val outAudioTrack = if (audioFormat != null) {
+                try {
+                    muxer.addTrack(audioFormat)
+                } catch (e: Exception) {
+                    Timber.tag(TAG).w(e, "Muxer does not support audio format: $audioFormat")
+                    -1
+                }
+            } else -1
             muxer.start()
 
             // 1. Copy Video Track
@@ -371,6 +391,35 @@ object LyricVideoEncoder {
 
                 uBuffer.put(uRowOffset + (x * uPixelStride), uVal.coerceIn(0, 255).toByte())
                 vBuffer.put(vRowOffset + (x * vPixelStride), vVal.coerceIn(0, 255).toByte())
+            }
+        }
+    }
+
+    /**
+     * Converts ARGB pixels to standard NV12 ByteBuffer when Image API is not supported.
+     */
+    private fun copyArgbToNv12(argb: IntArray, buffer: ByteBuffer, width: Int, height: Int) {
+        buffer.clear()
+        val frameSize = width * height
+        var yIndex = 0
+        var uvIndex = frameSize
+
+        for (y in 0 until height) {
+            val rowOffset = y * width
+            for (x in 0 until width) {
+                val c = argb[rowOffset + x]
+                val r = (c shr 16) and 0xFF
+                val g = (c shr 8) and 0xFF
+                val b = c and 0xFF
+                val yVal = ((66 * r + 129 * g + 25 * b + 128) shr 8) + 16
+                buffer.put(yIndex++, yVal.coerceIn(0, 255).toByte())
+
+                if (y % 2 == 0 && x % 2 == 0) {
+                    val uVal = ((-38 * r - 74 * g + 112 * b + 128) shr 8) + 128
+                    val vVal = ((112 * r - 94 * g - 18 * b + 128) shr 8) + 128
+                    buffer.put(uvIndex++, uVal.coerceIn(0, 255).toByte())
+                    buffer.put(uvIndex++, vVal.coerceIn(0, 255).toByte())
+                }
             }
         }
     }

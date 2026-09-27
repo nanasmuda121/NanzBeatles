@@ -17,6 +17,8 @@ import androidx.media3.common.C
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.SimpleCache
+import android.media.MediaExtractor
+import android.media.MediaFormat
 import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
@@ -36,17 +38,45 @@ import okhttp3.Request
 import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
+import java.util.concurrent.TimeUnit
 
 object LyricVideoShareUtils {
 
     private const val TAG = "LyricVideoShareUtils"
 
     /**
+     * Checks if the given local file is a valid, readable audio file that MediaExtractor can open.
+     */
+    fun isValidAudioFile(file: File): Boolean {
+        if (!file.exists() || file.length() < 32 * 1024L) return false
+        val extractor = MediaExtractor()
+        return try {
+            extractor.setDataSource(file.absolutePath)
+            var hasAudio = false
+            for (i in 0 until extractor.trackCount) {
+                val format = extractor.getTrackFormat(i)
+                val mime = format.getString(MediaFormat.KEY_MIME) ?: ""
+                if (mime.startsWith("audio/")) {
+                    hasAudio = true
+                    break
+                }
+            }
+            hasAudio
+        } catch (e: Exception) {
+            Timber.tag(TAG).w(e, "Audio file validation failed for: ${file.absolutePath}")
+            false
+        } finally {
+            try { extractor.release() } catch (ignored: Exception) {}
+        }
+    }
+
+    /**
      * Resolves the full audio track locally so MediaExtractor/MediaCodec can access it.
      * Priority:
-     * 1. downloadCache (full offline download)
-     * 2. playerCache (playback buffer)
-     * 3. Network pre-download via YTPlayerUtils resolver
+     * 1. Reusing existing valid local file
+     * 2. downloadCache (full offline download)
+     * 3. playerCache (playback buffer)
+     * 4. Network pre-download via YTPlayerUtils resolver (prioritizing AAC MP4 for native MediaExtractor/MediaMuxer)
      */
     suspend fun resolveLocalAudioFile(
         context: Context,
@@ -58,9 +88,14 @@ object LyricVideoShareUtils {
         val audioDir = File(context.cacheDir, "temp_lyric_audio").apply { mkdirs() }
         val targetAudioFile = File(audioDir, "audio_${mediaId}.m4a")
 
-        if (targetAudioFile.exists() && targetAudioFile.length() > 64 * 1024L) {
-            Timber.tag(TAG).d("Reusing existing local audio file: ${targetAudioFile.absolutePath}")
-            return@withContext targetAudioFile
+        if (targetAudioFile.exists()) {
+            if (isValidAudioFile(targetAudioFile)) {
+                Timber.tag(TAG).d("Reusing existing valid audio file: ${targetAudioFile.absolutePath}")
+                return@withContext targetAudioFile
+            } else {
+                Timber.tag(TAG).w("Existing audio file was invalid/corrupt, deleting: ${targetAudioFile.absolutePath}")
+                targetAudioFile.delete()
+            }
         }
 
         onProgress?.invoke("Memeriksa cache audio lokal...", 0.05f)
@@ -68,9 +103,12 @@ object LyricVideoShareUtils {
         // 1. Check downloadCache
         if (downloadCache != null && downloadCache.keys.contains(mediaId)) {
             Timber.tag(TAG).d("Audio found in downloadCache, extracting...")
-            onProgress?.invoke("Membaca audio dari unduhan offline...", 0.10f)
-            if (copyFromCache(downloadCache, mediaId, targetAudioFile)) {
+            onProgress?.invoke("Membaca audio dari unduhan offline...", 0.08f)
+            if (copyFromCache(downloadCache, mediaId, targetAudioFile) && isValidAudioFile(targetAudioFile)) {
+                Timber.tag(TAG).d("Valid audio extracted from downloadCache")
                 return@withContext targetAudioFile
+            } else {
+                targetAudioFile.delete()
             }
         }
 
@@ -78,14 +116,17 @@ object LyricVideoShareUtils {
         if (playerCache != null && playerCache.keys.contains(mediaId)) {
             Timber.tag(TAG).d("Audio found in playerCache, extracting...")
             onProgress?.invoke("Membaca audio dari buffer pemutar...", 0.10f)
-            if (copyFromCache(playerCache, mediaId, targetAudioFile)) {
+            if (copyFromCache(playerCache, mediaId, targetAudioFile) && isValidAudioFile(targetAudioFile)) {
+                Timber.tag(TAG).d("Valid audio extracted from playerCache")
                 return@withContext targetAudioFile
+            } else {
+                targetAudioFile.delete()
             }
         }
 
-        // 3. Fallback: Resolve stream and download temporary copy
-        Timber.tag(TAG).d("Audio not fully cached, downloading temporary audio stream...")
-        onProgress?.invoke("Mengunduh stream audio untuk video...", 0.12f)
+        // 3. Fallback: Resolve MP4/AAC stream and download temporary copy
+        Timber.tag(TAG).d("Audio not fully cached, downloading temporary AAC stream...")
+        onProgress?.invoke("Menghubungkan ke stream audio...", 0.12f)
 
         val connectivityManager = context.getSystemService<ConnectivityManager>()
             ?: error("ConnectivityManager not available")
@@ -93,23 +134,62 @@ object LyricVideoShareUtils {
         val playbackData = YTPlayerUtils.playerResponseForPlayback(
             videoId = mediaId,
             audioQuality = AudioQuality.HIGH,
-            connectivityManager = connectivityManager
+            connectivityManager = connectivityManager,
+            preferMp4Audio = true
         ).getOrThrow()
 
         val streamUrl = playbackData.streamUrl
-        val client = OkHttpClient.Builder().build()
-        val request = Request.Builder().url(streamUrl).build()
+        val client = OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .build()
+
+        val requestBuilder = Request.Builder().url(streamUrl)
+        playbackData.streamHeaders.forEach { (k, v) ->
+            requestBuilder.addHeader(k, v)
+        }
+        val request = requestBuilder.build()
+
+        val tempDownloadFile = File(audioDir, "temp_dl_${mediaId}_${System.currentTimeMillis()}.tmp")
 
         client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) error("Failed to download audio stream: HTTP ${response.code}")
+            if (!response.isSuccessful) error("Gagal mengunduh audio: HTTP ${response.code}")
             val body = response.body ?: error("Empty audio response body")
+            val totalBytes = body.contentLength()
 
-            FileOutputStream(targetAudioFile).use { output ->
-                body.byteStream().copyTo(output)
+            FileOutputStream(tempDownloadFile).use { output ->
+                val buffer = ByteArray(64 * 1024)
+                var bytesRead: Int
+                var accumulatedBytes = 0L
+                val input = body.byteStream()
+                while (input.read(buffer).also { bytesRead = it } != -1) {
+                    output.write(buffer, 0, bytesRead)
+                    accumulatedBytes += bytesRead
+                    if (totalBytes > 0) {
+                        val dlProgress = (accumulatedBytes.toFloat() / totalBytes).coerceIn(0f, 1f)
+                        val dlMb = accumulatedBytes / (1024f * 1024f)
+                        val totalMb = totalBytes / (1024f * 1024f)
+                        onProgress?.invoke("Mengunduh audio: %.1f MB / %.1f MB".format(dlMb, totalMb), 0.12f + 0.10f * dlProgress)
+                    } else {
+                        val dlMb = accumulatedBytes / (1024f * 1024f)
+                        onProgress?.invoke("Mengunduh audio: %.1f MB".format(dlMb), 0.16f)
+                    }
+                }
             }
         }
 
-        Timber.tag(TAG).d("Audio downloaded to temporary file: ${targetAudioFile.length()} bytes")
+        if (targetAudioFile.exists()) targetAudioFile.delete()
+        if (!tempDownloadFile.renameTo(targetAudioFile)) {
+            tempDownloadFile.copyTo(targetAudioFile, overwrite = true)
+            tempDownloadFile.delete()
+        }
+
+        if (!isValidAudioFile(targetAudioFile)) {
+            targetAudioFile.delete()
+            error("Format audio yang diunduh tidak didukung atau berkas rusak")
+        }
+
+        Timber.tag(TAG).d("Audio downloaded and verified: ${targetAudioFile.length()} bytes")
         targetAudioFile
     }
 

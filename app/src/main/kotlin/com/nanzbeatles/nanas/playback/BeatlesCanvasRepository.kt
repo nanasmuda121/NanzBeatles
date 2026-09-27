@@ -5,6 +5,8 @@
 
 package com.nanzbeatles.nanas.playback
 
+import com.nanzbeatles.nanas.App
+import com.nanzbeatles.nanas.utils.YTPlayerUtils
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.okhttp.OkHttp
@@ -50,7 +52,7 @@ import timber.log.Timber
  */
 object BeatlesCanvasRepository {
 
-    private const val MANIFEST_URL = "https://auramusiccanvas.vercel.app/canvas.json"
+    private const val MANIFEST_URL = "https://raw.githubusercontent.com/nanasmuda121/NanzBeatles/main/canvas.json"
     private const val REMOTE_BASE_URL = "https://auramusiccanvasserver.onrender.com"
 
     private const val MANIFEST_TTL_MS = 6 * 60 * 60 * 1000L     // 6h
@@ -79,9 +81,9 @@ object BeatlesCanvasRepository {
         expectSuccess = false
         install(HttpTimeout) {
             // First Render call after idle can take 30–90s (free-tier cold start).
-            requestTimeoutMillis = 90_000
-            connectTimeoutMillis = 15_000
-            socketTimeoutMillis = 90_000
+            requestTimeoutMillis = 30_000
+            connectTimeoutMillis = 10_000
+            socketTimeoutMillis = 30_000
         }
         install(ContentNegotiation) {
             json(json)
@@ -124,16 +126,46 @@ object BeatlesCanvasRepository {
         val cached = cachedItems
         if (cached != null && now - cachedAt < MANIFEST_TTL_MS) return@withLock cached
         if (cached != null && now - manifestFailureAt < NEGATIVE_TTL_MS) return@withLock cached
+
+        var loadedItems: List<CanvasItem>? = null
+
+        // 1. Try fetching latest remote manifest from GitHub
         try {
             val manifest: CanvasManifest = withContext(Dispatchers.IO) {
                 client.get(MANIFEST_URL).body()
             }
-            cachedItems = manifest.items
-            cachedAt = now
-            Timber.d("AuraCanvas: loaded ${manifest.items.size} manifest entries")
-            manifest.items
+            if (manifest.items.isNotEmpty()) {
+                loadedItems = manifest.items
+                Timber.d("AuraCanvas: loaded ${manifest.items.size} manifest entries from GitHub")
+            }
         } catch (t: Throwable) {
-            Timber.w(t, "AuraCanvas: failed to load manifest")
+            Timber.w(t, "AuraCanvas: failed to load manifest from GitHub, falling back to local asset")
+        }
+
+        // 2. Fallback to bundled asset manifest
+        if (loadedItems.isNullOrEmpty()) {
+            try {
+                val appInstance = runCatching { App.instance }.getOrNull()
+                if (appInstance != null) {
+                    val assetJson = withContext(Dispatchers.IO) {
+                        appInstance.assets.open("canvas.json").bufferedReader().use { it.readText() }
+                    }
+                    val assetManifest: CanvasManifest = json.decodeFromString(assetJson)
+                    if (assetManifest.items.isNotEmpty()) {
+                        loadedItems = assetManifest.items
+                        Timber.d("AuraCanvas: loaded ${loadedItems.size} manifest entries from bundled assets")
+                    }
+                }
+            } catch (t: Throwable) {
+                Timber.w(t, "AuraCanvas: failed to load bundled asset canvas.json")
+            }
+        }
+
+        if (!loadedItems.isNullOrEmpty()) {
+            cachedItems = loadedItems
+            cachedAt = now
+            loadedItems
+        } else {
             manifestFailureAt = now
             cached ?: emptyList()
         }
@@ -259,16 +291,17 @@ object BeatlesCanvasRepository {
         artist: String?,
         album: String? = null,
         durationMs: Long? = null,
+        videoId: String? = null,
     ): String? {
-        if (title.isNullOrBlank() && artist.isNullOrBlank() && album.isNullOrBlank()) return null
-        val key = listOf(title, artist, album, durationMs?.toString()).joinToString("\u0001") { normalize(it ?: "") }
+        if (title.isNullOrBlank() && artist.isNullOrBlank() && album.isNullOrBlank() && videoId.isNullOrBlank()) return null
+        val key = listOf(title, artist, album, durationMs?.toString(), videoId).joinToString("\u0001") { normalize(it ?: "") }
         val now = System.currentTimeMillis()
         synchronized(resultCache) {
             val hit = resultCache[key]
             if (hit != null && hit.expiresAt > now) return hit.url
         }
 
-        // 1) Manifest
+        // 1) Manifest (Spotify Canvases)
         if (!title.isNullOrBlank() && !artist.isNullOrBlank()) {
             val manifestHit = manifestLookup(ensureManifest(), title, artist)
             if (manifestHit != null) {
@@ -279,15 +312,34 @@ object BeatlesCanvasRepository {
             }
         }
 
-        // 2) Remote (Render) – does Spotify search + canvas fetch server-side.
-        warmUp() // ensure dyno is awake on first real call
+        // 2) Remote (Render server, if active)
+        warmUp()
         val remoteHit = remoteLookup(title, artist, album, durationMs)
-        synchronized(resultCache) {
-            resultCache[key] = CacheEntry(
-                remoteHit,
-                now + if (remoteHit != null) POSITIVE_TTL_MS else NEGATIVE_TTL_MS,
-            )
+        if (remoteHit != null) {
+            synchronized(resultCache) {
+                resultCache[key] = CacheEntry(remoteHit, now + POSITIVE_TTL_MS)
+            }
+            return remoteHit
         }
-        return remoteHit
+
+        // 3) Video Stream Fallback (YouTube Visualizer / Music Video stream)
+        if (!videoId.isNullOrBlank()) {
+            val videoStreamHit = runCatching {
+                YTPlayerUtils.getVideoStreamUrl(videoId).getOrNull()
+            }.getOrNull()
+
+            if (videoStreamHit != null) {
+                Timber.d("AuraCanvas: fallback to video stream for $videoId")
+                synchronized(resultCache) {
+                    resultCache[key] = CacheEntry(videoStreamHit, now + (3 * 60 * 60 * 1000L)) // 3h TTL
+                }
+                return videoStreamHit
+            }
+        }
+
+        synchronized(resultCache) {
+            resultCache[key] = CacheEntry(null, now + NEGATIVE_TTL_MS)
+        }
+        return null
     }
 }

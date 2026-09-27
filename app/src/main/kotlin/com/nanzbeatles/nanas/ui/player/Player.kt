@@ -745,7 +745,8 @@ fun BottomSheetPlayer(
                     title = mediaMetadata?.title,
                     artist = mediaMetadata?.artists?.joinToString(", ") { it.name },
                     album = mediaMetadata?.album?.title,
-                    durationMs = mediaMetadata?.duration?.takeIf { it > 0 }?.times(1000L)
+                    durationMs = mediaMetadata?.duration?.takeIf { it > 0 }?.times(1000L),
+                    videoId = mediaMetadata?.id
                 )
             }.getOrNull()
         } else {

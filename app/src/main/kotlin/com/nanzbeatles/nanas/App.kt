@@ -73,6 +73,7 @@ class App : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
         
         // Install crash handler first
         CrashHandler.install(this)
@@ -305,6 +306,9 @@ class App : Application(), SingletonImageLoader.Factory {
     }
 
     companion object {
+        lateinit var instance: App
+            private set
+
         suspend fun forgetAccount(context: Context) {
             context.dataStore.edit { settings ->
                 settings.remove(InnerTubeCookieKey)

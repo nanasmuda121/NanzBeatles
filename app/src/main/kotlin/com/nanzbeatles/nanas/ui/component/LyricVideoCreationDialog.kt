@@ -23,6 +23,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -33,6 +36,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RangeSlider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -89,16 +94,19 @@ fun LyricVideoCreationDialog(
     val downloadCache: SimpleCache? = playerConnection?.service?.downloadCache
     val playerCache: SimpleCache? = playerConnection?.service?.playerCache
 
-    var selectedDuration by remember { mutableStateOf(LyricVideoDuration.THIRTY) }
-    var startFromCurrentPosition by remember { mutableStateOf(currentPlaybackPositionMs > 5000L) }
+    val songDurationSec = mediaMetadata.duration.takeIf { it > 0 } ?: 180
+
+    val initialStartSec = (currentPlaybackPositionMs / 1000f).coerceIn(0f, maxOf(0f, songDurationSec.toFloat() - 30f))
+    val initialEndSec = minOf(songDurationSec.toFloat(), initialStartSec + 30f)
+
+    var startTimeSec by remember { mutableFloatStateOf(initialStartSec) }
+    var endTimeSec by remember { mutableFloatStateOf(initialEndSec) }
 
     var isGenerating by remember { mutableStateOf(false) }
     var currentStage by remember { mutableStateOf("Menyiapkan...") }
     var currentProgress by remember { mutableFloatStateOf(0f) }
     var generatedVideoFile by remember { mutableStateOf<File?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-
-    val songDurationSec = mediaMetadata.duration.takeIf { it > 0 } ?: 180
 
     Dialog(
         onDismissRequest = {
@@ -129,6 +137,7 @@ fun LyricVideoCreationDialog(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
                         .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -259,6 +268,11 @@ fun LyricVideoCreationDialog(
 
                     } else {
                         // --- STATE 1: SELECTION OPTIONS ---
+                        fun formatTime(sec: Float): String {
+                            val totalSec = sec.toInt().coerceAtLeast(0)
+                            return "%02d:%02d".format(totalSec / 60, totalSec % 60)
+                        }
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
@@ -270,111 +284,235 @@ fun LyricVideoCreationDialog(
                                 modifier = Modifier.size(28.dp)
                             )
                             Spacer(Modifier.width(10.dp))
-                            Text(
-                                text = "Buat Video Lirik",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-
-                        Spacer(Modifier.height(16.dp))
-
-                        Text(
-                            text = "Pilih Durasi Video:",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(Modifier.height(8.dp))
-
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            LyricVideoDuration.entries.forEach { option ->
-                                val isSelected = selectedDuration == option
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { selectedDuration = option },
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = if (isSelected)
-                                            MaterialTheme.colorScheme.primaryContainer
-                                        else
-                                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
-                                    )
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Column {
-                                            Text(
-                                                text = option.label,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                                color = if (isSelected)
-                                                    MaterialTheme.colorScheme.onPrimaryContainer
-                                                else
-                                                    MaterialTheme.colorScheme.onSurface
-                                            )
-                                            Text(
-                                                text = option.desc,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = if (isSelected)
-                                                    MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                                                else
-                                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-
-                                        if (isSelected) {
-                                            Icon(
-                                                painter = painterResource(R.drawable.check),
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                modifier = Modifier.size(20.dp)
-                                            )
-                                        }
-                                    }
-                                }
+                            Column {
+                                Text(
+                                    text = "Buat Video Lirik",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Pilih bagian lagu yang ingin dijadikan video",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
 
                         Spacer(Modifier.height(16.dp))
 
-                        // Start position toggle
-                        if (currentPlaybackPositionMs > 5000L) {
+                        // Quick Presets Row
+                        Text(
+                            text = "Preset Durasi Cepat:",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(Modifier.height(6.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            val curDuration = (endTimeSec - startTimeSec).toInt()
+                            val presets = listOf(
+                                15 to "15s",
+                                30 to "30s",
+                                60 to "60s",
+                                -1 to "Penuh"
+                            )
+                            presets.forEach { (dur, label) ->
+                                val isSelected = if (dur == -1) {
+                                    startTimeSec <= 1f && endTimeSec >= songDurationSec.toFloat() - 1f
+                                } else {
+                                    curDuration == dur
+                                }
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = {
+                                        if (dur == -1) {
+                                            startTimeSec = 0f
+                                            endTimeSec = songDurationSec.toFloat()
+                                        } else {
+                                            val targetEnd = startTimeSec + dur.toFloat()
+                                            if (targetEnd <= songDurationSec.toFloat()) {
+                                                endTimeSec = targetEnd
+                                            } else {
+                                                startTimeSec = maxOf(0f, songDurationSec.toFloat() - dur.toFloat())
+                                                endTimeSec = songDurationSec.toFloat()
+                                            }
+                                        }
+                                    },
+                                    label = {
+                                        Text(
+                                            text = label,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                        )
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+
+                        Spacer(Modifier.height(14.dp))
+
+                        // Selected Time Interval Card (Mulai & Selesai)
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                            )
+                        ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { startFromCurrentPosition = !startFromCurrentPosition }
-                                    .padding(vertical = 4.dp),
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column(modifier = Modifier.weight(1f)) {
+                                Column(horizontalAlignment = Alignment.Start) {
                                     Text(
-                                        text = "Mulai dari posisi saat ini",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                    val currentPosSec = currentPlaybackPositionMs / 1000L
-                                    Text(
-                                        text = "Posisi: %02d:%02d".format(currentPosSec / 60, currentPosSec % 60),
-                                        style = MaterialTheme.typography.bodySmall,
+                                        text = "Mulai Dari",
+                                        style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+                                    Text(
+                                        text = formatTime(startTimeSec),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
                                 }
-                                Switch(
-                                    checked = startFromCurrentPosition,
-                                    onCheckedChange = { startFromCurrentPosition = it }
+
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    val selDurationSec = (endTimeSec - startTimeSec).toInt().coerceAtLeast(1)
+                                    Icon(
+                                        painter = painterResource(R.drawable.arrow_forward),
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Text(
+                                        text = "$selDurationSec detik",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(
+                                        text = "Selesai Pada",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = formatTime(endTimeSec),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(Modifier.height(10.dp))
+
+                        // RangeSlider for Full Timeline Dragging
+                        RangeSlider(
+                            value = startTimeSec..endTimeSec,
+                            onValueChange = { range ->
+                                if (range.endInclusive - range.start >= 3f) {
+                                    startTimeSec = range.start
+                                    endTimeSec = range.endInclusive
+                                }
+                            },
+                            valueRange = 0f..songDurationSec.toFloat(),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        // Stepper fine-tuning controls
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "Mulai: ",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                AssistChip(
+                                    onClick = {
+                                        startTimeSec = (startTimeSec - 5f).coerceAtLeast(0f)
+                                        if (endTimeSec - startTimeSec < 3f) {
+                                            endTimeSec = minOf(songDurationSec.toFloat(), startTimeSec + 3f)
+                                        }
+                                    },
+                                    label = { Text("-5s") },
+                                    modifier = Modifier.height(28.dp)
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                AssistChip(
+                                    onClick = {
+                                        startTimeSec = (startTimeSec + 5f).coerceAtMost(maxOf(0f, endTimeSec - 3f))
+                                    },
+                                    label = { Text("+5s") },
+                                    modifier = Modifier.height(28.dp)
                                 )
                             }
-                            Spacer(Modifier.height(12.dp))
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "Selesai: ",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                AssistChip(
+                                    onClick = {
+                                        endTimeSec = (endTimeSec - 5f).coerceAtLeast(startTimeSec + 3f)
+                                    },
+                                    label = { Text("-5s") },
+                                    modifier = Modifier.height(28.dp)
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                AssistChip(
+                                    onClick = {
+                                        endTimeSec = (endTimeSec + 5f).coerceAtMost(songDurationSec.toFloat())
+                                    },
+                                    label = { Text("+5s") },
+                                    modifier = Modifier.height(28.dp)
+                                )
+                            }
                         }
+
+                        // Current Position button if playing
+                        if (currentPlaybackPositionMs > 3000L) {
+                            Spacer(Modifier.height(8.dp))
+                            val curSec = currentPlaybackPositionMs / 1000f
+                            AssistChip(
+                                onClick = {
+                                    val selDur = (endTimeSec - startTimeSec).coerceAtLeast(10f)
+                                    startTimeSec = curSec.coerceIn(0f, maxOf(0f, songDurationSec.toFloat() - 3f))
+                                    endTimeSec = minOf(songDurationSec.toFloat(), startTimeSec + selDur)
+                                },
+                                label = {
+                                    Text("Mulai dari posisi saat ini (${formatTime(curSec)})")
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_play),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+
+                        Spacer(Modifier.height(14.dp))
 
                         if (errorMessage != null) {
                             Text(
@@ -398,18 +536,8 @@ fun LyricVideoCreationDialog(
                                     isGenerating = true
                                     errorMessage = null
 
-                                    val durationSec = if (selectedDuration.seconds > 0) {
-                                        minOf(selectedDuration.seconds, songDurationSec)
-                                    } else {
-                                        songDurationSec
-                                    }
-
-                                    val startPosMs = if (startFromCurrentPosition) {
-                                        val maxStart = (songDurationSec - durationSec) * 1000L
-                                        minOf(currentPlaybackPositionMs, maxOf(0L, maxStart))
-                                    } else {
-                                        0L
-                                    }
+                                    val startPosMs = (startTimeSec * 1000L).toLong()
+                                    val durationMs = ((endTimeSec - startTimeSec) * 1000L).toLong().coerceAtLeast(1000L)
 
                                     scope.launch {
                                         val result = LyricVideoShareUtils.generateLyricVideo(
@@ -417,7 +545,7 @@ fun LyricVideoCreationDialog(
                                             mediaMetadata = mediaMetadata,
                                             lyrics = lyrics,
                                             startTimeMs = startPosMs,
-                                            durationMs = durationSec * 1000L,
+                                            durationMs = durationMs,
                                             downloadCache = downloadCache,
                                             playerCache = playerCache,
                                             onProgress = { stage, prog ->

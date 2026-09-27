@@ -73,9 +73,10 @@ object YTPlayerUtils {
         audioQuality: AudioQuality,
         connectivityManager: ConnectivityManager,
         poTokenProvider: PoTokenProvider? = null,
+        preferMp4Audio: Boolean = false,
     ): Result<PlaybackData> = try {
         withTimeout(STREAM_RESOLUTION_TIMEOUT_MS) {
-            resolvePlaybackData(videoId, playlistId, audioQuality, connectivityManager, poTokenProvider)
+            resolvePlaybackData(videoId, playlistId, audioQuality, connectivityManager, poTokenProvider, preferMp4Audio)
         }
     } catch (e: TimeoutCancellationException) {
         Timber.tag(logTag).w("Stream resolution timed out after ${STREAM_RESOLUTION_TIMEOUT_MS}ms for $videoId")
@@ -94,6 +95,7 @@ object YTPlayerUtils {
         audioQuality: AudioQuality,
         connectivityManager: ConnectivityManager,
         poTokenProvider: PoTokenProvider?,
+        preferMp4Audio: Boolean = false,
     ): Result<PlaybackData> = runCatching {
         Timber.tag(logTag).d("Fetching player response for videoId: $videoId, playlistId: $playlistId")
         val isLoggedIn = YouTube.cookie != null
@@ -172,6 +174,7 @@ object YTPlayerUtils {
                 playbackTracking = playbackTracking,
                 clientName = client.clientName,
                 client = client,
+                preferMp4Audio = preferMp4Audio,
             )?.let { return@runCatching it }
         }
 
@@ -193,13 +196,14 @@ object YTPlayerUtils {
         playbackTracking: PlayerResponse.PlaybackTracking?,
         clientName: String,
         client: YouTubeClient,
+        preferMp4Audio: Boolean = false,
     ): PlaybackData? {
         if (response.playabilityStatus.status != "OK") {
             Timber.tag(logTag).d("Player response status not OK for $clientName: ${response.playabilityStatus.reason}")
             return null
         }
 
-        val format = findFormat(response, audioQuality, connectivityManager)
+        val format = findFormat(response, audioQuality, connectivityManager, preferMp4Audio)
             ?: run {
                 Timber.tag(logTag).d("No suitable format found for client: $clientName")
                 return null
@@ -282,18 +286,27 @@ object YTPlayerUtils {
         playerResponse: PlayerResponse,
         audioQuality: AudioQuality,
         connectivityManager: ConnectivityManager,
+        preferMp4Audio: Boolean = false,
     ): PlayerResponse.StreamingData.Format? {
-        Timber.tag(logTag).d("Finding format with audioQuality: $audioQuality, network metered: ${connectivityManager.isActiveNetworkMetered}")
+        Timber.tag(logTag).d("Finding format with audioQuality: $audioQuality, preferMp4Audio: $preferMp4Audio, network metered: ${connectivityManager.isActiveNetworkMetered}")
 
-        val format = playerResponse.streamingData?.adaptiveFormats
-            ?.filter { it.isAudio && it.isOriginal }
-            ?.maxByOrNull {
-                it.bitrate * when (audioQuality) {
-                    AudioQuality.AUTO -> if (connectivityManager.isActiveNetworkMetered) -1 else 1
-                    AudioQuality.HIGH -> 1
-                    AudioQuality.LOW -> -1
-                } + (if (it.mimeType.startsWith("audio/webm")) 10240 else 0) // prefer opus stream
-            }
+        val adaptiveFormats = playerResponse.streamingData?.adaptiveFormats
+            ?.filter { it.isAudio && it.isOriginal } ?: emptyList()
+
+        val candidateFormats = if (preferMp4Audio) {
+            val mp4Only = adaptiveFormats.filter { it.mimeType.startsWith("audio/mp4") }
+            if (mp4Only.isNotEmpty()) mp4Only else adaptiveFormats
+        } else {
+            adaptiveFormats
+        }
+
+        val format = candidateFormats.maxByOrNull {
+            it.bitrate * when (audioQuality) {
+                AudioQuality.AUTO -> if (connectivityManager.isActiveNetworkMetered) -1 else 1
+                AudioQuality.HIGH -> 1
+                AudioQuality.LOW -> -1
+            } + (if (preferMp4Audio && it.mimeType.startsWith("audio/mp4")) 20480 else if (!preferMp4Audio && it.mimeType.startsWith("audio/webm")) 10240 else 0)
+        }
 
         if (format != null) {
             Timber.tag(logTag).d("Selected format: ${format.mimeType}, bitrate: ${format.bitrate}")
@@ -301,7 +314,7 @@ object YTPlayerUtils {
             Timber.tag(logTag).d("No suitable audio format found")
         }
 
-return format
+        return format
     }
 
     /**

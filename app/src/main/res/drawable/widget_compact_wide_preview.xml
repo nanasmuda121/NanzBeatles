@@ -6,11 +6,11 @@
     android:viewportHeight="50">
     <!-- Background -->
     <path
-        android:fillColor="#FFB4AB"
+        android:fillColor="#1A1528"
         android:pathData="M0,0h250v50h-250z"/>
     <!-- Album art -->
     <path
-        android:fillColor="#E8DEF8"
+        android:fillColor="#2D2545"
         android:pathData="M5,5h40v40h-40z"/>
     <!-- Song title -->
     <path
@@ -18,14 +18,14 @@
         android:pathData="M55,12h100v10h-100z"/>
     <!-- Artist -->
     <path
-        android:fillColor="#FFFFFF"
+        android:fillColor="#CCFFFFFF"
         android:pathData="M55,28h80v8h-80z"/>
     <!-- Play button -->
     <path
-        android:fillColor="#FFFFFF"
+        android:fillColor="#8B5CF6"
         android:pathData="M185,20m-10,0a10,10 0,1 1,20 0a10,10 0,1 1,-20 0"/>
     <path
-        android:fillColor="#FFB4AB"
+        android:fillColor="#FFFFFF"
         android:pathData="M183,17l5,3l-5,3z"/>
     <!-- Like button -->
     <path

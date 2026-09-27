@@ -300,8 +300,9 @@ class NanzBeatlesWidgetManager @Inject constructor(
     }
 
     private fun getRoundedDefaultIcon(cornerRadius: Float): Bitmap {
-        // Get the launcher icon and make it rounded
-        val drawable = context.packageManager.getApplicationIcon(context.packageName)
+        // Get the NanzBeatles icon and make it rounded
+        val drawable = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.ic_widget_music_logo)
+            ?: context.packageManager.getApplicationIcon(context.packageName)
         val size = 300
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)

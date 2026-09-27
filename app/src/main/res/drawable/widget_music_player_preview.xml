@@ -6,7 +6,7 @@
     android:viewportHeight="110">
     <!-- Background album art -->
     <path
-        android:fillColor="#E8DEF8"
+        android:fillColor="#1A1528"
         android:pathData="M0,0h250v110h-250z"/>
     <!-- Gradient overlay -->
     <path
@@ -22,7 +22,7 @@
         android:pathData="M12,82h100v10h-100z"/>
     <!-- Progress bar -->
     <path
-        android:fillColor="#FFFFFF"
+        android:fillColor="#8B5CF6"
         android:pathData="M12,105h180v3h-180z"/>
     <!-- Like icon -->
     <path
@@ -34,10 +34,10 @@
         android:pathData="M70,68l6,4l-6,4z"/>
     <!-- Play button -->
     <path
-        android:fillColor="#FFFFFF"
+        android:fillColor="#8B5CF6"
         android:pathData="M115,65m-15,0a15,15 0,1 1,30 0a15,15 0,1 1,-30 0"/>
     <path
-        android:fillColor="#FFB4AB"
+        android:fillColor="#FFFFFF"
         android:pathData="M112,60l6,5l-6,5z"/>
     <!-- Next -->
     <path

@@ -6,7 +6,7 @@
     android:viewportHeight="110">
     <!-- Full cover album art -->
     <path
-        android:fillColor="#E8DEF8"
+        android:fillColor="#1A1528"
         android:pathData="M0,0h110v110h-110z"/>
     <!-- Gradient overlay -->
     <path
@@ -21,10 +21,10 @@
         android:pathData="M18,89l4,3l-4,3z"/>
     <!-- Play button -->
     <path
-        android:fillColor="#FFFFFF"
+        android:fillColor="#8B5CF6"
         android:pathData="M50,85m-12,0a12,12 0,1 1,24 0a12,12 0,1 1,-24 0"/>
     <path
-        android:fillColor="#FFB4AB"
+        android:fillColor="#FFFFFF"
         android:pathData="M48,82l4,3l-4,3z"/>
     <!-- Next button -->
     <path

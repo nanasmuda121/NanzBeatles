@@ -292,9 +292,8 @@ object LyricVideoEncoder {
             muxer.start()
 
             // Check if audio file was pre-trimmed to the clip duration (starts at 0)
-            val audioTrackDurationUs = if (audioFormat.containsKey(MediaFormat.KEY_DURATION)) {
-                audioFormat.getLong(MediaFormat.KEY_DURATION)
-            } else 0L
+            val audioTrackDurationUs = audioFormat?.takeIf { it.containsKey(MediaFormat.KEY_DURATION) }
+                ?.getLong(MediaFormat.KEY_DURATION) ?: 0L
 
             val isAudioPreTrimmed = audioTrackDurationUs > 0L && audioTrackDurationUs <= (durationMs + 4_000L) * 1000L
             val startUs = if (isAudioPreTrimmed) 0L else startTimeMs * 1000L

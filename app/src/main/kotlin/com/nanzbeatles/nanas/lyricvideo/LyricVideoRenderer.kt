@@ -117,6 +117,13 @@ class LyricVideoRenderer(
         textAlign = Paint.Align.LEFT
     }
 
+    private val lyricsPrevPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.argb(110, 255, 255, 255)
+        textSize = height * 0.050f // ~36px
+        typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
+        textAlign = Paint.Align.LEFT
+    }
+
     private val hubOuterRingPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.argb(190, 220, 220, 220)
         style = Paint.Style.STROKE
@@ -422,6 +429,7 @@ class LyricVideoRenderer(
     ) {
         val activeIndex = lyrics?.indexOfLast { it.time <= currentTimeMs && it.text.isNotBlank() } ?: -1
         val activeEntry = if (activeIndex >= 0) lyrics?.get(activeIndex) else null
+        val prevEntry = if (activeIndex > 0) lyrics?.subList(0, activeIndex)?.lastOrNull { it.text.isNotBlank() } else null
         val nextEntry = if (activeIndex >= 0 && activeIndex + 1 < (lyrics?.size ?: 0)) {
             lyrics?.subList(activeIndex + 1, lyrics.size)?.firstOrNull { it.text.isNotBlank() }
         } else null
@@ -467,12 +475,48 @@ class LyricVideoRenderer(
                 }
             }
 
+            // Smooth Verse / Line Transition Animation (Gliding scroll + Crossfade)
+            val timeSinceLineStartMs = (currentTimeMs - activeEntry.time).coerceAtLeast(0L)
+            val transitionDurationMs = 380f // 380ms silky smooth transition window
+            val transProgress = (timeSinceLineStartMs / transitionDurationMs).coerceIn(0f, 1f)
+            // Cubic ease-out curve for natural, Apple Music style deceleration
+            val easeOutT = 1f - (1f - transProgress) * (1f - transProgress) * (1f - transProgress)
+
+            val slideDistance = height * 0.048f // ~35px on 720p
+            val activeSlideOffsetY = (1f - easeOutT) * slideDistance
+            val activeAlpha = (0.20f + 0.80f * easeOutT).coerceIn(0f, 1f)
+
             // Wrap words into at most 2 visual lines
             val linesOfWords = wrapTimedWords(timedWords, lyricsMaxWidth, lyricsActivePaint, maxLines = 2)
             val lineHeight = lyricsActivePaint.textSize * 1.30f
             val totalActiveHeight = linesOfWords.size * lineHeight
-            var currentY = lyricsY - (totalActiveHeight / 2f) + (lyricsActivePaint.textSize * 0.85f)
+            val activeCenterY = lyricsY + activeSlideOffsetY
+            val activeTopY = activeCenterY - (totalActiveHeight / 2f)
+            var currentY = activeTopY + (lyricsActivePaint.textSize * 0.85f)
             val spaceWidth = lyricsActivePaint.measureText(" ")
+
+            // 1. Draw Exiting Previous Verse (floating upward and dissolving)
+            if (prevEntry != null && transProgress < 1.0f) {
+                val prevAlpha = ((1f - easeOutT) * 115).toInt().coerceIn(0, 255)
+                val prevSlideOffsetY = -easeOutT * (slideDistance * 1.25f)
+                lyricsPrevPaint.color = Color.argb(prevAlpha, 255, 255, 255)
+                val prevLines = wrapText(prevEntry.text.trim(), lyricsMaxWidth, lyricsPrevPaint, maxLines = 1)
+                if (prevLines.isNotEmpty()) {
+                    val prevLineY = activeTopY - (height * 0.022f) + prevSlideOffsetY
+                    canvas.drawText(prevLines[0], lyricsX, prevLineY, lyricsPrevPaint)
+                }
+            }
+
+            // 2. Draw Active Verse with smooth syllable / word highlight & enter fade
+            val curAlpha = (255 * activeAlpha).toInt()
+            val upcAlpha = (95 * activeAlpha).toInt()
+            val activeWordPaint = Paint(lyricsActivePaint).apply {
+                alpha = curAlpha
+                setShadowLayer(10f * activeAlpha, 0f, 3f, Color.parseColor("#A0000000"))
+            }
+            val upcomingWordPaint = Paint(lyricsUpcomingPaint).apply {
+                alpha = upcAlpha
+            }
 
             for (line in linesOfWords) {
                 var curX = lyricsX
@@ -482,24 +526,30 @@ class LyricVideoRenderer(
                     when {
                         tw.progress >= 1f -> {
                             // Fully sung: pure glowing white
-                            canvas.drawText(tw.text, curX, currentY, lyricsActivePaint)
+                            canvas.drawText(tw.text, curX, currentY, activeWordPaint)
                         }
                         tw.progress <= 0f -> {
                             // Upcoming: dimmed translucent white
-                            canvas.drawText(tw.text, curX, currentY, lyricsUpcomingPaint)
+                            canvas.drawText(tw.text, curX, currentY, upcomingWordPaint)
                         }
                         else -> {
-                            // Actively being sung: smooth linear gradient wipe!
+                            // Actively being sung: smooth linear gradient sweep wipe!
                             val sweepPaint = Paint(lyricsActivePaint).apply {
                                 val pSpread = 0.08f
                                 val p0 = (tw.progress - pSpread).coerceAtLeast(0f)
                                 val p1 = (tw.progress + pSpread).coerceAtMost(1f)
                                 shader = LinearGradient(
                                     curX, 0f, curX + wordWidth, 0f,
-                                    intArrayOf(Color.WHITE, Color.WHITE, Color.argb(95, 255, 255, 255), Color.argb(95, 255, 255, 255)),
+                                    intArrayOf(
+                                        Color.argb(curAlpha, 255, 255, 255),
+                                        Color.argb(curAlpha, 255, 255, 255),
+                                        Color.argb(upcAlpha, 255, 255, 255),
+                                        Color.argb(upcAlpha, 255, 255, 255)
+                                    ),
                                     floatArrayOf(0f, p0, p1, 1f),
                                     Shader.TileMode.CLAMP
                                 )
+                                setShadowLayer(10f * activeAlpha, 0f, 3f, Color.parseColor("#A0000000"))
                             }
                             canvas.drawText(tw.text, curX, currentY, sweepPaint)
                         }
@@ -509,12 +559,16 @@ class LyricVideoRenderer(
                 currentY += lineHeight
             }
 
-            // Draw Next Upcoming Lyric Line in subtle dim font (Apple Music style preview)
+            // 3. Draw Next Upcoming Verse in subtle dim font (gliding smoothly into position)
             if (nextEntry != null && nextEntry.text.isNotBlank()) {
                 val nextLineText = nextEntry.text.trim()
                 val nextLines = wrapText(nextLineText, lyricsMaxWidth, lyricsNextLinePaint, maxLines = 1)
                 if (nextLines.isNotEmpty()) {
-                    canvas.drawText(nextLines[0], lyricsX, currentY + (height * 0.025f), lyricsNextLinePaint)
+                    val nextSlideOffsetY = (1f - easeOutT) * (slideDistance * 0.55f)
+                    val nextAlpha = ((0.30f + 0.70f * easeOutT) * 90).toInt().coerceIn(0, 90)
+                    lyricsNextLinePaint.alpha = nextAlpha
+                    val nextLineY = currentY + (height * 0.026f) + nextSlideOffsetY
+                    canvas.drawText(nextLines[0], lyricsX, nextLineY, lyricsNextLinePaint)
                 }
             }
         } else {

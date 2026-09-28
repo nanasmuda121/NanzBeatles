@@ -291,17 +291,24 @@ object LyricVideoEncoder {
 
             muxer.start()
 
-            // Seek audio to starting point
-            val startUs = startTimeMs * 1000L
-            val endUs = (startTimeMs + durationMs) * 1000L
+            // Check if audio file was pre-trimmed to the clip duration (starts at 0)
+            val audioTrackDurationUs = if (audioFormat.containsKey(MediaFormat.KEY_DURATION)) {
+                audioFormat.getLong(MediaFormat.KEY_DURATION)
+            } else 0L
 
-            audioExtractor.seekTo(startUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
-            while (audioExtractor.sampleTime in 0 until startUs) {
-                // Keep the boundary sample covering startUs to avoid losing the first syllable
-                if (audioExtractor.sampleTime >= startUs - 12_000L) {
-                    break
+            val isAudioPreTrimmed = audioTrackDurationUs > 0L && audioTrackDurationUs <= (durationMs + 4_000L) * 1000L
+            val startUs = if (isAudioPreTrimmed) 0L else startTimeMs * 1000L
+            val endUs = if (isAudioPreTrimmed) durationMs * 1000L else (startTimeMs + durationMs) * 1000L
+
+            if (!isAudioPreTrimmed && startUs > 0L) {
+                audioExtractor.seekTo(startUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
+                while (audioExtractor.sampleTime in 0 until startUs) {
+                    // Keep the boundary sample covering startUs to avoid losing the first syllable
+                    if (audioExtractor.sampleTime >= startUs - 12_000L) {
+                        break
+                    }
+                    audioExtractor.advance()
                 }
-                audioExtractor.advance()
             }
 
             // Interleaved copying: Video & Audio in presentation timestamp order
@@ -312,12 +319,17 @@ object LyricVideoEncoder {
 
             var videoDone = false
             var audioDone = false
+            var firstAudioSampleTimeUs = -1L
 
             while (!videoDone || !audioDone) {
                 val currentVideoTime = if (!videoDone) videoExtractor.sampleTime else Long.MAX_VALUE
                 val rawAudioTime = if (!audioDone) audioExtractor.sampleTime else Long.MAX_VALUE
                 val currentAudioTime = if (rawAudioTime in 0..endUs) {
-                    maxOf(0L, rawAudioTime - startUs)
+                    if (firstAudioSampleTimeUs >= 0L) {
+                        maxOf(0L, rawAudioTime - firstAudioSampleTimeUs)
+                    } else {
+                        maxOf(0L, rawAudioTime - startUs)
+                    }
                 } else {
                     Long.MAX_VALUE
                 }
@@ -343,9 +355,12 @@ object LyricVideoEncoder {
                     if (sampleSize < 0 || sampleTime > endUs) {
                         audioDone = true
                     } else {
+                        if (firstAudioSampleTimeUs == -1L) {
+                            firstAudioSampleTimeUs = sampleTime
+                        }
                         audioInfo.offset = 0
                         audioInfo.size = sampleSize
-                        audioInfo.presentationTimeUs = maxOf(0L, sampleTime - startUs)
+                        audioInfo.presentationTimeUs = maxOf(0L, sampleTime - firstAudioSampleTimeUs)
                         audioInfo.flags = audioExtractor.sampleFlags
                         muxer.writeSampleData(outAudioTrack, audioBuffer, audioInfo)
                         audioExtractor.advance()

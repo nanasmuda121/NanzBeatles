@@ -17,8 +17,11 @@ import androidx.media3.common.C
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.SimpleCache
+import android.media.MediaCodec
 import android.media.MediaExtractor
 import android.media.MediaFormat
+import android.media.MediaMuxer
+import java.nio.ByteBuffer
 import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
@@ -54,7 +57,7 @@ object LyricVideoShareUtils {
      * Checks if the given local file is a valid, readable AAC audio file that MediaExtractor and MediaMuxer can handle.
      */
     fun isValidAudioFile(file: File): Boolean {
-        if (!file.exists() || file.length() < 32 * 1024L) return false
+        if (!file.exists() || file.length() < 4 * 1024L) return false
         val extractor = MediaExtractor()
         return try {
             extractor.setDataSource(file.absolutePath)
@@ -78,67 +81,170 @@ object LyricVideoShareUtils {
         }
     }
 
+    private fun extractClipFromExtractor(
+        extractor: MediaExtractor,
+        targetFile: File,
+        startTimeMs: Long,
+        durationMs: Long
+    ): Boolean {
+        var muxer: MediaMuxer? = null
+        try {
+            var audioTrack = -1
+            var audioFormat: MediaFormat? = null
+            for (i in 0 until extractor.trackCount) {
+                val format = extractor.getTrackFormat(i)
+                val mime = format.getString(MediaFormat.KEY_MIME) ?: ""
+                if (mime.startsWith("audio/")) {
+                    audioTrack = i
+                    audioFormat = format
+                    break
+                }
+            }
+            if (audioTrack == -1 || audioFormat == null) return false
+            extractor.selectTrack(audioTrack)
+
+            if (targetFile.exists()) targetFile.delete()
+            targetFile.parentFile?.mkdirs()
+
+            muxer = MediaMuxer(targetFile.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+            val outTrack = muxer.addTrack(audioFormat)
+            muxer.start()
+
+            val startUs = startTimeMs * 1000L
+            val endUs = (startTimeMs + durationMs) * 1000L
+
+            if (startUs > 0L) {
+                extractor.seekTo(startUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
+                while (extractor.sampleTime in 0 until startUs) {
+                    if (extractor.sampleTime >= startUs - 12_000L) {
+                        break
+                    }
+                    extractor.advance()
+                }
+            }
+
+            val buffer = ByteBuffer.allocateDirect(256 * 1024)
+            val info = MediaCodec.BufferInfo()
+            var firstSampleTimeUs = -1L
+
+            while (true) {
+                val sampleTime = extractor.sampleTime
+                if (sampleTime < 0 || sampleTime > endUs) break
+
+                buffer.clear()
+                val sampleSize = extractor.readSampleData(buffer, 0)
+                if (sampleSize < 0) break
+
+                if (firstSampleTimeUs == -1L) {
+                    firstSampleTimeUs = sampleTime
+                }
+
+                info.offset = 0
+                info.size = sampleSize
+                info.presentationTimeUs = maxOf(0L, sampleTime - firstSampleTimeUs)
+                info.flags = extractor.sampleFlags
+                muxer.writeSampleData(outTrack, buffer, info)
+                extractor.advance()
+            }
+
+            muxer.stop()
+            muxer.release()
+            muxer = null
+
+            return targetFile.exists() && targetFile.length() > 4 * 1024L
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "extractClipFromExtractor failed")
+            targetFile.delete()
+            return false
+        } finally {
+            try { muxer?.release() } catch (ignored: Exception) {}
+        }
+    }
+
+    private fun extractClipFromFile(
+        sourceFile: File,
+        targetFile: File,
+        startTimeMs: Long,
+        durationMs: Long
+    ): Boolean {
+        val extractor = MediaExtractor()
+        return try {
+            extractor.setDataSource(sourceFile.absolutePath)
+            extractClipFromExtractor(extractor, targetFile, startTimeMs, durationMs)
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "extractClipFromFile failed")
+            false
+        } finally {
+            try { extractor.release() } catch (ignored: Exception) {}
+        }
+    }
+
+    private fun extractClipFromStream(
+        context: Context,
+        streamUrl: String,
+        headers: Map<String, String>,
+        targetFile: File,
+        startTimeMs: Long,
+        durationMs: Long
+    ): Boolean {
+        val extractor = MediaExtractor()
+        return try {
+            extractor.setDataSource(context, Uri.parse(streamUrl), headers)
+            extractClipFromExtractor(extractor, targetFile, startTimeMs, durationMs)
+        } catch (e: Exception) {
+            Timber.tag(TAG).w(e, "extractClipFromStream failed")
+            false
+        } finally {
+            try { extractor.release() } catch (ignored: Exception) {}
+        }
+    }
+
     /**
-     * Resolves the full audio track locally so MediaExtractor/MediaCodec can access it.
-     * Priority:
-     * 1. Reusing existing valid local file
-     * 2. downloadCache (full offline download)
-     * 3. playerCache (playback buffer)
-     * 4. Network pre-download via YTPlayerUtils resolver (prioritizing AAC MP4 for native MediaExtractor/MediaMuxer)
+     * Resolves strictly the selected audio range (startTimeMs to startTimeMs + durationMs).
+     * Extracts only the selected duration without downloading the full song when possible.
      */
-    suspend fun resolveLocalAudioFile(
+    suspend fun resolveAudioClip(
         context: Context,
         mediaId: String,
+        startTimeMs: Long,
+        durationMs: Long,
         downloadCache: SimpleCache? = null,
         playerCache: SimpleCache? = null,
         onProgress: ((String, Float) -> Unit)? = null
     ): File = withContext(Dispatchers.IO) {
         val audioDir = File(context.cacheDir, "temp_lyric_audio").apply { mkdirs() }
-        val targetAudioFile = File(audioDir, "audio_${mediaId}.m4a")
+        val targetClipFile = File(audioDir, "clip_${mediaId}_${startTimeMs}_${durationMs}.m4a")
 
-        if (targetAudioFile.exists()) {
-            if (isValidAudioFile(targetAudioFile)) {
-                Timber.tag(TAG).d("Reusing existing valid audio file: ${targetAudioFile.absolutePath}")
-                return@withContext targetAudioFile
-            } else {
-                Timber.tag(TAG).w("Existing audio file was invalid/corrupt, deleting: ${targetAudioFile.absolutePath}")
-                targetAudioFile.delete()
-            }
+        if (targetClipFile.exists() && isValidAudioFile(targetClipFile)) {
+            Timber.tag(TAG).d("Reusing existing valid audio clip: ${targetClipFile.absolutePath}")
+            return@withContext targetClipFile
         }
 
-        onProgress?.invoke("Memeriksa cache audio lokal...", 0.05f)
+        onProgress?.invoke("Menyiapkan segmen audio...", 0.05f)
 
-        // 1. Check downloadCache
+        // 1. Check downloadCache (offline download)
         if (downloadCache != null && downloadCache.keys.contains(mediaId)) {
-            Timber.tag(TAG).d("Audio found in downloadCache, extracting...")
-            onProgress?.invoke("Membaca audio dari unduhan offline...", 0.08f)
-            if (copyFromCache(downloadCache, mediaId, targetAudioFile) && isValidAudioFile(targetAudioFile)) {
-                Timber.tag(TAG).d("Valid audio extracted from downloadCache")
-                return@withContext targetAudioFile
-            } else {
-                targetAudioFile.delete()
+            val tempOffline = File(audioDir, "temp_offline_${mediaId}.tmp")
+            if (copyFromCache(downloadCache, mediaId, tempOffline)) {
+                if (isValidAudioFile(tempOffline)) {
+                    onProgress?.invoke("Memotong audio dari unduhan offline...", 0.10f)
+                    val ok = extractClipFromFile(tempOffline, targetClipFile, startTimeMs, durationMs)
+                    tempOffline.delete()
+                    if (ok && isValidAudioFile(targetClipFile)) {
+                        Timber.tag(TAG).d("Audio clip extracted from downloadCache: ${targetClipFile.length()} bytes")
+                        return@withContext targetClipFile
+                    }
+                } else {
+                    tempOffline.delete()
+                }
             }
         }
 
-        // 2. Check playerCache
-        if (playerCache != null && playerCache.keys.contains(mediaId)) {
-            Timber.tag(TAG).d("Audio found in playerCache, extracting...")
-            onProgress?.invoke("Membaca audio dari buffer pemutar...", 0.10f)
-            if (copyFromCache(playerCache, mediaId, targetAudioFile) && isValidAudioFile(targetAudioFile)) {
-                Timber.tag(TAG).d("Valid audio extracted from playerCache")
-                return@withContext targetAudioFile
-            } else {
-                targetAudioFile.delete()
-            }
-        }
-
-        // 3. Fallback: Resolve MP4/AAC stream and download temporary copy
-        Timber.tag(TAG).d("Audio not fully cached, downloading temporary AAC stream...")
-        onProgress?.invoke("Menghubungkan ke stream audio...", 0.12f)
-
+        // 2. Stream online directly according to selected duration
         val connectivityManager = context.getSystemService<ConnectivityManager>()
-            ?: error("ConnectivityManager not available")
+            ?: error("ConnectivityManager tidak tersedia")
 
+        onProgress?.invoke("Menghubungkan ke stream audio...", 0.08f)
         val playbackData = YTPlayerUtils.playerResponseForPlayback(
             videoId = mediaId,
             audioQuality = AudioQuality.HIGH,
@@ -146,59 +252,58 @@ object LyricVideoShareUtils {
             preferMp4Audio = true
         ).getOrThrow()
 
-        val streamUrl = playbackData.streamUrl
+        // 3. Extract clip directly from stream without downloading full audio
+        val durSec = durationMs / 1000L
+        onProgress?.invoke("Mengunduh audio segmen ($durSec detik)...", 0.12f)
+        val streamSuccess = try {
+            extractClipFromStream(
+                context = context,
+                streamUrl = playbackData.streamUrl,
+                headers = playbackData.streamHeaders,
+                targetFile = targetClipFile,
+                startTimeMs = startTimeMs,
+                durationMs = durationMs
+            )
+        } catch (e: Exception) {
+            Timber.tag(TAG).w(e, "Direct stream extraction failed, falling back to temp download")
+            false
+        }
+
+        if (streamSuccess && isValidAudioFile(targetClipFile)) {
+            Timber.tag(TAG).d("Audio clip extracted directly from stream: ${targetClipFile.length()} bytes")
+            return@withContext targetClipFile
+        }
+
+        // 4. Fallback: Download temp AAC, extract clip, and delete full file
+        onProgress?.invoke("Mengunduh audio...", 0.14f)
         val client = OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)
             .build()
 
-        val requestBuilder = Request.Builder().url(streamUrl)
-        playbackData.streamHeaders.forEach { (k, v) ->
-            requestBuilder.addHeader(k, v)
-        }
+        val requestBuilder = Request.Builder().url(playbackData.streamUrl)
+        playbackData.streamHeaders.forEach { (k, v) -> requestBuilder.addHeader(k, v) }
         val request = requestBuilder.build()
-
         val tempDownloadFile = File(audioDir, "temp_dl_${mediaId}_${System.currentTimeMillis()}.tmp")
 
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) error("Gagal mengunduh audio: HTTP ${response.code}")
             val body = response.body ?: error("Empty audio response body")
-            val totalBytes = body.contentLength()
-
             FileOutputStream(tempDownloadFile).use { output ->
-                val buffer = ByteArray(64 * 1024)
-                var bytesRead: Int
-                var accumulatedBytes = 0L
-                val input = body.byteStream()
-                while (input.read(buffer).also { bytesRead = it } != -1) {
-                    output.write(buffer, 0, bytesRead)
-                    accumulatedBytes += bytesRead
-                    if (totalBytes > 0) {
-                        val dlProgress = (accumulatedBytes.toFloat() / totalBytes).coerceIn(0f, 1f)
-                        val dlMb = accumulatedBytes / (1024f * 1024f)
-                        val totalMb = totalBytes / (1024f * 1024f)
-                        onProgress?.invoke("Mengunduh audio: %.1f MB / %.1f MB".format(dlMb, totalMb), 0.12f + 0.10f * dlProgress)
-                    } else {
-                        val dlMb = accumulatedBytes / (1024f * 1024f)
-                        onProgress?.invoke("Mengunduh audio: %.1f MB".format(dlMb), 0.16f)
-                    }
-                }
+                body.byteStream().copyTo(output)
             }
         }
 
-        if (targetAudioFile.exists()) targetAudioFile.delete()
-        if (!tempDownloadFile.renameTo(targetAudioFile)) {
-            tempDownloadFile.copyTo(targetAudioFile, overwrite = true)
-            tempDownloadFile.delete()
+        val extractSuccess = extractClipFromFile(tempDownloadFile, targetClipFile, startTimeMs, durationMs)
+        tempDownloadFile.delete() // Guarantee full audio is NEVER kept, only the selected clip!
+
+        if (!extractSuccess || !isValidAudioFile(targetClipFile)) {
+            targetClipFile.delete()
+            error("Gagal mengekstrak segmen audio yang dipilih")
         }
 
-        if (!isValidAudioFile(targetAudioFile)) {
-            targetAudioFile.delete()
-            error("Format audio yang diunduh tidak didukung atau berkas rusak")
-        }
-
-        Timber.tag(TAG).d("Audio downloaded and verified: ${targetAudioFile.length()} bytes")
-        targetAudioFile
+        Timber.tag(TAG).d("Audio clip extracted via fallback: ${targetClipFile.length()} bytes")
+        targetClipFile
     }
 
     private fun copyFromCache(cache: SimpleCache, key: String, destFile: File): Boolean {
@@ -261,10 +366,12 @@ object LyricVideoShareUtils {
         onProgress: (stage: String, progress: Float) -> Unit
     ): Result<File> = withContext(Dispatchers.Default) {
         try {
-            onProgress("Menyiapkan audio lagu...", 0.05f)
-            val audioFile = resolveLocalAudioFile(
+            onProgress("Menyiapkan segmen audio lagu...", 0.05f)
+            val audioFile = resolveAudioClip(
                 context = context,
                 mediaId = mediaMetadata.id,
+                startTimeMs = startTimeMs,
+                durationMs = durationMs,
                 downloadCache = downloadCache,
                 playerCache = playerCache,
                 onProgress = onProgress

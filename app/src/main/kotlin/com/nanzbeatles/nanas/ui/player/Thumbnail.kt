@@ -257,8 +257,6 @@ fun Thumbnail(
     isPlayerExpanded: () -> Boolean = { true },
     isLandscape: Boolean = false,
     isListenTogetherGuest: Boolean = false,
-    hideWhenCanvasActive: Boolean = false,
-    shouldShowAuraCanvas: Boolean = false,
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val context = LocalContext.current
@@ -384,7 +382,7 @@ fun Thumbnail(
 
         // Main thumbnail view
         AnimatedVisibility(
-            visible = error == null && !(hideWhenCanvasActive && shouldShowAuraCanvas),
+            visible = error == null,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier
@@ -468,8 +466,6 @@ fun Thumbnail(
                                 currentMediaId = mediaMetadata?.id,
                                 currentMediaThumbnail = mediaMetadata?.thumbnailUrl,
                                 videoModeEnabled = videoModeEnabled,
-                                hideWhenCanvasActive = hideWhenCanvasActive,
-                                shouldShowAuraCanvas = shouldShowAuraCanvas,
                             )
                         }
                     }
@@ -551,8 +547,6 @@ private fun ThumbnailItem(
     currentMediaId: String? = null,
     currentMediaThumbnail: String? = null,
     videoModeEnabled: Boolean = false,
-    hideWhenCanvasActive: Boolean = false,
-    shouldShowAuraCanvas: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val incrementalSeekSkipEnabled by rememberPreference(SeekExtraSeconds, defaultValue = false)

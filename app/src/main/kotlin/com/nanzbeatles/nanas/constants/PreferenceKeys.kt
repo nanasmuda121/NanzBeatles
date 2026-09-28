@@ -128,7 +128,6 @@ val SubtitleFontSizeKey = floatPreferencesKey("subtitleFontSize")
 val AudioOffload = booleanPreferencesKey("enableOffload")
 
 val VideoModeEnabledKey = booleanPreferencesKey("videoModeEnabled")
-val AuraCanvasEnabledKey = booleanPreferencesKey("auraCanvasEnabled")
 
 val PersistentQueueKey = booleanPreferencesKey("persistentQueue")
 val PersistentShuffleAcrossQueuesKey = booleanPreferencesKey("persistentShuffleAcrossQueues")

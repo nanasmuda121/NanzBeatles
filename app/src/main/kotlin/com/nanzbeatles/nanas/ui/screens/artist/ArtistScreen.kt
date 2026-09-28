@@ -79,8 +79,6 @@ import androidx.compose.ui.util.fastForEach
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
-import com.nanzbeatles.nanas.ui.component.BeatlesCanvasImage
-import androidx.media3.common.util.UnstableApi
 import androidx.compose.ui.layout.ContentScale
 import com.nanzbeatles.innertube.YouTube
 import com.nanzbeatles.innertube.models.AlbumItem
@@ -290,13 +288,10 @@ fun ArtistScreen(
                                         IntOffset(x = 0, y = headerOffset)
                                     }
                             ) {
-                                @UnstableApi
-                                BeatlesCanvasImage(
-                                    title = null,
-                                    artist = artistName,
-                                    staticImageUrl = thumbnail.resize(1200, 1200).toString(),
+                                AsyncImage(
+                                    model = thumbnail.resize(1200, 1200).toString(),
+                                    contentDescription = null,
                                     contentScale = ContentScale.Crop,
-                                    candidateTracks = librarySongs.take(10).mapNotNull { it.song.id }, // for on-demand remote lookup
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .align(Alignment.TopCenter)

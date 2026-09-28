@@ -78,8 +78,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.exoplayer.offline.Download
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
-import com.nanzbeatles.nanas.ui.component.BeatlesCanvasImage
-import androidx.media3.common.util.UnstableApi
 import com.nanzbeatles.nanas.LocalDatabase
 import com.nanzbeatles.nanas.LocalDownloadUtil
 import com.nanzbeatles.nanas.LocalPlayerAwareWindowInsets
@@ -210,13 +208,10 @@ fun AlbumScreen(
                             ),
                         shape = RoundedCornerShape(3.dp)
                     ) {
-                        @UnstableApi
-                        BeatlesCanvasImage(
-                            title = albumWithSongs.album.title,
-                            artist = albumWithSongs.songs.firstOrNull()?.artists?.firstOrNull()?.name,
-                            staticImageUrl = albumWithSongs.album.thumbnailUrl?.toHighQualityThumbnail(),
+                        AsyncImage(
+                            model = albumWithSongs.album.thumbnailUrl?.toHighQualityThumbnail(),
+                            contentDescription = null,
                             contentScale = ContentScale.Crop,
-                            candidateTracks = albumWithSongs.songs.take(8).mapNotNull { it.song.id }, // for on-demand remote lookup
                             modifier = Modifier.fillMaxSize()
                         )
                     }

@@ -1068,8 +1068,6 @@
     <string name="switch_to_audio">Beralih ke audio</string>
     <string name="enable_video_mode">Mode Video</string>
     <string name="enable_video_mode_desc">Aktifkan pemutaran video otomatis untuk lagu video</string>
-    <string name="aura_canvas">VideoCanvas</string>
-    <string name="aura_canvas_desc">Tampilkan video VideoCanvas perulangan di balik seni album saat kecocokan ditemukan di manifes komunitas. Eksperimental.</string>
     <string name="closed_captions">Teks tertutup 1</string>
     <string name="closed_captions_desc">Tampilkan subtitle selama pemutaran video</string>
     <string name="subtitle_font_size">Ukuran Font Subtitle</string>

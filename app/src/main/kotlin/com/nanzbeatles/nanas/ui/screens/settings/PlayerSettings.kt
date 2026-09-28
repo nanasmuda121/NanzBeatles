@@ -84,7 +84,6 @@ import com.nanzbeatles.nanas.constants.SponsorBlockSkipPreviewKey
 import com.nanzbeatles.nanas.constants.SponsorBlockSkipMusicOffTopicKey
 import com.nanzbeatles.nanas.constants.SponsorBlockSkipFillerKey
 import com.nanzbeatles.nanas.constants.ShufflePlaylistFirstKey
-import com.nanzbeatles.nanas.constants.AuraCanvasEnabledKey
 import com.nanzbeatles.nanas.constants.SimilarContent
 import com.nanzbeatles.nanas.constants.SkipSilenceInstantKey
 import com.nanzbeatles.nanas.constants.SkipSilenceKey
@@ -221,10 +220,6 @@ fun PlayerSettings(
     )
     val (videoModeEnabled, onVideoModeEnabledChange) = rememberPreference(
         VideoModeEnabledKey,
-        defaultValue = true
-    )
-    val (auraCanvasEnabled, onAuraCanvasEnabledChange) = rememberPreference(
-        AuraCanvasEnabledKey,
         defaultValue = true
     )
     val (subtitlesEnabled, onSubtitlesEnabledChange) = rememberPreference(
@@ -616,27 +611,6 @@ fun PlayerSettings(
                     onClick = { onVideoModeEnabledChange(!videoModeEnabled) }
                 ))
                 add(Material3SettingsItem(
-                    icon = painterResource(R.drawable.slow_motion_video),
-                    title = { Text(stringResource(R.string.aura_canvas)) },
-                    description = { Text(stringResource(R.string.aura_canvas_desc)) },
-                    trailingContent = {
-                        Switch(
-                            checked = auraCanvasEnabled,
-                            onCheckedChange = onAuraCanvasEnabledChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (auraCanvasEnabled) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
-                        )
-                    },
-                     onClick = { onAuraCanvasEnabledChange(!auraCanvasEnabled) }
-                 ))
-                 add(Material3SettingsItem(
                      icon = painterResource(R.drawable.ic_subtitles),
                     title = { Text(stringResource(R.string.closed_captions)) },
                     description = { Text(stringResource(R.string.closed_captions_desc)) },

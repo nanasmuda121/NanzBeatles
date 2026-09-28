@@ -145,7 +145,6 @@ import com.nanzbeatles.nanas.LocalDownloadUtil
 import com.nanzbeatles.nanas.LocalListenTogetherManager
 import com.nanzbeatles.nanas.LocalPlayerConnection
 import com.nanzbeatles.nanas.R
-import com.nanzbeatles.nanas.constants.AuraCanvasEnabledKey
 import com.nanzbeatles.nanas.constants.EnableVoiceCommandsKey
 import com.nanzbeatles.nanas.constants.CropAlbumArtKey
 import com.nanzbeatles.nanas.constants.DarkModeKey
@@ -194,7 +193,6 @@ import com.nanzbeatles.nanas.ui.utils.toHighQualityThumbnail
 import com.nanzbeatles.nanas.utils.makeTimeString
 import com.nanzbeatles.nanas.utils.rememberEnumPreference
 import com.nanzbeatles.nanas.utils.rememberPreference
-import com.nanzbeatles.nanas.playback.BeatlesCanvasRepository
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -735,25 +733,6 @@ fun BottomSheetPlayer(
     }
 
     val backgroundAlpha = state.progress.coerceIn(0f, 1f)
-    val auraCanvasEnabled by rememberPreference(AuraCanvasEnabledKey, true)
-    var auraCanvasUrl by remember { mutableStateOf<String?>(null) }
-    
-    LaunchedEffect(auraCanvasEnabled, state.isExpanded, mediaMetadata) {
-        if (auraCanvasEnabled && state.isExpanded && mediaMetadata?.isVideoSong != true && !videoModeEnabled) {
-            auraCanvasUrl = runCatching {
-                BeatlesCanvasRepository.findCanvasUrl(
-                    title = mediaMetadata?.title,
-                    artist = mediaMetadata?.artists?.joinToString(", ") { it.name },
-                    album = mediaMetadata?.album?.title,
-                    durationMs = mediaMetadata?.duration?.takeIf { it > 0 }?.times(1000L)
-                )
-            }.getOrNull()
-        } else {
-            auraCanvasUrl = null
-        }
-    }
-    
-    val shouldAuraCanvas = auraCanvasUrl != null
 
     BottomSheet(
         state = state,
@@ -764,19 +743,7 @@ fun BottomSheetPlayer(
                     .fillMaxSize()
                     .background(bottomSheetBackgroundColor)
             ) {
-                val currentMetadata = mediaMetadata
-                if (shouldAuraCanvas && currentMetadata != null) {
-                    BeatlesCanvasOverlay(
-                        title = currentMetadata.title,
-                        artist = currentMetadata.artists.joinToString(", ") { it.name },
-                        album = currentMetadata.album?.title,
-                        durationMs = currentMetadata.duration.takeIf { it > 0 }?.times(1000L),
-                        canvasUrl = auraCanvasUrl,
-                        modifier = Modifier
-                            .fillMaxSize()
-                    )
-                } else {
-                    when (playerBackground) {
+                when (playerBackground) {
                         PlayerBackgroundStyle.BLUR -> {
                             AnimatedContent(
                                 targetState = mediaMetadata?.thumbnailUrl,
@@ -863,7 +830,6 @@ fun BottomSheetPlayer(
                             PlayerBackgroundStyle.DEFAULT
                         }
                     }
-                }
             }
         },
         onDismiss = {
@@ -2026,8 +1992,6 @@ fun BottomSheetPlayer(
                                     isPlayerExpanded = isExpandedProvider,
                                     isLandscape = true,
                                     isListenTogetherGuest = isListenTogetherGuest,
-                                    hideWhenCanvasActive = true,
-                                    shouldShowAuraCanvas = shouldAuraCanvas,
                                 )
                             }
                         }
@@ -2093,8 +2057,6 @@ fun BottomSheetPlayer(
                                     modifier = Modifier.nestedScroll(state.preUpPostDownNestedScrollConnection),
                                     isPlayerExpanded = isExpandedProvider,
                                     isListenTogetherGuest = isListenTogetherGuest,
-                                    hideWhenCanvasActive = true,
-                                    shouldShowAuraCanvas = shouldAuraCanvas,
                                 )
                             }
                         }

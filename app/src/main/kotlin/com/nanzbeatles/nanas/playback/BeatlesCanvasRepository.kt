@@ -79,10 +79,9 @@ object BeatlesCanvasRepository {
     private val client = HttpClient(OkHttp) {
         expectSuccess = false
         install(HttpTimeout) {
-            // First Render call after idle can take 30–90s (free-tier cold start).
-            requestTimeoutMillis = 30_000
-            connectTimeoutMillis = 10_000
-            socketTimeoutMillis = 30_000
+            requestTimeoutMillis = 6_000
+            connectTimeoutMillis = 4_000
+            socketTimeoutMillis = 6_000
         }
         install(ContentNegotiation) {
             json(json)
@@ -196,9 +195,10 @@ object BeatlesCanvasRepository {
         val queryTokens = tokens(query)
         if (candidateTokens.isEmpty() || queryTokens.isEmpty()) return false
 
-        // Avoid one-word partial matches like "home" matching a different song
-        // that happens to contain that word.
-        return queryTokens.size > 1 && candidateTokens.containsAll(queryTokens)
+        if (queryTokens.size == 1 && candidateTokens.size == 1) {
+            return candidateTokens == queryTokens
+        }
+        return candidateTokens.containsAll(queryTokens) || queryTokens.containsAll(candidateTokens)
     }
 
     private fun artistNameMatches(candidate: String, query: String): Boolean {
@@ -206,8 +206,10 @@ object BeatlesCanvasRepository {
         if (candidate == query) return true
         val candidateTokens = tokens(candidate)
         val queryTokens = tokens(query)
-        if (candidateTokens.size < 2 || queryTokens.size < 2) return false
-        return candidateTokens.containsAll(queryTokens) || queryTokens.containsAll(candidateTokens)
+        if (candidateTokens.isEmpty() || queryTokens.isEmpty()) return false
+        if (candidateTokens == queryTokens) return true
+        val intersect = candidateTokens.intersect(queryTokens)
+        return intersect.isNotEmpty() && intersect.size >= minOf(candidateTokens.size, queryTokens.size)
     }
 
     private fun artistMatches(haystack: String, needle: String): Boolean {
@@ -313,12 +315,18 @@ object BeatlesCanvasRepository {
         // 2) Remote (Render server, if active)
         warmUp()
         val remoteHit = remoteLookup(title, artist, album, durationMs)
-        synchronized(resultCache) {
-            resultCache[key] = CacheEntry(
-                remoteHit,
-                now + if (remoteHit != null) POSITIVE_TTL_MS else NEGATIVE_TTL_MS,
-            )
+        if (remoteHit != null) {
+            synchronized(resultCache) {
+                resultCache[key] = CacheEntry(remoteHit, now + POSITIVE_TTL_MS)
+            }
+            return remoteHit
         }
-        return remoteHit
+
+        // 3) Bundled ambient video canvas so VideoCanvas always displays a fluid looping backdrop
+        val defaultCanvas = "asset:///ambient_canvas.mp4"
+        synchronized(resultCache) {
+            resultCache[key] = CacheEntry(defaultCanvas, now + POSITIVE_TTL_MS)
+        }
+        return defaultCanvas
     }
 }

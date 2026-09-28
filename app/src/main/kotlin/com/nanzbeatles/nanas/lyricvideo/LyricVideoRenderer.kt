@@ -97,7 +97,7 @@ class LyricVideoRenderer(
 
     private val lyricsActivePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE
-        textSize = height * 0.074f // ~53px on 720p
+        textSize = height * 0.070f // ~50px on 720p
         typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
         textAlign = Paint.Align.LEFT
         setShadowLayer(10f, 0f, 3f, Color.parseColor("#A0000000"))
@@ -105,14 +105,14 @@ class LyricVideoRenderer(
 
     private val lyricsUpcomingPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.argb(95, 255, 255, 255)
-        textSize = height * 0.074f
+        textSize = height * 0.070f
         typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
         textAlign = Paint.Align.LEFT
     }
 
     private val lyricsNextLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.argb(90, 255, 255, 255)
-        textSize = height * 0.044f // ~32px
+        textSize = height * 0.042f // ~30px
         typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
         textAlign = Paint.Align.LEFT
     }
@@ -172,9 +172,9 @@ class LyricVideoRenderer(
     // Text positions
     private val brandTextY = caseRect.top - (height * 0.035f)
     private val handleX = width * 0.952f
-    private val lyricsX = width * 0.095f
-    private val lyricsY = height * 0.480f
-    private val lyricsMaxWidth = width * 0.45f
+    private val lyricsX = width * 0.065f // Shifted slightly left for better optical balance
+    private val lyricsY = height * 0.470f
+    private val lyricsMaxWidth = width * 0.46f
 
     // Pre-allocated circular disc bitmap
     private var circularCoverBitmap: Bitmap? = null
@@ -409,7 +409,8 @@ class LyricVideoRenderer(
 
     private data class TimedWord(
         val text: String,
-        val progress: Float
+        val progress: Float,
+        val hasTrailingSpace: Boolean = true
     )
 
     private fun renderLyrics(
@@ -435,31 +436,34 @@ class LyricVideoRenderer(
                     val wStartMs = (w.startTime * 1000).toLong()
                     val wEndMs = (w.endTime * 1000).toLong()
                     val wDur = (wEndMs - wStartMs).coerceAtLeast(1L)
-                    val prog = when {
+                    val rawProg = when {
                         currentTimeMs >= wEndMs -> 1f
                         currentTimeMs < wStartMs -> 0f
                         else -> ((currentTimeMs - wStartMs).toFloat() / wDur).coerceIn(0f, 1f)
                     }
-                    timedWords.add(TimedWord(w.text, prog))
+                    val smoothProg = rawProg * rawProg * (3f - 2f * rawProg)
+                    timedWords.add(TimedWord(w.text, smoothProg, w.hasTrailingSpace))
                 }
             } else {
                 // Progressive word highlight for standard LRC lines
                 val rawWords = activeEntry.text.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
                 val lineStartMs = activeEntry.time
-                val lineEndMs = nextEntry?.time?.takeIf { it > lineStartMs } ?: activeEntry.effectiveEndTime(3500L)
-                val lineDur = (lineEndMs - lineStartMs).coerceAtLeast(400L)
+                val estimatedLineDur = (rawWords.size * 420L).coerceIn(1600L, 5000L)
+                val maxAllowedDur = nextEntry?.let { (it.time - lineStartMs).coerceAtLeast(400L) } ?: 4000L
+                val lineDur = minOf(estimatedLineDur, maxAllowedDur)
                 val lineProgress = ((currentTimeMs - lineStartMs).toFloat() / lineDur).coerceIn(0f, 1f)
 
                 val count = rawWords.size
                 for ((idx, w) in rawWords.withIndex()) {
                     val wStart = idx.toFloat() / count
                     val wEnd = (idx + 1).toFloat() / count
-                    val prog = when {
+                    val rawProg = when {
                         lineProgress >= wEnd -> 1f
                         lineProgress <= wStart -> 0f
                         else -> ((lineProgress - wStart) / (wEnd - wStart)).coerceIn(0f, 1f)
                     }
-                    timedWords.add(TimedWord(w, prog))
+                    val smoothProg = rawProg * rawProg * (3f - 2f * rawProg)
+                    timedWords.add(TimedWord(w, smoothProg, hasTrailingSpace = true))
                 }
             }
 
@@ -500,7 +504,7 @@ class LyricVideoRenderer(
                             canvas.drawText(tw.text, curX, currentY, sweepPaint)
                         }
                     }
-                    curX += wordWidth + spaceWidth
+                    curX += wordWidth + (if (tw.hasTrailingSpace) spaceWidth else 0f)
                 }
                 currentY += lineHeight
             }
@@ -541,22 +545,23 @@ class LyricVideoRenderer(
         var currentLineWidth = 0f
         val spaceWidth = paint.measureText(" ")
 
-        for (word in words) {
+        for (i in words.indices) {
+            val word = words[i]
             val wordWidth = paint.measureText(word.text)
-            val addedWidth = if (currentLine.isEmpty()) wordWidth else spaceWidth + wordWidth
+            val addedWidth = wordWidth + (if (word.hasTrailingSpace) spaceWidth else 0f)
 
             if (currentLineWidth + addedWidth <= maxWidth || currentLine.isEmpty()) {
                 currentLine.add(word)
                 currentLineWidth += addedWidth
             } else {
                 lines.add(currentLine)
-                if (lines.size == maxLines - 1) {
-                    val remaining = words.subList(words.indexOf(word), words.size)
+                if (lines.size >= maxLines - 1) {
                     val lastLine = mutableListOf<TimedWord>()
                     var lastLineWidth = 0f
-                    for (rw in remaining) {
+                    for (j in i until words.size) {
+                        val rw = words[j]
                         val rwWidth = paint.measureText(rw.text)
-                        val rAdded = if (lastLine.isEmpty()) rwWidth else spaceWidth + rwWidth
+                        val rAdded = rwWidth + (if (rw.hasTrailingSpace) spaceWidth else 0f)
                         if (lastLineWidth + rAdded <= maxWidth || lastLine.isEmpty()) {
                             lastLine.add(rw)
                             lastLineWidth += rAdded
@@ -568,7 +573,7 @@ class LyricVideoRenderer(
                     return lines
                 }
                 currentLine = mutableListOf(word)
-                currentLineWidth = wordWidth
+                currentLineWidth = addedWidth
             }
         }
 
@@ -583,11 +588,12 @@ class LyricVideoRenderer(
      * Splits text into at most [maxLines] lines respecting word boundaries.
      */
     private fun wrapText(text: String, maxWidth: Float, paint: Paint, maxLines: Int): List<String> {
-        val words = text.split(Regex("\\s+"))
+        val words = text.split(Regex("\\s+")).filter { it.isNotBlank() }
         val lines = mutableListOf<String>()
         var currentLine = StringBuilder()
 
-        for (word in words) {
+        for (i in words.indices) {
+            val word = words[i]
             val testLine = if (currentLine.isEmpty()) word else "$currentLine $word"
             if (paint.measureText(testLine) <= maxWidth) {
                 currentLine = StringBuilder(testLine)
@@ -595,7 +601,7 @@ class LyricVideoRenderer(
                 if (currentLine.isNotEmpty()) {
                     lines.add(currentLine.toString())
                     if (lines.size == maxLines - 1) {
-                        val remainingWords = words.subList(words.indexOf(word), words.size).joinToString(" ")
+                        val remainingWords = words.subList(i, words.size).joinToString(" ")
                         var lastLine = remainingWords
                         while (paint.measureText("$lastLine…") > maxWidth && lastLine.isNotEmpty()) {
                             lastLine = lastLine.dropLast(1).trimEnd()

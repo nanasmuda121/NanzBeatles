@@ -297,9 +297,12 @@ object LyricVideoEncoder {
 
             audioExtractor.seekTo(startUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
             while (audioExtractor.sampleTime in 0 until startUs) {
+                // Keep the boundary sample covering startUs to avoid losing the first syllable
+                if (audioExtractor.sampleTime >= startUs - 12_000L) {
+                    break
+                }
                 audioExtractor.advance()
             }
-            val firstAudioSampleTimeUs = if (audioExtractor.sampleTime >= 0) audioExtractor.sampleTime else startUs
 
             // Interleaved copying: Video & Audio in presentation timestamp order
             val videoBuffer = ByteBuffer.allocateDirect(1024 * 1024)
@@ -314,7 +317,7 @@ object LyricVideoEncoder {
                 val currentVideoTime = if (!videoDone) videoExtractor.sampleTime else Long.MAX_VALUE
                 val rawAudioTime = if (!audioDone) audioExtractor.sampleTime else Long.MAX_VALUE
                 val currentAudioTime = if (rawAudioTime in 0..endUs) {
-                    maxOf(0L, rawAudioTime - firstAudioSampleTimeUs)
+                    maxOf(0L, rawAudioTime - startUs)
                 } else {
                     Long.MAX_VALUE
                 }
@@ -342,7 +345,7 @@ object LyricVideoEncoder {
                     } else {
                         audioInfo.offset = 0
                         audioInfo.size = sampleSize
-                        audioInfo.presentationTimeUs = maxOf(0L, sampleTime - firstAudioSampleTimeUs)
+                        audioInfo.presentationTimeUs = maxOf(0L, sampleTime - startUs)
                         audioInfo.flags = audioExtractor.sampleFlags
                         muxer.writeSampleData(outAudioTrack, audioBuffer, audioInfo)
                         audioExtractor.advance()

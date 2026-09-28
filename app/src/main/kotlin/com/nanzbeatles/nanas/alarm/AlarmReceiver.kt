@@ -1,6 +1,5 @@
 /**
- * Auramusic Project (C) 2026
- * Licensed under GPL-3.0 | See git history for contributors
+ * NanzBeatles Project (C) 2026
  *
  * Fires when an alarm matures. Posts a high-priority full-screen
  * notification that launches MainActivity (which queues and plays

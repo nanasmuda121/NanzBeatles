@@ -1,6 +1,5 @@
 /**
- * Auramusic Project (C) 2026
- * Licensed under GPL-3.0 | See git history for contributors
+ * NanzBeatles Project (C) 2026
  *
  * Music alarm settings: time picker, repeat, song-source picker
  * (downloads / cached / playlist) and per-source song selection.

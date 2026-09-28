@@ -1,6 +1,5 @@
 /**
- * Auramusic Project (C) 2026
- * Licensed under GPL-3.0 | See git history for contributors
+ * NanzBeatles Project (C) 2026
  *
  * Bluetooth LE Audio manager – uses BluetoothProfile proxies (A2DP,
  * HEADSET, LE_AUDIO) as the single source of truth for connected

@@ -1,6 +1,5 @@
 /**
  * NanzBeatles Project (C) 2026
- * Licensed under GPL-3.0
  */
 
 package com.nanzbeatles.nanas.lyricvideo

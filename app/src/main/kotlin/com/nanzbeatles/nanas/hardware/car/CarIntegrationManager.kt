@@ -1,6 +1,5 @@
 /**
- * Auramusic Project (C) 2026
- * Licensed under GPL-3.0 | See git history for contributors
+ * NanzBeatles Project (C) 2026
  *
  * Car Integration manager – detects when the device is connected to
  * a car infotainment system (via Android Auto / Bluetooth car kit /

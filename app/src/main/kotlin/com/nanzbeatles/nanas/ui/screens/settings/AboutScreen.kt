@@ -1,6 +1,5 @@
 /**
- * Auramusic Project (C) 2026
- * Licensed under GPL-3.0 | See git history for contributors
+ * NanzBeatles Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.ui.screens.settings
@@ -201,7 +200,7 @@ fun AboutScreen(
                                 when {
                                     BuildConfig.CAST_AVAILABLE -> "GMS"
                                     BuildConfig.ARCHITECTURE != "universal" -> "STANDALONE"
-                                    else -> "FOSS"
+                                    else -> "PRO"
                                 }
                             )
                         },
@@ -750,58 +749,7 @@ fun AboutScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // License Info (clickable)
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .then(if (maxWidth < 600.dp) Modifier else Modifier.fillMaxWidth(0.8f))
-                    .clickable {
-                        uriHandler.openUri("https://github.com/nanasmuda121/NanzBeatles/blob/main/LICENSE")
-                    },
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp)
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                        modifier = Modifier.size(52.dp)
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.info),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
-                    Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text(
-                            text = "Lisensi",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "GNU General Public License v3.0",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
+
 
             // Extra bottom padding to avoid mini player blocking content
             Spacer(Modifier.height(MiniPlayerHeight + NavigationBarHeight + 24.dp))

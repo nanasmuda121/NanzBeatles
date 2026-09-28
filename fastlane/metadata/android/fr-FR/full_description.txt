@@ -12,4 +12,3 @@ Fonctionnalités :
 
 Il s'agit de la version FOSS (Free and Open Source), compatible avec F-Droid. Elle n'inclut pas les dépendances de Google Play Services.
 
-Licence : GPL-3.0

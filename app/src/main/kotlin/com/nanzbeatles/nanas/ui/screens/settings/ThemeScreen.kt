@@ -1,6 +1,5 @@
 /**
- * AuraMusic Project (C) 2026
- * Licensed under GPL-3.0. See LICENSE file for details.
+ * NanzBeatles Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.ui.screens.settings

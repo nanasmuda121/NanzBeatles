@@ -1,6 +1,5 @@
 /**
- * Auramusic Project (C) 2026
- * Licensed under GPL-3.0 | See git history for contributors
+ * NanzBeatles Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.ui.tv
@@ -610,16 +609,11 @@ import kotlin.math.roundToInt
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        text = "${BuildConfig.ARCHITECTURE.uppercase()} • FOSS TV",
+                        text = "${BuildConfig.ARCHITECTURE.uppercase()} • NanzBeatles TV",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(16.dp))
-                    Text(
-                        text = "Licensed under GPL-3.0",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                     Text(
                         text = "NanzBeatles (C) 2026",
                         style = MaterialTheme.typography.bodySmall,

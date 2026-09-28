@@ -1,6 +1,5 @@
 /**
  * NanzBeatles Project (C) 2026
- * Licensed under GPL-3.0
  */
 
 package com.nanzbeatles.nanas.lyricvideo
@@ -17,7 +16,9 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.Typeface
+import com.nanzbeatles.nanas.constants.VideoLyricsCardStyle
 import com.nanzbeatles.nanas.lyrics.LyricsEntry
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.sin
@@ -40,8 +41,31 @@ class LyricVideoRenderer(
     val height: Int = 720,
     private val caseBitmap: Bitmap? = null,
     private val brandText: String = "NanzBeatles",
-    private val artistHandle: String = "@NanzBeatles"
+    private val artistHandle: String = "@NanzBeatles",
+    var cardStyle: VideoLyricsCardStyle = VideoLyricsCardStyle.KASET,
+    lyricsScale: Float = 1.0f,
+    lyricsOffsetX: Float = 0f,
+    lyricsOffsetY: Float = 0f
 ) {
+
+    var lyricsScale: Float = lyricsScale
+        set(value) {
+            if (field != value) {
+                field = value
+                entryLinesCache.clear()
+            }
+        }
+
+    var lyricsOffsetX: Float = lyricsOffsetX
+        set(value) {
+            if (field != value) {
+                field = value
+                entryLinesCache.clear()
+            }
+        }
+
+    var lyricsOffsetY: Float = lyricsOffsetY
+
 
     // Paints
     private val bgPaint = Paint().apply {
@@ -251,26 +275,135 @@ class LyricVideoRenderer(
         // 1. Solid Pure Black Background
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
 
-        // 2. Constantly Spinning CD Disc Cover
-        renderSpinningDisc(canvas, currentTimeMs)
+        if (cardStyle == VideoLyricsCardStyle.NORMAL) {
+            // Normal card mode: clean square album art + song title + artist below + sleek audio waveform
+            renderNormalCard(canvas, songTitle, songArtist, currentTimeMs, amplitude)
+        } else {
+            // Kaset / CD jewel case mode
+            renderSpinningDisc(canvas, currentTimeMs)
+            renderSpindleHub(canvas)
+            renderJewelCase(canvas)
+            renderBrandText(canvas)
+            renderArtistHandle(canvas)
+            renderWaveform(canvas, currentTimeMs, amplitude)
+        }
 
-        // 3. Spindle Clamp Hub
-        renderSpindleHub(canvas)
-
-        // 4. Jewel Case Overlay (Realistic Acrylic or Procedural)
-        renderJewelCase(canvas)
-
-        // 5. "NanzBeatles" Brand Text Above Case
-        renderBrandText(canvas)
-
-        // 6. Vertical 90° Rotated Handle "@Xxxtentaction"
-        renderArtistHandle(canvas)
-
-        // 7. 3-Cluster Audio Reactive Waveform Bars
-        renderWaveform(canvas, currentTimeMs, amplitude)
-
-        // 8. Large White Left-Aligned Lyrics
+        // Large White Left-Aligned Lyrics
         renderLyrics(canvas, currentTimeMs, lyrics, songTitle, songArtist)
+    }
+
+    private fun renderNormalCard(
+        canvas: Canvas,
+        songTitle: String,
+        songArtist: String,
+        currentTimeMs: Long,
+        amplitude: Float
+    ) {
+        val cx = discCenterX
+        val cy = discCenterY
+        val cardSize = discRadius * 1.82f // ~373px on 720p
+        val cardCornerRadius = height * 0.035f
+
+        val cardLeft = cx - (cardSize / 2f)
+        val cardTop = cy - (cardSize * 0.62f)
+        val cardRight = cardLeft + cardSize
+        val cardBottom = cardTop + cardSize
+        val cardRect = RectF(cardLeft, cardTop, cardRight, cardBottom)
+
+        // 1. Soft Drop Shadow behind cover
+        val shadowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#40000000")
+            setShadowLayer(24f, 0f, 8f, Color.parseColor("#C0000000"))
+        }
+        canvas.drawRoundRect(cardRect, cardCornerRadius, cardCornerRadius, shadowPaint)
+
+        // 2. Draw Rounded Album Art Cover
+        val cover = cachedSourceCover
+        if (cover != null && !cover.isRecycled) {
+            canvas.save()
+            val clipPath = Path().apply {
+                addRoundRect(cardRect, cardCornerRadius, cardCornerRadius, Path.Direction.CW)
+            }
+            canvas.clipPath(clipPath)
+            val minDim = minOf(cover.width, cover.height)
+            val cropX = (cover.width - minDim) / 2
+            val cropY = (cover.height - minDim) / 2
+            val srcRect = Rect(cropX, cropY, cropX + minDim, cropY + minDim)
+            canvas.drawBitmap(cover, srcRect, cardRect, null)
+            canvas.restore()
+        } else {
+            val placeholderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                shader = LinearGradient(
+                    cardLeft, cardTop, cardRight, cardBottom,
+                    Color.parseColor("#1E293B"), Color.parseColor("#0F172A"),
+                    Shader.TileMode.CLAMP
+                )
+            }
+            canvas.drawRoundRect(cardRect, cardCornerRadius, cardCornerRadius, placeholderPaint)
+        }
+
+        // 3. Subtle stroke border around cover
+        val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.argb(45, 255, 255, 255)
+            style = Paint.Style.STROKE
+            strokeWidth = 2.5f
+        }
+        canvas.drawRoundRect(cardRect, cardCornerRadius, cardCornerRadius, borderPaint)
+
+        // 4. Song Title below cover ("nama musik di bawahnya")
+        val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textSize = height * 0.046f
+            typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
+            textAlign = Paint.Align.CENTER
+            setShadowLayer(8f, 0f, 2f, Color.parseColor("#A0000000"))
+        }
+        val maxTextWidth = cardSize * 1.15f
+        var displayTitle = songTitle
+        while (titlePaint.measureText("$displayTitle…") > maxTextWidth && displayTitle.isNotEmpty()) {
+            displayTitle = displayTitle.dropLast(1).trimEnd()
+        }
+        if (displayTitle.length < songTitle.length) displayTitle = "$displayTitle…"
+
+        val titleY = cardBottom + (height * 0.052f)
+        canvas.drawText(displayTitle, cx, titleY, titlePaint)
+
+        // 5. Artist Name below song title ("artisnya juga")
+        val artistPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.argb(195, 203, 213, 225)
+            textSize = height * 0.035f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            textAlign = Paint.Align.CENTER
+        }
+        var displayArtist = if (songArtist.isNotBlank()) songArtist else "NanzBeatles"
+        while (artistPaint.measureText("$displayArtist…") > maxTextWidth && displayArtist.isNotEmpty()) {
+            displayArtist = displayArtist.dropLast(1).trimEnd()
+        }
+        if (displayArtist.length < songArtist.length) displayArtist = "$displayArtist…"
+
+        val artistY = titleY + (height * 0.040f)
+        canvas.drawText(displayArtist, cx, artistY, artistPaint)
+
+        // 6. Sleek Audio Waveform below artist
+        val waveBaseY = artistY + (height * 0.050f)
+        val barCount = 15
+        val barSpacing = height * 0.016f
+        val startX = cx - ((barCount - 1) * barSpacing / 2f)
+        val minH = height * 0.012f
+        val maxH = height * 0.050f
+
+        for (b in 0 until barCount) {
+            val bx = startX + (b * barSpacing)
+            val centerDist = abs(b - (barCount / 2f)) / (barCount / 2f)
+            val bell = exp(-centerDist * centerDist * 2.0).toFloat()
+            val phase = (b * 0.5) + (currentTimeMs * 0.008)
+            val waveAmp = (amplitude * 0.75f + (sin(phase) * 0.25).toFloat()).coerceIn(0.15f, 1.0f)
+            val barH = minH + (waveAmp * (maxH - minH) * bell)
+
+            val yTop = waveBaseY - (barH / 2f)
+            val yBot = waveBaseY + (barH / 2f)
+            canvas.drawLine(bx, yTop, bx, yBot, waveformPaint)
+        }
     }
 
     private fun renderSpinningDisc(canvas: Canvas, currentTimeMs: Long) {
@@ -476,7 +609,7 @@ class LyricVideoRenderer(
                     timedWords.add(TimedWord(w, sMs, eMs, hasTrailingSpace = idx < count - 1))
                 }
             }
-            lyricsActivePaint.textSize = activeTextSize
+            lyricsActivePaint.textSize = activeTextSize * lyricsScale
             wrapTimedWords(timedWords, lyricsMaxWidth, lyricsActivePaint, maxLines = 3)
         }
     }
@@ -490,8 +623,15 @@ class LyricVideoRenderer(
     ) {
         val validLyrics = lyrics?.filter { it.text.isNotBlank() } ?: emptyList()
 
+        val scaledActiveTextSize = activeTextSize * lyricsScale
+        val scaledSecTextSize = secTextSize * lyricsScale
+        val scaledPrevTextSize = prevTextSize * lyricsScale
+        val curSlotActiveY = slotActiveY + lyricsOffsetY
+        val curSlotPrevY = slotPrevY + lyricsOffsetY
+        val curSlotNextY = slotNextY + lyricsOffsetY
+
         if (validLyrics.isEmpty()) {
-            renderTitleCard(canvas, songTitle, songArtist, slotActiveY, 1.0f)
+            renderTitleCard(canvas, songTitle, songArtist, curSlotActiveY, 1.0f)
             return
         }
 
@@ -509,15 +649,15 @@ class LyricVideoRenderer(
                 val ease = 1f - (1f - p) * (1f - p) * (1f - p)
                 val scrollOffset = (1f - ease) * stepDistance
 
-                renderTitleCard(canvas, songTitle, songArtist, slotPrevY + scrollOffset, (1f - ease).coerceIn(0f, 1f))
+                renderTitleCard(canvas, songTitle, songArtist, curSlotPrevY + scrollOffset, (1f - ease).coerceIn(0f, 1f))
 
-                val activeCenterY = slotActiveY + scrollOffset
-                val curTextSize = secTextSize + (activeTextSize - secTextSize) * ease
+                val activeCenterY = curSlotActiveY + scrollOffset
+                val curTextSize = scaledSecTextSize + (scaledActiveTextSize - scaledSecTextSize) * ease
                 val activeAlpha = (0.45f + 0.55f * ease).coerceIn(0f, 1f)
                 renderEntry(canvas, firstLines, currentTimeMs, activeCenterY, curTextSize, activeAlpha, EntryRenderStyle.ACTIVE)
             } else {
-                renderTitleCard(canvas, songTitle, songArtist, slotActiveY, 1.0f)
-                renderEntry(canvas, firstLines, currentTimeMs, slotNextY, secTextSize, 0.45f, EntryRenderStyle.UPCOMING)
+                renderTitleCard(canvas, songTitle, songArtist, curSlotActiveY, 1.0f)
+                renderEntry(canvas, firstLines, currentTimeMs, curSlotNextY, scaledSecTextSize, 0.45f, EntryRenderStyle.UPCOMING)
             }
             return
         }
@@ -541,13 +681,13 @@ class LyricVideoRenderer(
         // 1. Older previous line exiting upward
         if (olderEntry != null && olderLines != null && ease < 1.0f) {
             val olderAlpha = (0.35f * (1f - ease)).coerceIn(0f, 1f)
-            val olderCenterY = (slotPrevY - stepDistance) + scrollOffset
-            renderEntry(canvas, olderLines, currentTimeMs, olderCenterY, prevTextSize, olderAlpha, EntryRenderStyle.PREVIOUS)
+            val olderCenterY = (curSlotPrevY - stepDistance) + scrollOffset
+            renderEntry(canvas, olderLines, currentTimeMs, olderCenterY, scaledPrevTextSize, olderAlpha, EntryRenderStyle.PREVIOUS)
         }
 
         // 2. Previous line gliding from slotActiveY to slotPrevY
-        val prevCenterY = slotPrevY + scrollOffset
-        val curPrevTextSize = activeTextSize - (activeTextSize - prevTextSize) * ease
+        val prevCenterY = curSlotPrevY + scrollOffset
+        val curPrevTextSize = scaledActiveTextSize - (scaledActiveTextSize - scaledPrevTextSize) * ease
         val prevAlpha = (1.0f - (0.62f * ease)).coerceIn(0f, 1f)
         if (prevEntry != null && prevLines != null) {
             renderEntry(canvas, prevLines, currentTimeMs, prevCenterY, curPrevTextSize, prevAlpha, EntryRenderStyle.PREVIOUS)
@@ -556,16 +696,16 @@ class LyricVideoRenderer(
         }
 
         // 3. Active line gliding from slotNextY to slotActiveY ("geser + maju sikit")
-        val activeCenterY = slotActiveY + scrollOffset
-        val curActiveTextSize = secTextSize + (activeTextSize - secTextSize) * ease
+        val activeCenterY = curSlotActiveY + scrollOffset
+        val curActiveTextSize = scaledSecTextSize + (scaledActiveTextSize - scaledSecTextSize) * ease
         val activeAlpha = (0.45f + 0.55f * ease).coerceIn(0f, 1f)
         renderEntry(canvas, activeLines, currentTimeMs, activeCenterY, curActiveTextSize, activeAlpha, EntryRenderStyle.ACTIVE)
 
         // 4. Next line appearing at slotNextY (already in its exact lines!)
         if (nextEntry != null && nextLines != null) {
-            val nextCenterY = slotNextY + scrollOffset
+            val nextCenterY = curSlotNextY + scrollOffset
             val nextAlpha = if (ease >= 1.0f) 0.45f else (0.45f * ease).coerceIn(0f, 1f)
-            renderEntry(canvas, nextLines, currentTimeMs, nextCenterY, secTextSize, nextAlpha, EntryRenderStyle.UPCOMING)
+            renderEntry(canvas, nextLines, currentTimeMs, nextCenterY, scaledSecTextSize, nextAlpha, EntryRenderStyle.UPCOMING)
         }
     }
 
@@ -608,7 +748,7 @@ class LyricVideoRenderer(
                 lyricsNextLinePaint.alpha = dimAlpha
                 val spW = lyricsNextLinePaint.measureText(" ")
                 for (line in lines) {
-                    var curX = lyricsX
+                    var curX = lyricsX + lyricsOffsetX
                     for (tw in line) {
                         canvas.drawText(tw.text, curX, currentY, lyricsNextLinePaint)
                         curX += lyricsNextLinePaint.measureText(tw.text) + (if (tw.hasTrailingSpace) spW else 0f)
@@ -621,7 +761,7 @@ class LyricVideoRenderer(
                 lyricsPrevPaint.alpha = prevAlpha
                 val spW = lyricsPrevPaint.measureText(" ")
                 for (line in lines) {
-                    var curX = lyricsX
+                    var curX = lyricsX + lyricsOffsetX
                     for (tw in line) {
                         canvas.drawText(tw.text, curX, currentY, lyricsPrevPaint)
                         curX += lyricsPrevPaint.measureText(tw.text) + (if (tw.hasTrailingSpace) spW else 0f)
@@ -643,7 +783,7 @@ class LyricVideoRenderer(
                 val spW = lyricsActivePaint.measureText(" ")
 
                 for (line in lines) {
-                    var curX = lyricsX
+                    var curX = lyricsX + lyricsOffsetX
                     for (tw in line) {
                         val wordWidth = lyricsActivePaint.measureText(tw.text)
                         val p = tw.progressAt(currentTimeMs)
@@ -691,24 +831,24 @@ class LyricVideoRenderer(
     ) {
         if (alpha <= 0.01f) return
         val cardAlpha = (255 * alpha).toInt().coerceIn(0, 255)
-        lyricsActivePaint.textSize = activeTextSize
+        lyricsActivePaint.textSize = activeTextSize * lyricsScale
         lyricsActivePaint.alpha = cardAlpha
 
         val titleLines = wrapText(title, lyricsMaxWidth, lyricsActivePaint, maxLines = 2)
         val lineHeight = lyricsActivePaint.textSize * 1.25f
         val hasArtist = artist.isNotBlank()
-        val totalH = (titleLines.size * lineHeight) + (if (hasArtist) secTextSize * 1.25f else 0f)
+        val totalH = (titleLines.size * lineHeight) + (if (hasArtist) secTextSize * lyricsScale * 1.25f else 0f)
 
         var curY = centerY - (totalH / 2f) + (lyricsActivePaint.textSize * 0.75f)
         for (line in titleLines) {
-            canvas.drawText(line, lyricsX, curY, lyricsActivePaint)
+            canvas.drawText(line, lyricsX + lyricsOffsetX, curY, lyricsActivePaint)
             curY += lineHeight
         }
 
         if (hasArtist) {
-            lyricsNextLinePaint.textSize = secTextSize
+            lyricsNextLinePaint.textSize = secTextSize * lyricsScale
             lyricsNextLinePaint.alpha = (cardAlpha * 0.75f).toInt().coerceIn(0, 255)
-            canvas.drawText(artist, lyricsX, curY + (height * 0.015f), lyricsNextLinePaint)
+            canvas.drawText(artist, lyricsX + lyricsOffsetX, curY + (height * 0.015f), lyricsNextLinePaint)
         }
     }
 

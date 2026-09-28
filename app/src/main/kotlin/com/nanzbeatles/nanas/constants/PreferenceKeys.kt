@@ -1,6 +1,5 @@
 /**
- * Auramusic Project (C) 2026
- * Licensed under GPL-3.0 | See git history for contributors
+ * NanzBeatles Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.constants
@@ -454,6 +453,16 @@ val EnhancedLyricsKey = booleanPreferencesKey("enhancedLyrics")
 val TranslateLyricsKey = booleanPreferencesKey("translateLyrics")
 val VideoLyricsOffsetKey = intPreferencesKey("videoLyricsOffset")
 val VideoLyricsEnabledKey = booleanPreferencesKey("videoLyricsEnabled")
+
+enum class VideoLyricsCardStyle {
+    NORMAL, // Tanpa CD, hanya gambar album dan nama musik serta artis di bawahnya
+    KASET;  // CD / Kaset jewel case dengan disc berputar
+}
+
+val VideoLyricsCardStyleKey = stringPreferencesKey("videoLyricsCardStyle")
+val VideoLyricsScalePercentKey = intPreferencesKey("videoLyricsScalePercent")
+val VideoLyricsOffsetXPercentKey = intPreferencesKey("videoLyricsOffsetXPercent")
+val VideoLyricsOffsetYPercentKey = intPreferencesKey("videoLyricsOffsetYPercent")
 val OpenRouterApiKey = stringPreferencesKey("openRouterApiKey")
 val AiProviderKey = stringPreferencesKey("aiProvider")
 val OpenRouterBaseUrlKey = stringPreferencesKey("openRouterBaseUrl")

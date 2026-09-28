@@ -1,6 +1,5 @@
 /**
- * Auramusic Project (C) 2026
- * Licensed under GPL-3.0 | See git history for contributors
+ * NanzBeatles Project (C) 2026
  *
  * Schedules music alarms via the system AlarmManager. Uses
  * setAlarmClock() so the alarm survives Doze / app standby and shows

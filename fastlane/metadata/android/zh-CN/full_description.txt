@@ -12,4 +12,3 @@ Aura 音乐是一个开源播放器，可以使你直接从YouTube音乐中在�
 
 这是符合F-Droid的FOSS（自由和开源）版本。 它不包括 Google Play 服务的依赖项。
 
-License: GPL-3.0

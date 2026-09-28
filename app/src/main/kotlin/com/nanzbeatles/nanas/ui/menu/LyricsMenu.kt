@@ -1,6 +1,5 @@
 /**
- * Auramusic Project (C) 2026
- * Licensed under GPL-3.0 | See git history for contributors
+ * NanzBeatles Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.ui.menu
@@ -139,6 +138,22 @@ fun LyricsMenu(
             lyrics = parsedEntries,
             currentPlaybackPositionMs = currentPosition,
             onDismiss = { showLyricVideoDialog = false }
+        )
+    }
+
+    var showLayoutEditor by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    if (showLayoutEditor) {
+        val rawLyrics = lyricsProvider()?.lyrics.orEmpty()
+        val parsedEntries = remember(rawLyrics) {
+            if (rawLyrics.isNotBlank()) LyricsUtils.parseLyrics(rawLyrics) else emptyList()
+        }
+        com.nanzbeatles.nanas.ui.component.VideoLyricsLayoutEditor(
+            mediaMetadata = mediaMetadataProvider(),
+            lyrics = parsedEntries,
+            onDismiss = { showLayoutEditor = false }
         )
     }
 
@@ -453,6 +468,21 @@ fun LyricsMenu(
                             },
                             onClick = {
                                 showLyricVideoDialog = true
+                            }
+                        )
+                    )
+
+                    add(
+                        Material3MenuItemData(
+                            title = { Text("Tata Letak Video Lirik") },
+                            icon = {
+                                Icon(
+                                    painter = painterResource(R.drawable.tune),
+                                    contentDescription = null,
+                                )
+                            },
+                            onClick = {
+                                showLayoutEditor = true
                             }
                         )
                     )

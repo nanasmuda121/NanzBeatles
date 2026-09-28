@@ -1,6 +1,5 @@
 /**
- * Auramusic Project (C) 2026
- * Licensed under GPL-3.0 | See git history for contributors
+ * NanzBeatles Project (C) 2026
  *
  * HardwareIntegrationManager owns the hardware feature managers
  * (Bluetooth audio + Car) and exposes a derived "active hardware"

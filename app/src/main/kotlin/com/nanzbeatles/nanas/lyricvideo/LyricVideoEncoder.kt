@@ -1,6 +1,5 @@
 /**
  * NanzBeatles Project (C) 2026
- * Licensed under GPL-3.0
  */
 
 package com.nanzbeatles.nanas.lyricvideo
@@ -13,6 +12,7 @@ import android.media.MediaCodecInfo
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaMuxer
+import com.nanzbeatles.nanas.constants.VideoLyricsCardStyle
 import com.nanzbeatles.nanas.lyrics.LyricsEntry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
@@ -48,7 +48,11 @@ object LyricVideoEncoder {
         val startTimeMs: Long,
         val durationMs: Long,
         val amplitudes: FloatArray,
-        val caseBitmap: Bitmap? = null
+        val caseBitmap: Bitmap? = null,
+        val cardStyle: VideoLyricsCardStyle = VideoLyricsCardStyle.KASET,
+        val lyricsScale: Float = 1.0f,
+        val lyricsOffsetX: Float = 0f,
+        val lyricsOffsetY: Float = 0f
     )
 
     /**
@@ -88,7 +92,11 @@ object LyricVideoEncoder {
                 height = VIDEO_HEIGHT,
                 caseBitmap = config.caseBitmap,
                 brandText = "NanzBeatles",
-                artistHandle = artistHandle
+                artistHandle = artistHandle,
+                cardStyle = config.cardStyle,
+                lyricsScale = config.lyricsScale,
+                lyricsOffsetX = config.lyricsOffsetX,
+                lyricsOffsetY = config.lyricsOffsetY
             ).apply {
                 setCoverBitmap(config.coverBitmap)
             }
@@ -319,6 +327,7 @@ object LyricVideoEncoder {
             var videoDone = false
             var audioDone = false
             var firstAudioSampleTimeUs = -1L
+            var lastAudioPtsUs = -1L
 
             while (!videoDone || !audioDone) {
                 val currentVideoTime = if (!videoDone) videoExtractor.sampleTime else Long.MAX_VALUE
@@ -359,7 +368,12 @@ object LyricVideoEncoder {
                         }
                         audioInfo.offset = 0
                         audioInfo.size = sampleSize
-                        audioInfo.presentationTimeUs = maxOf(0L, sampleTime - firstAudioSampleTimeUs)
+                        var pts = maxOf(0L, sampleTime - firstAudioSampleTimeUs)
+                        if (pts <= lastAudioPtsUs) {
+                            pts = lastAudioPtsUs + 1000L
+                        }
+                        lastAudioPtsUs = pts
+                        audioInfo.presentationTimeUs = pts
                         audioInfo.flags = audioExtractor.sampleFlags
                         muxer.writeSampleData(outAudioTrack, audioBuffer, audioInfo)
                         audioExtractor.advance()

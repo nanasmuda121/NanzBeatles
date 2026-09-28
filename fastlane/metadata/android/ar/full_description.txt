@@ -12,4 +12,3 @@ Aura Music is an open-source music players that lets you stream music directly f
 
 هذه هي نسخة البرمجيات الحرة والمفتوحة المصدر، متوافقة مع F-Droid. It does not include Google Play Services dependencies.
 
-License: GPL-3.0

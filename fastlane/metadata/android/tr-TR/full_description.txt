@@ -12,4 +12,3 @@ Aura Music, doğrudan Youtube Music'den müzik dinlemenizi sağlayan açık kayn
 
 Bu F-Droid ile uyumlu olan özgür ve açık kaynaklı sürümü. Google Play Servisleri bağımlılıklarını içermez.
 
-Lisans: GPL-3.0

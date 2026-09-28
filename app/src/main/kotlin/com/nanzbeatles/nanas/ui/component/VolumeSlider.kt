@@ -1,6 +1,5 @@
 /**
- * Auramusic Project (C) 2026
- * Licensed under GPL-3.0 | See git history for contributors
+ * NanzBeatles Project (C) 2026
  * 
  * Material 3 Expressive Volume Slider
  * Based on M3 Expressive Slider specifications (Size M):

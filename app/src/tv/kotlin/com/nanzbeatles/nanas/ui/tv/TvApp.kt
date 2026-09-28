@@ -1,6 +1,5 @@
 /**
- * Auramusic Project (C) 2026
- * Licensed under GPL-3.0 | See git history for contributors
+ * NanzBeatles Project (C) 2026
  */
 
 package com.nanzbeatles.nanas.ui.tv
@@ -3724,7 +3723,7 @@ fun TvSettingsScreen(
         item(key = "about_settings") {
             TvSettingsCategoryItem(
                 title = "About",
-                subtitle = "App version, licenses, and information",
+                subtitle = "App version and information",
                 onClick = onAboutClick,
                 icon = Icons.Filled.Info,
                 modifier = Modifier

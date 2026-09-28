@@ -1,6 +1,5 @@
 /**
  * NanzBeatles Project (C) 2026
- * Licensed under GPL-3.0
  */
 
 package com.nanzbeatles.nanas.ui.component
@@ -72,7 +71,11 @@ import com.nanzbeatles.nanas.R
 import com.nanzbeatles.nanas.lyrics.LyricsEntry
 import com.nanzbeatles.nanas.lyricvideo.LyricVideoShareUtils
 import com.nanzbeatles.nanas.models.MediaMetadata
-import com.nanzbeatles.nanas.utils.ShareUtils
+import androidx.compose.runtime.DisposableEffect
+import com.nanzbeatles.nanas.constants.VideoLyricsCardStyle
+import com.nanzbeatles.nanas.constants.VideoLyricsCardStyleKey
+import com.nanzbeatles.nanas.utils.rememberEnumPreference
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -109,6 +112,42 @@ fun LyricVideoCreationDialog(
     var currentProgress by remember { mutableFloatStateOf(0f) }
     var generatedVideoFile by remember { mutableStateOf<File?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    var showLayoutEditor by remember { mutableStateOf(false) }
+    var isAudioPreviewPlaying by remember { mutableStateOf(false) }
+    var cardStyle by rememberEnumPreference(VideoLyricsCardStyleKey, VideoLyricsCardStyle.NORMAL)
+
+    LaunchedEffect(isAudioPreviewPlaying, startTimeSec, endTimeSec) {
+        if (isAudioPreviewPlaying) {
+            val endMs = (endTimeSec * 1000L).toLong()
+            while (isAudioPreviewPlaying) {
+                delay(100L)
+                val current = playerConnection?.player?.currentPosition ?: 0L
+                val isPlaying = playerConnection?.player?.isPlaying ?: false
+                if (current >= endMs || !isPlaying) {
+                    playerConnection?.player?.pause()
+                    isAudioPreviewPlaying = false
+                    break
+                }
+            }
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            if (isAudioPreviewPlaying) {
+                playerConnection?.player?.pause()
+            }
+        }
+    }
+
+    if (showLayoutEditor) {
+        VideoLyricsLayoutEditor(
+            mediaMetadata = mediaMetadata,
+            lyrics = lyrics,
+            onDismiss = { showLayoutEditor = false }
+        )
+    }
 
     Dialog(
         onDismissRequest = {
@@ -569,6 +608,168 @@ fun LyricVideoCreationDialog(
 
                         Spacer(Modifier.height(14.dp))
 
+                        // Audio & Lyrics Start/End Preview Card
+                        val startLyricText = remember(lyrics, startTimeSec) {
+                            val startMs = (startTimeSec * 1000L).toLong()
+                            lyrics?.findLast { it.time <= startMs }?.text
+                                ?: lyrics?.firstOrNull()?.text
+                                ?: "(Tidak ada lirik)"
+                        }
+                        val endLyricText = remember(lyrics, endTimeSec) {
+                            val endMs = (endTimeSec * 1000L).toLong()
+                            lyrics?.findLast { it.time <= endMs }?.text
+                                ?: lyrics?.lastOrNull()?.text
+                                ?: "(Tidak ada lirik)"
+                        }
+
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(14.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.mic),
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            text = "Pratinjau Lirik & Audio",
+                                            style = MaterialTheme.typography.labelLarge,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+
+                                    AssistChip(
+                                        onClick = {
+                                            val player = playerConnection?.player
+                                            if (isAudioPreviewPlaying) {
+                                                player?.pause()
+                                                isAudioPreviewPlaying = false
+                                            } else {
+                                                player?.seekTo((startTimeSec * 1000L).toLong())
+                                                player?.play()
+                                                isAudioPreviewPlaying = true
+                                            }
+                                        },
+                                        label = {
+                                            Text(if (isAudioPreviewPlaying) "Berhenti" else "Dengar Audio")
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                painter = painterResource(if (isAudioPreviewPlaying) R.drawable.pause else R.drawable.ic_play),
+                                                contentDescription = null,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                        }
+                                    )
+                                }
+
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(
+                                            MaterialTheme.colorScheme.surface.copy(alpha = 0.65f),
+                                            RoundedCornerShape(10.dp)
+                                        )
+                                        .padding(10.dp),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Row(verticalAlignment = Alignment.Top) {
+                                        Text(
+                                            text = "Lirik Mulai (${formatTime(startTimeSec)}): ",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Text(
+                                            text = startLyricText,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 2
+                                        )
+                                    }
+                                    Row(verticalAlignment = Alignment.Top) {
+                                        Text(
+                                            text = "Lirik Berhenti (${formatTime(endTimeSec)}): ",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.secondary
+                                        )
+                                        Text(
+                                            text = endLyricText,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 2
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(Modifier.height(14.dp))
+
+                        // Card Model Selection (NORMAL vs KASET)
+                        Text(
+                            text = "Model Desain:",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            FilterChip(
+                                selected = cardStyle == VideoLyricsCardStyle.NORMAL,
+                                onClick = { cardStyle = VideoLyricsCardStyle.NORMAL },
+                                label = { Text("Normal (Sampul & Info)") },
+                                modifier = Modifier.weight(1f)
+                            )
+                            FilterChip(
+                                selected = cardStyle == VideoLyricsCardStyle.KASET,
+                                onClick = { cardStyle = VideoLyricsCardStyle.KASET },
+                                label = { Text("Kaset (Piringan CD)") },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Spacer(Modifier.height(10.dp))
+
+                        // Fullscreen Landscape Layout Editor Button
+                        OutlinedButton(
+                            onClick = { showLayoutEditor = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.tune),
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("Edit Tata Letak & Ukuran (Layar Penuh)")
+                        }
+
+                        Spacer(Modifier.height(14.dp))
+
                         if (errorMessage != null) {
                             Text(
                                 text = errorMessage ?: "",
@@ -588,6 +789,10 @@ fun LyricVideoCreationDialog(
                             Spacer(Modifier.width(8.dp))
                             Button(
                                 onClick = {
+                                    if (isAudioPreviewPlaying) {
+                                        playerConnection?.player?.pause()
+                                        isAudioPreviewPlaying = false
+                                    }
                                     isGenerating = true
                                     errorMessage = null
 

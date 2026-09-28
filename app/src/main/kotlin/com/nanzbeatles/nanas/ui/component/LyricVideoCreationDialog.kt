@@ -71,6 +71,7 @@ import com.nanzbeatles.nanas.R
 import com.nanzbeatles.nanas.lyrics.LyricsEntry
 import com.nanzbeatles.nanas.lyricvideo.LyricVideoShareUtils
 import com.nanzbeatles.nanas.models.MediaMetadata
+import com.nanzbeatles.nanas.utils.ShareUtils
 import androidx.compose.runtime.DisposableEffect
 import com.nanzbeatles.nanas.constants.VideoLyricsCardStyle
 import com.nanzbeatles.nanas.constants.VideoLyricsCardStyleKey

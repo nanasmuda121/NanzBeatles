@@ -74,8 +74,6 @@ import com.nanzbeatles.nanas.ui.component.NewActionGrid
 import com.nanzbeatles.nanas.ui.component.TextFieldDialog
 import com.nanzbeatles.nanas.viewmodels.LyricsMenuViewModel
 import com.nanzbeatles.nanas.constants.AutoTranslateLyricsKey
-import com.nanzbeatles.nanas.constants.LyricsDisplayStyle
-import com.nanzbeatles.nanas.constants.LyricsDisplayStyleKey
 import com.nanzbeatles.nanas.constants.OpenRouterApiKey
 import com.nanzbeatles.nanas.lyrics.LyricsTranslationHelper
 import com.nanzbeatles.nanas.ui.component.EnumDialog
@@ -98,31 +96,6 @@ fun LyricsMenu(
     val autoTranslateLyrics by rememberPreference(AutoTranslateLyricsKey, false)
     val openRouterApiKey by rememberPreference(OpenRouterApiKey, "")
 
-    val (lyricsDisplayStyle, onLyricsDisplayStyleChange) = rememberEnumPreference(
-        key = LyricsDisplayStyleKey,
-        defaultValue = LyricsDisplayStyle.KEREN
-    )
-    var showLyricsStyleDialog by rememberSaveable { mutableStateOf(false) }
-
-    if (showLyricsStyleDialog) {
-        EnumDialog(
-            onDismiss = { showLyricsStyleDialog = false },
-            onSelect = {
-                onLyricsDisplayStyleChange(it)
-                showLyricsStyleDialog = false
-            },
-            title = stringResource(R.string.lyrics_display_style),
-            current = lyricsDisplayStyle,
-            values = listOf(LyricsDisplayStyle.NORMAL, LyricsDisplayStyle.KEREN, LyricsDisplayStyle.APPLE_MUSIC),
-            valueText = {
-                when (it) {
-                    LyricsDisplayStyle.NORMAL -> stringResource(R.string.lyrics_style_normal)
-                    LyricsDisplayStyle.KEREN -> stringResource(R.string.lyrics_style_keren)
-                    LyricsDisplayStyle.APPLE_MUSIC -> stringResource(R.string.lyrics_style_apple_music)
-                }
-            }
-        )
-    }
 
     var showEditDialog by rememberSaveable {
         mutableStateOf(false)
@@ -484,31 +457,6 @@ fun LyricsMenu(
                         )
                     )
 
-                    add(
-                        Material3MenuItemData(
-                            title = { Text(stringResource(R.string.lyrics_display_style)) },
-                            icon = {
-                                Icon(
-                                    painter = painterResource(R.drawable.palette),
-                                    contentDescription = null,
-                                )
-                            },
-                            onClick = {
-                                showLyricsStyleDialog = true
-                            },
-                            trailingContent = {
-                                Text(
-                                    text = when (lyricsDisplayStyle) {
-                                        LyricsDisplayStyle.NORMAL -> "Normal"
-                                        LyricsDisplayStyle.KEREN -> "Keren"
-                                        LyricsDisplayStyle.APPLE_MUSIC -> "Apple Music"
-                                    },
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        )
-                    )
 
                     // Add "Translate with AI" option if auto-translate is disabled
                     if (!autoTranslateLyrics && openRouterApiKey.isNotBlank()) {

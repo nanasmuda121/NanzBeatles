@@ -42,6 +42,7 @@ import com.nanzbeatles.nanas.constants.VideoLyricsOffsetXPercentKey
 import com.nanzbeatles.nanas.constants.VideoLyricsOffsetYPercentKey
 import com.nanzbeatles.nanas.constants.VideoLyricsScalePercentKey
 import com.nanzbeatles.nanas.constants.VideoLyricsShowUpcomingKey
+import com.nanzbeatles.nanas.constants.VideoLyricsHideInactiveKey
 import com.nanzbeatles.nanas.lyrics.LyricsEntry
 import com.nanzbeatles.nanas.models.MediaMetadata
 import com.nanzbeatles.nanas.utils.ShareUtils
@@ -645,6 +646,7 @@ object LyricVideoShareUtils {
             val cardAlphaPercent = prefs[VideoLyricsCardAlphaPercentKey] ?: 100
             val spacingPercent = prefs[VideoLyricsLineSpacingPercentKey] ?: 100
             val showUpcoming = prefs[VideoLyricsShowUpcomingKey] ?: true
+            val hideInactive = prefs[VideoLyricsHideInactiveKey] ?: (!showUpcoming)
             val lyricsRotation = (prefs[VideoLyricsLyricsRotationKey] ?: 0).toFloat()
             val cardRotation = (prefs[VideoLyricsCardRotationKey] ?: 0).toFloat()
 
@@ -677,7 +679,8 @@ object LyricVideoShareUtils {
                 cardOffsetY = cardOffsetY,
                 cardAlpha = cardAlpha,
                 lyricsSpacingScale = lyricsSpacingScale,
-                showUpcomingLyrics = showUpcoming,
+                showUpcomingLyrics = !hideInactive && showUpcoming,
+                hideInactiveLyrics = hideInactive,
                 lyricsRotation = lyricsRotation,
                 cardRotation = cardRotation
             )

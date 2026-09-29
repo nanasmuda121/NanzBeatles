@@ -50,6 +50,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -63,6 +64,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
@@ -82,6 +84,7 @@ import com.nanzbeatles.nanas.constants.VideoLyricsCardRotationKey
 import com.nanzbeatles.nanas.constants.VideoLyricsCardScalePercentKey
 import com.nanzbeatles.nanas.constants.VideoLyricsCardStyle
 import com.nanzbeatles.nanas.constants.VideoLyricsCardStyleKey
+import com.nanzbeatles.nanas.constants.VideoLyricsHideInactiveKey
 import com.nanzbeatles.nanas.constants.VideoLyricsLineSpacingPercentKey
 import com.nanzbeatles.nanas.constants.VideoLyricsLyricsRotationKey
 import com.nanzbeatles.nanas.constants.VideoLyricsOffsetXPercentKey
@@ -129,11 +132,36 @@ fun VideoLyricsLayoutEditor(
     var cardAlphaPercent by rememberSaveable { mutableIntStateOf(100) }
     var lineSpacingPercent by rememberSaveable { mutableIntStateOf(100) }
     var showUpcomingLyrics by rememberSaveable { mutableStateOf(true) }
+    var hideInactiveLyrics by rememberSaveable { mutableStateOf(false) }
     var lyricsRotation by rememberSaveable { mutableIntStateOf(0) }
     var cardRotation by rememberSaveable { mutableIntStateOf(0) }
 
     var selectedTab by rememberSaveable { mutableIntStateOf(0) } // 0 = Lirik, 1 = Sampul, 2 = Gaya
     var showControls by rememberSaveable { mutableStateOf(true) }
+
+    // Helper to persist all settings to DataStore
+    val saveSettings: () -> Unit = {
+        scope.launch {
+            context.dataStore.edit { prefs ->
+                prefs[VideoLyricsCardStyleKey] = cardStyle.name
+                prefs[VideoLyricsScalePercentKey] = scalePercent
+                prefs[VideoLyricsOffsetXPercentKey] = offsetXPercent
+                prefs[VideoLyricsOffsetYPercentKey] = offsetYPercent
+                prefs[VideoLyricsCardScalePercentKey] = cardScalePercent
+                prefs[VideoLyricsCardOffsetXPercentKey] = cardOffsetXPercent
+                prefs[VideoLyricsCardOffsetYPercentKey] = cardOffsetYPercent
+                prefs[VideoLyricsCardAlphaPercentKey] = cardAlphaPercent
+                prefs[VideoLyricsLineSpacingPercentKey] = lineSpacingPercent
+                prefs[VideoLyricsShowUpcomingKey] = !hideInactiveLyrics
+                prefs[VideoLyricsHideInactiveKey] = hideInactiveLyrics
+                prefs[VideoLyricsLyricsRotationKey] = lyricsRotation
+                prefs[VideoLyricsCardRotationKey] = cardRotation
+            }
+            withContext(Dispatchers.Main) {
+                onStyleChanged?.invoke(cardStyle)
+            }
+        }
+    }
 
     // Load initial saved preferences
     LaunchedEffect(Unit) {
@@ -148,7 +176,10 @@ fun VideoLyricsLayoutEditor(
         cardOffsetYPercent = prefs[VideoLyricsCardOffsetYPercentKey] ?: 0
         cardAlphaPercent = prefs[VideoLyricsCardAlphaPercentKey] ?: 100
         lineSpacingPercent = prefs[VideoLyricsLineSpacingPercentKey] ?: 100
-        showUpcomingLyrics = prefs[VideoLyricsShowUpcomingKey] ?: true
+        val savedHideInactive = prefs[VideoLyricsHideInactiveKey]
+        val savedShowUpcoming = prefs[VideoLyricsShowUpcomingKey] ?: true
+        hideInactiveLyrics = savedHideInactive ?: (!savedShowUpcoming)
+        showUpcomingLyrics = !hideInactiveLyrics
         lyricsRotation = prefs[VideoLyricsLyricsRotationKey] ?: 0
         cardRotation = prefs[VideoLyricsCardRotationKey] ?: 0
     }
@@ -181,14 +212,35 @@ fun VideoLyricsLayoutEditor(
         }
     }
 
-    // Sample preview lyrics if none provided
-    val sampleLyrics = remember(lyrics) {
-        if (!lyrics.isNullOrEmpty()) lyrics else listOf(
-            LyricsEntry(0L, "Nikmati lantunan musik bersama NanzBeatles"),
-            LyricsEntry(3000L, "Tata letak VideoLyrics dapat Anda geser"),
-            LyricsEntry(6500L, "Sesuaikan ukuran lirik dari 1% hingga 100%"),
-            LyricsEntry(10000L, "Pilih gaya tampilan Kaset atau Kartu Normal")
-        )
+    // Sample preview lyrics normalized to 0L loop so karaoke sweeps and transitions are always live!
+    val previewLyrics = remember(lyrics) {
+        val nonBlank = lyrics?.filter { it.text.isNotBlank() }
+        if (!nonBlank.isNullOrEmpty()) {
+            val sampleCount = minOf(4, nonBlank.size)
+            val stepMs = 3500L
+            nonBlank.take(sampleCount).mapIndexed { index, original ->
+                val newLineStart = index * stepMs
+                val mappedWords = original.words?.map { w ->
+                    val wordStartRel = (w.startTime * 1000.0) - original.time
+                    val wordEndRel = (w.endTime * 1000.0) - original.time
+                    val newWordStart = (newLineStart + wordStartRel.coerceAtLeast(0.0)) / 1000.0
+                    val newWordEnd = (newLineStart + wordEndRel.coerceAtLeast(100.0)) / 1000.0
+                    w.copy(startTime = newWordStart, endTime = newWordEnd)
+                }
+                original.copy(
+                    time = newLineStart,
+                    endTime = newLineStart + 3200L,
+                    words = mappedWords
+                )
+            }
+        } else {
+            listOf(
+                LyricsEntry(0L, "Nikmati lantunan musik bersama NanzBeatles"),
+                LyricsEntry(3500L, "Tata letak VideoLyrics dapat Anda geser"),
+                LyricsEntry(7000L, "Sesuaikan ukuran lirik dari 20% hingga 200%"),
+                LyricsEntry(10500L, "Pilih gaya tampilan Kaset atau Kartu Normal")
+            )
+        }
     }
 
     val animatedAmp = remember(previewTimeMs) {
@@ -196,7 +248,10 @@ fun VideoLyricsLayoutEditor(
     }
 
     Dialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            saveSettings()
+            onDismiss()
+        },
         properties = DialogProperties(
             usePlatformDefaultWidth = false,
             decorFitsSystemWindows = false,
@@ -275,7 +330,7 @@ fun VideoLyricsLayoutEditor(
                     }
 
                     Canvas(modifier = canvasModifier) {
-                        val curTime = previewTimeMs % 12000L
+                        val curTime = previewTimeMs % 14000L
                         val curAmp = animatedAmp
                         val currentCardStyle = cardStyle
                         val currentScale = (scalePercent / 80f).coerceIn(0.2f, 2.5f)
@@ -296,7 +351,8 @@ fun VideoLyricsLayoutEditor(
                         renderer.cardOffsetY = currentCardOffsetY
                         renderer.cardAlpha = currentCardAlpha
                         renderer.lyricsSpacingScale = currentSpacing
-                        renderer.showUpcomingLyrics = showUpcomingLyrics
+                        renderer.showUpcomingLyrics = !hideInactiveLyrics
+                        renderer.hideInactiveLyrics = hideInactiveLyrics
                         renderer.lyricsRotation = lyricsRotation.toFloat()
                         renderer.cardRotation = cardRotation.toFloat()
                         if (coverBitmap != null) {
@@ -311,7 +367,7 @@ fun VideoLyricsLayoutEditor(
                                 canvas = nativeCanvas,
                                 currentTimeMs = curTime,
                                 amplitude = curAmp,
-                                lyrics = sampleLyrics,
+                                lyrics = previewLyrics,
                                 songTitle = mediaMetadata?.title ?: "NanzBeatles Music",
                                 songArtist = mediaMetadata?.artists?.joinToString { it.name } ?: "Beatles Audio"
                             )
@@ -361,6 +417,25 @@ fun VideoLyricsLayoutEditor(
                                 )
                                 Spacer(Modifier.width(6.dp))
                                 Text("Pengaturan")
+                            }
+                            Button(
+                                onClick = {
+                                    saveSettings()
+                                    Toast.makeText(context, "Tata letak berhasil disimpan!", Toast.LENGTH_SHORT).show()
+                                    onDismiss()
+                                },
+                                shape = CircleShape,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.check),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text("Simpan")
                             }
                         }
                     }
@@ -431,6 +506,7 @@ fun VideoLyricsLayoutEditor(
                                             offsetYPercent = 0
                                             lineSpacingPercent = 100
                                             showUpcomingLyrics = true
+                                            hideInactiveLyrics = false
                                             lyricsRotation = 0
                                             cardScalePercent = 100
                                             cardOffsetXPercent = 0
@@ -546,29 +622,51 @@ fun VideoLyricsLayoutEditor(
 
                                             Spacer(Modifier.height(6.dp))
 
-                                            Text(
-                                                text = "Jenis Tampilan Lirik:",
-                                                style = MaterialTheme.typography.labelMedium,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                            Spacer(Modifier.height(4.dp))
-                                            Row(
+                                            Card(
                                                 modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                shape = RoundedCornerShape(14.dp),
+                                                colors = CardDefaults.cardColors(
+                                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                                ),
+                                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
                                             ) {
-                                                FilterChip(
-                                                    selected = showUpcomingLyrics,
-                                                    onClick = { showUpcomingLyrics = true },
-                                                    label = { Text("Ada Preview Bawah") },
-                                                    modifier = Modifier.weight(1f)
-                                                )
-                                                FilterChip(
-                                                    selected = !showUpcomingLyrics,
-                                                    onClick = { showUpcomingLyrics = false },
-                                                    label = { Text("Tanpa Preview Bawah") },
-                                                    modifier = Modifier.weight(1f)
-                                                )
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .clickable {
+                                                            hideInactiveLyrics = !hideInactiveLyrics
+                                                            showUpcomingLyrics = !hideInactiveLyrics
+                                                        }
+                                                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                                                        Text(
+                                                            text = "Sembunyikan Lirik Tidak Aktif",
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            fontWeight = FontWeight.SemiBold,
+                                                            color = MaterialTheme.colorScheme.onSurface
+                                                        )
+                                                        Spacer(Modifier.height(2.dp))
+                                                        Text(
+                                                            text = if (hideInactiveLyrics) {
+                                                                "Fokus 1 baris lirik aktif di tengah (tanpa lirik sebelum & sesudahnya)"
+                                                            } else {
+                                                                "Menampilkan lirik aktif beserta baris sebelum & sesudahnya"
+                                                            },
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                    }
+                                                    Switch(
+                                                        checked = hideInactiveLyrics,
+                                                        onCheckedChange = { checked ->
+                                                            hideInactiveLyrics = checked
+                                                            showUpcomingLyrics = !checked
+                                                        }
+                                                    )
+                                                }
                                             }
 
                                             Spacer(Modifier.height(6.dp))
@@ -881,27 +979,9 @@ fun VideoLyricsLayoutEditor(
 
                                 Button(
                                     onClick = {
-                                        scope.launch {
-                                            context.dataStore.edit { prefs ->
-                                                prefs[VideoLyricsCardStyleKey] = cardStyle.name
-                                                prefs[VideoLyricsScalePercentKey] = scalePercent
-                                                prefs[VideoLyricsOffsetXPercentKey] = offsetXPercent
-                                                prefs[VideoLyricsOffsetYPercentKey] = offsetYPercent
-                                                prefs[VideoLyricsCardScalePercentKey] = cardScalePercent
-                                                prefs[VideoLyricsCardOffsetXPercentKey] = cardOffsetXPercent
-                                                prefs[VideoLyricsCardOffsetYPercentKey] = cardOffsetYPercent
-                                                prefs[VideoLyricsCardAlphaPercentKey] = cardAlphaPercent
-                                                prefs[VideoLyricsLineSpacingPercentKey] = lineSpacingPercent
-                                                prefs[VideoLyricsShowUpcomingKey] = showUpcomingLyrics
-                                                prefs[VideoLyricsLyricsRotationKey] = lyricsRotation
-                                                prefs[VideoLyricsCardRotationKey] = cardRotation
-                                            }
-                                            withContext(Dispatchers.Main) {
-                                                onStyleChanged?.invoke(cardStyle)
-                                                Toast.makeText(context, "Tata letak VideoLyrics berhasil disimpan!", Toast.LENGTH_SHORT).show()
-                                                onDismiss()
-                                            }
-                                        }
+                                        saveSettings()
+                                        Toast.makeText(context, "Tata letak VideoLyrics berhasil disimpan!", Toast.LENGTH_SHORT).show()
+                                        onDismiss()
                                     },
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(12.dp),

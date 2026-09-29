@@ -59,6 +59,7 @@ object LyricVideoEncoder {
         val cardAlpha: Float = 1.0f,
         val lyricsSpacingScale: Float = 1.0f,
         val showUpcomingLyrics: Boolean = true,
+        val hideInactiveLyrics: Boolean = false,
         val lyricsRotation: Float = 0f,
         val cardRotation: Float = 0f
     )
@@ -111,6 +112,7 @@ object LyricVideoEncoder {
                 cardAlpha = config.cardAlpha,
                 lyricsSpacingScale = config.lyricsSpacingScale,
                 showUpcomingLyrics = config.showUpcomingLyrics,
+                hideInactiveLyrics = config.hideInactiveLyrics,
                 lyricsRotation = config.lyricsRotation,
                 cardRotation = config.cardRotation
             ).apply {

@@ -6,6 +6,7 @@ package com.nanzbeatles.nanas.ui.component
 
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -81,11 +82,14 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.media3.common.Player
 import com.nanzbeatles.nanas.constants.VideoLyricsCardStyle
 import com.nanzbeatles.nanas.constants.VideoLyricsCardStyleKey
+import com.nanzbeatles.nanas.constants.VideoLyricsHideInactiveKey
+import com.nanzbeatles.nanas.constants.VideoLyricsShowUpcomingKey
 import com.nanzbeatles.nanas.extensions.toMediaItem
 import com.nanzbeatles.nanas.playback.queues.ListQueue
 import androidx.datastore.preferences.core.edit
 import com.nanzbeatles.nanas.utils.dataStore
 import com.nanzbeatles.nanas.utils.rememberEnumPreference
+import com.nanzbeatles.nanas.utils.rememberPreference
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
@@ -127,6 +131,7 @@ fun LyricVideoCreationDialog(
     var showLayoutEditor by rememberSaveable { mutableStateOf(false) }
     var isAudioPreviewPlaying by remember { mutableStateOf(false) }
     var cardStyle by rememberEnumPreference(VideoLyricsCardStyleKey, VideoLyricsCardStyle.NORMAL)
+    var hideInactiveLyrics by rememberPreference(VideoLyricsHideInactiveKey, defaultValue = false)
 
     LaunchedEffect(isAudioPreviewPlaying, startTimeSec, endTimeSec) {
         if (isAudioPreviewPlaying) {
@@ -519,6 +524,46 @@ fun LyricVideoCreationDialog(
                                 )
                             }
 
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+                                ),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { hideInactiveLyrics = !hideInactiveLyrics }
+                                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f).padding(end = 10.dp)) {
+                                        Text(
+                                            text = "Sembunyikan Lirik Tidak Aktif",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                        Spacer(Modifier.height(2.dp))
+                                        Text(
+                                            text = if (hideInactiveLyrics) {
+                                                "Fokus 1 baris lirik aktif di tengah (tanpa baris sebelum & sesudahnya)"
+                                            } else {
+                                                "Tampilkan baris lirik aktif beserta baris sebelum & sesudahnya"
+                                            },
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Switch(
+                                        checked = hideInactiveLyrics,
+                                        onCheckedChange = { hideInactiveLyrics = it }
+                                    )
+                                }
+                            }
+
                             OutlinedButton(
                                 onClick = { showLayoutEditor = true },
                                 modifier = Modifier.fillMaxWidth(),
@@ -892,9 +937,12 @@ fun LyricVideoCreationDialog(
                                     val durationMs = ((endTimeSec - startTimeSec) * 1000L).toLong().coerceAtLeast(1000L)
 
                                     val currentCardStyle = cardStyle
+                                    val currentHideInactive = hideInactiveLyrics
                                     scope.launch {
                                         context.dataStore.edit { prefs ->
                                             prefs[VideoLyricsCardStyleKey] = currentCardStyle.name
+                                            prefs[VideoLyricsHideInactiveKey] = currentHideInactive
+                                            prefs[VideoLyricsShowUpcomingKey] = !currentHideInactive
                                         }
                                         val result = LyricVideoShareUtils.generateLyricVideo(
                                             context = context,

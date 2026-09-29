@@ -469,6 +469,7 @@ val VideoLyricsCardOffsetYPercentKey = intPreferencesKey("videoLyricsCardOffsetY
 val VideoLyricsCardAlphaPercentKey = intPreferencesKey("videoLyricsCardAlphaPercent")
 val VideoLyricsLineSpacingPercentKey = intPreferencesKey("videoLyricsLineSpacingPercent")
 val VideoLyricsShowUpcomingKey = booleanPreferencesKey("videoLyricsShowUpcoming")
+val VideoLyricsHideInactiveKey = booleanPreferencesKey("videoLyricsHideInactive")
 val VideoLyricsLyricsRotationKey = intPreferencesKey("videoLyricsLyricsRotation")
 val VideoLyricsCardRotationKey = intPreferencesKey("videoLyricsCardRotation")
 val OpenRouterApiKey = stringPreferencesKey("openRouterApiKey")

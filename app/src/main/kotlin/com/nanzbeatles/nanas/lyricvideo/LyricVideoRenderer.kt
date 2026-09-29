@@ -52,6 +52,7 @@ class LyricVideoRenderer(
     var cardAlpha: Float = 1.0f,
     var lyricsSpacingScale: Float = 1.0f,
     var showUpcomingLyrics: Boolean = true,
+    var hideInactiveLyrics: Boolean = false,
     var lyricsRotation: Float = 0f,
     var cardRotation: Float = 0f
 ) {
@@ -686,17 +687,21 @@ class LyricVideoRenderer(
                 if (timeUntilFirstMs in 0L..440L) {
                     val p = 1f - (timeUntilFirstMs.toFloat() / transitionDurationMs).coerceIn(0f, 1f)
                     val ease = 1f - (1f - p) * (1f - p) * (1f - p)
-                    val scrollOffset = (1f - ease) * scaledStepDistance
+                    val scrollOffset = if (hideInactiveLyrics) 0f else (1f - ease) * scaledStepDistance
 
-                    renderTitleCard(canvas, songTitle, songArtist, curSlotPrevY + scrollOffset, (1f - ease).coerceIn(0f, 1f))
+                    if (!hideInactiveLyrics) {
+                        renderTitleCard(canvas, songTitle, songArtist, curSlotPrevY + scrollOffset, (1f - ease).coerceIn(0f, 1f))
+                    } else {
+                        renderTitleCard(canvas, songTitle, songArtist, curSlotActiveY - ease * 25f, (1f - ease).coerceIn(0f, 1f))
+                    }
 
-                    val activeCenterY = curSlotActiveY + scrollOffset
-                    val curTextSize = scaledSecTextSize + (scaledActiveTextSize - scaledSecTextSize) * ease
+                    val activeCenterY = if (hideInactiveLyrics) curSlotActiveY + (1f - ease) * 25f else curSlotActiveY + scrollOffset
+                    val curTextSize = if (hideInactiveLyrics) scaledActiveTextSize else scaledSecTextSize + (scaledActiveTextSize - scaledSecTextSize) * ease
                     val activeAlpha = (0.45f + 0.55f * ease).coerceIn(0f, 1f)
                     renderEntry(canvas, firstLines, currentTimeMs, activeCenterY, curTextSize, activeAlpha, EntryRenderStyle.ACTIVE)
                 } else {
                     renderTitleCard(canvas, songTitle, songArtist, curSlotActiveY, 1.0f)
-                    if (showUpcomingLyrics) {
+                    if (!hideInactiveLyrics && showUpcomingLyrics) {
                         renderEntry(canvas, firstLines, currentTimeMs, curSlotNextY, scaledSecTextSize, 0.45f, EntryRenderStyle.UPCOMING)
                     }
                 }
@@ -719,31 +724,48 @@ class LyricVideoRenderer(
             val ease = 1f - (1f - transProgress) * (1f - transProgress) * (1f - transProgress)
             val scrollOffset = (1f - ease) * scaledStepDistance
 
-            // 1. Older previous line exiting upward
-            if (olderEntry != null && olderLines != null && ease < 1.0f) {
-                val olderAlpha = (0.35f * (1f - ease)).coerceIn(0f, 1f)
-                val olderCenterY = (curSlotPrevY - scaledStepDistance) + scrollOffset
-                renderEntry(canvas, olderLines, currentTimeMs, olderCenterY, scaledPrevTextSize, olderAlpha, EntryRenderStyle.PREVIOUS)
+            if (!hideInactiveLyrics) {
+                // 1. Older previous line exiting upward
+                if (olderEntry != null && olderLines != null && ease < 1.0f) {
+                    val olderAlpha = (0.35f * (1f - ease)).coerceIn(0f, 1f)
+                    val olderCenterY = (curSlotPrevY - scaledStepDistance) + scrollOffset
+                    renderEntry(canvas, olderLines, currentTimeMs, olderCenterY, scaledPrevTextSize, olderAlpha, EntryRenderStyle.PREVIOUS)
+                }
+
+                // 2. Previous line gliding from slotActiveY to slotPrevY
+                val prevCenterY = curSlotPrevY + scrollOffset
+                val curPrevTextSize = scaledActiveTextSize - (scaledActiveTextSize - scaledPrevTextSize) * ease
+                val prevAlpha = (1.0f - (0.62f * ease)).coerceIn(0f, 1f)
+                if (prevEntry != null && prevLines != null) {
+                    renderEntry(canvas, prevLines, currentTimeMs, prevCenterY, curPrevTextSize, prevAlpha, EntryRenderStyle.PREVIOUS)
+                } else if (activeIndex == 0 && prevAlpha > 0.05f) {
+                    renderTitleCard(canvas, songTitle, songArtist, prevCenterY, prevAlpha)
+                }
+            } else {
+                // When hiding inactive lyrics: previous line gently fades out during transition window
+                if (prevEntry != null && prevLines != null && ease < 1.0f) {
+                    val prevAlpha = ((1.0f - ease) * 0.40f).coerceIn(0f, 1f)
+                    val prevCenterY = curSlotActiveY - (ease * 25f)
+                    renderEntry(canvas, prevLines, currentTimeMs, prevCenterY, scaledActiveTextSize, prevAlpha, EntryRenderStyle.PREVIOUS)
+                }
             }
 
-            // 2. Previous line gliding from slotActiveY to slotPrevY
-            val prevCenterY = curSlotPrevY + scrollOffset
-            val curPrevTextSize = scaledActiveTextSize - (scaledActiveTextSize - scaledPrevTextSize) * ease
-            val prevAlpha = (1.0f - (0.62f * ease)).coerceIn(0f, 1f)
-            if (prevEntry != null && prevLines != null) {
-                renderEntry(canvas, prevLines, currentTimeMs, prevCenterY, curPrevTextSize, prevAlpha, EntryRenderStyle.PREVIOUS)
-            } else if (activeIndex == 0 && prevAlpha > 0.05f) {
-                renderTitleCard(canvas, songTitle, songArtist, prevCenterY, prevAlpha)
+            // 3. Active line
+            val activeCenterY = if (hideInactiveLyrics) {
+                curSlotActiveY + (1f - ease) * 25f
+            } else {
+                curSlotActiveY + scrollOffset
             }
-
-            // 3. Active line gliding from slotNextY to slotActiveY ("geser + maju sikit")
-            val activeCenterY = curSlotActiveY + scrollOffset
-            val curActiveTextSize = scaledSecTextSize + (scaledActiveTextSize - scaledSecTextSize) * ease
+            val curActiveTextSize = if (hideInactiveLyrics) {
+                scaledActiveTextSize
+            } else {
+                scaledSecTextSize + (scaledActiveTextSize - scaledSecTextSize) * ease
+            }
             val activeAlpha = (0.45f + 0.55f * ease).coerceIn(0f, 1f)
             renderEntry(canvas, activeLines, currentTimeMs, activeCenterY, curActiveTextSize, activeAlpha, EntryRenderStyle.ACTIVE)
 
-            // 4. Next line appearing at slotNextY (already in its exact lines!)
-            if (showUpcomingLyrics && nextEntry != null && nextLines != null) {
+            // 4. Next line appearing at slotNextY (only if inactive lyrics are not hidden)
+            if (!hideInactiveLyrics && showUpcomingLyrics && nextEntry != null && nextLines != null) {
                 val nextCenterY = curSlotNextY + scrollOffset
                 val nextAlpha = if (ease >= 1.0f) 0.45f else (0.45f * ease).coerceIn(0f, 1f)
                 renderEntry(canvas, nextLines, currentTimeMs, nextCenterY, scaledSecTextSize, nextAlpha, EntryRenderStyle.UPCOMING)

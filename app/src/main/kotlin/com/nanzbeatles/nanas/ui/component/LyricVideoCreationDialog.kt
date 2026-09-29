@@ -73,8 +73,11 @@ import com.nanzbeatles.nanas.lyricvideo.LyricVideoShareUtils
 import com.nanzbeatles.nanas.models.MediaMetadata
 import com.nanzbeatles.nanas.utils.ShareUtils
 import androidx.compose.runtime.DisposableEffect
+import androidx.media3.common.Player
 import com.nanzbeatles.nanas.constants.VideoLyricsCardStyle
 import com.nanzbeatles.nanas.constants.VideoLyricsCardStyleKey
+import com.nanzbeatles.nanas.extensions.toMediaItem
+import com.nanzbeatles.nanas.playback.queues.ListQueue
 import com.nanzbeatles.nanas.utils.rememberEnumPreference
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -120,13 +123,26 @@ fun LyricVideoCreationDialog(
 
     LaunchedEffect(isAudioPreviewPlaying, startTimeSec, endTimeSec) {
         if (isAudioPreviewPlaying) {
+            val startMs = (startTimeSec * 1000L).toLong()
             val endMs = (endTimeSec * 1000L).toLong()
+            // Wait slightly for player seek to initiate
+            delay(150L)
             while (isAudioPreviewPlaying) {
-                delay(100L)
-                val current = playerConnection?.player?.currentPosition ?: 0L
-                val isPlaying = playerConnection?.player?.isPlaying ?: false
-                if (current >= endMs || !isPlaying) {
-                    playerConnection?.player?.pause()
+                delay(150L)
+                val player = playerConnection?.player ?: break
+                val current = player.currentPosition
+
+                // Only stop if player is READY (or ended) and past endMs, and past startMs
+                if ((player.playbackState == Player.STATE_READY && current >= endMs && current >= startMs) ||
+                    player.playbackState == Player.STATE_ENDED
+                ) {
+                    player.pause()
+                    isAudioPreviewPlaying = false
+                    break
+                }
+
+                // If user paused playback from external controls (playWhenReady == false and not buffering/seeking)
+                if (!player.playWhenReady && player.playbackState != Player.STATE_BUFFERING) {
                     isAudioPreviewPlaying = false
                     break
                 }
@@ -659,13 +675,23 @@ fun LyricVideoCreationDialog(
                                     AssistChip(
                                         onClick = {
                                             val player = playerConnection?.player
-                                            if (isAudioPreviewPlaying) {
-                                                player?.pause()
-                                                isAudioPreviewPlaying = false
-                                            } else {
-                                                player?.seekTo((startTimeSec * 1000L).toLong())
-                                                player?.play()
-                                                isAudioPreviewPlaying = true
+                                            if (player != null) {
+                                                if (isAudioPreviewPlaying) {
+                                                    player.pause()
+                                                    isAudioPreviewPlaying = false
+                                                } else {
+                                                    if (player.currentMediaItem?.mediaId != mediaMetadata.id) {
+                                                        playerConnection.playQueue(
+                                                            ListQueue(
+                                                                title = mediaMetadata.title,
+                                                                items = listOf(mediaMetadata.toMediaItem())
+                                                            )
+                                                        )
+                                                    }
+                                                    player.seekTo((startTimeSec * 1000L).toLong())
+                                                    player.play()
+                                                    isAudioPreviewPlaying = true
+                                                }
                                             }
                                         },
                                         label = {

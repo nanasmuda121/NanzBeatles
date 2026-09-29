@@ -350,7 +350,7 @@ fun VideoLyricsLayoutEditor(
                                     label = { Text("Normal (Gambar)") },
                                     leadingIcon = {
                                         Icon(
-                                            painter = painterResource(R.drawable.album),
+                                            painter = painterResource(R.drawable.music_note),
                                             contentDescription = null,
                                             modifier = Modifier.size(16.dp)
                                         )
@@ -363,7 +363,7 @@ fun VideoLyricsLayoutEditor(
                                     label = { Text("Kaset (CD)") },
                                     leadingIcon = {
                                         Icon(
-                                            painter = painterResource(R.drawable.widget_vinyl_ring),
+                                            painter = painterResource(R.drawable.album),
                                             contentDescription = null,
                                             modifier = Modifier.size(16.dp)
                                         )

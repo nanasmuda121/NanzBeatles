@@ -81,7 +81,8 @@ import androidx.media3.common.Player
 import com.nanzbeatles.nanas.constants.VideoLyricsCardStyle
 import com.nanzbeatles.nanas.constants.VideoLyricsCardStyleKey
 import com.nanzbeatles.nanas.extensions.toMediaItem
-import com.nanzbeatles.nanas.playback.queues.ListQueue
+import androidx.datastore.preferences.core.edit
+import com.nanzbeatles.nanas.utils.dataStore
 import com.nanzbeatles.nanas.utils.rememberEnumPreference
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch

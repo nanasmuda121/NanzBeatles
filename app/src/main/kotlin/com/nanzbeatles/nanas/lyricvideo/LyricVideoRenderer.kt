@@ -45,7 +45,11 @@ class LyricVideoRenderer(
     var cardStyle: VideoLyricsCardStyle = VideoLyricsCardStyle.KASET,
     lyricsScale: Float = 1.0f,
     lyricsOffsetX: Float = 0f,
-    lyricsOffsetY: Float = 0f
+    lyricsOffsetY: Float = 0f,
+    var cardScale: Float = 1.0f,
+    var cardOffsetX: Float = 0f,
+    var cardOffsetY: Float = 0f,
+    var cardAlpha: Float = 1.0f
 ) {
 
     var lyricsScale: Float = lyricsScale
@@ -275,20 +279,37 @@ class LyricVideoRenderer(
         // 1. Solid Pure Black Background
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
 
-        if (cardStyle == VideoLyricsCardStyle.NORMAL) {
-            // Normal card mode: clean square album art + song title + artist below + sleek audio waveform
-            renderNormalCard(canvas, songTitle, songArtist, currentTimeMs, amplitude)
-        } else {
-            // Kaset / CD jewel case mode
-            renderSpinningDisc(canvas, currentTimeMs)
-            renderSpindleHub(canvas)
-            renderJewelCase(canvas)
-            renderBrandText(canvas)
-            renderArtistHandle(canvas)
-            renderWaveform(canvas, currentTimeMs, amplitude)
+        // 2. Render Card / Cover Art / CD Jewel Case if visible
+        if (cardAlpha > 0.005f) {
+            val cardLayerAlpha = (cardAlpha.coerceIn(0f, 1f) * 255).toInt()
+            val saveCount = if (cardLayerAlpha < 255) {
+                canvas.saveLayerAlpha(0f, 0f, width.toFloat(), height.toFloat(), cardLayerAlpha)
+            } else {
+                canvas.save()
+            }
+
+            canvas.translate(cardOffsetX, cardOffsetY)
+            if (cardScale != 1.0f) {
+                canvas.scale(cardScale, cardScale, discCenterX, discCenterY)
+            }
+
+            if (cardStyle == VideoLyricsCardStyle.NORMAL) {
+                // Normal card mode: clean square album art + song title + artist below + sleek audio waveform
+                renderNormalCard(canvas, songTitle, songArtist, currentTimeMs, amplitude)
+            } else {
+                // Kaset / CD jewel case mode
+                renderSpinningDisc(canvas, currentTimeMs)
+                renderSpindleHub(canvas)
+                renderJewelCase(canvas)
+                renderBrandText(canvas)
+                renderArtistHandle(canvas)
+                renderWaveform(canvas, currentTimeMs, amplitude)
+            }
+
+            canvas.restoreToCount(saveCount)
         }
 
-        // Large White Left-Aligned Lyrics
+        // 3. Large White Left-Aligned Lyrics
         renderLyrics(canvas, currentTimeMs, lyrics, songTitle, songArtist)
     }
 
@@ -626,9 +647,14 @@ class LyricVideoRenderer(
         val scaledActiveTextSize = activeTextSize * lyricsScale
         val scaledSecTextSize = secTextSize * lyricsScale
         val scaledPrevTextSize = prevTextSize * lyricsScale
+
+        // Dynamic slot distance scaling proportionally with lyricsScale:
+        // When lyrics scale is larger, the distance between active and neighboring lines increases;
+        // when lyrics scale is smaller, the distance shrinks accordingly.
+        val scaledStepDistance = stepDistance * lyricsScale
         val curSlotActiveY = slotActiveY + lyricsOffsetY
-        val curSlotPrevY = slotPrevY + lyricsOffsetY
-        val curSlotNextY = slotNextY + lyricsOffsetY
+        val curSlotPrevY = curSlotActiveY - scaledStepDistance
+        val curSlotNextY = curSlotActiveY + scaledStepDistance
 
         if (validLyrics.isEmpty()) {
             renderTitleCard(canvas, songTitle, songArtist, curSlotActiveY, 1.0f)
@@ -647,7 +673,7 @@ class LyricVideoRenderer(
             if (timeUntilFirstMs in 0L..440L) {
                 val p = 1f - (timeUntilFirstMs.toFloat() / transitionDurationMs).coerceIn(0f, 1f)
                 val ease = 1f - (1f - p) * (1f - p) * (1f - p)
-                val scrollOffset = (1f - ease) * stepDistance
+                val scrollOffset = (1f - ease) * scaledStepDistance
 
                 renderTitleCard(canvas, songTitle, songArtist, curSlotPrevY + scrollOffset, (1f - ease).coerceIn(0f, 1f))
 
@@ -676,12 +702,12 @@ class LyricVideoRenderer(
         val timeSinceLineStartMs = (currentTimeMs - activeEntry.time).coerceAtLeast(0L)
         val transProgress = (timeSinceLineStartMs / transitionDurationMs).coerceIn(0f, 1f)
         val ease = 1f - (1f - transProgress) * (1f - transProgress) * (1f - transProgress)
-        val scrollOffset = (1f - ease) * stepDistance
+        val scrollOffset = (1f - ease) * scaledStepDistance
 
         // 1. Older previous line exiting upward
         if (olderEntry != null && olderLines != null && ease < 1.0f) {
             val olderAlpha = (0.35f * (1f - ease)).coerceIn(0f, 1f)
-            val olderCenterY = (curSlotPrevY - stepDistance) + scrollOffset
+            val olderCenterY = (curSlotPrevY - scaledStepDistance) + scrollOffset
             renderEntry(canvas, olderLines, currentTimeMs, olderCenterY, scaledPrevTextSize, olderAlpha, EntryRenderStyle.PREVIOUS)
         }
 

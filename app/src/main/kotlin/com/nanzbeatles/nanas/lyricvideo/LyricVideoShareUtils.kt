@@ -29,6 +29,10 @@ import coil3.request.allowHardware
 import coil3.toBitmap
 import com.nanzbeatles.nanas.constants.AudioQuality
 import com.nanzbeatles.nanas.constants.AudioQualityKey
+import com.nanzbeatles.nanas.constants.VideoLyricsCardAlphaPercentKey
+import com.nanzbeatles.nanas.constants.VideoLyricsCardOffsetXPercentKey
+import com.nanzbeatles.nanas.constants.VideoLyricsCardOffsetYPercentKey
+import com.nanzbeatles.nanas.constants.VideoLyricsCardScalePercentKey
 import com.nanzbeatles.nanas.constants.VideoLyricsCardStyle
 import com.nanzbeatles.nanas.constants.VideoLyricsCardStyleKey
 import com.nanzbeatles.nanas.constants.VideoLyricsOffsetXPercentKey
@@ -631,10 +635,18 @@ object LyricVideoShareUtils {
             val scalePercent = prefs[VideoLyricsScalePercentKey] ?: 80
             val offsetXPercent = prefs[VideoLyricsOffsetXPercentKey] ?: 0
             val offsetYPercent = prefs[VideoLyricsOffsetYPercentKey] ?: 0
+            val cardScalePercent = prefs[VideoLyricsCardScalePercentKey] ?: 100
+            val cardOffsetXPercent = prefs[VideoLyricsCardOffsetXPercentKey] ?: 0
+            val cardOffsetYPercent = prefs[VideoLyricsCardOffsetYPercentKey] ?: 0
+            val cardAlphaPercent = prefs[VideoLyricsCardAlphaPercentKey] ?: 100
 
             val lyricsScale = (scalePercent / 80f).coerceIn(0.4f, 1.5f)
             val lyricsOffsetX = (offsetXPercent / 100f) * 200f
             val lyricsOffsetY = (offsetYPercent / 100f) * 150f
+            val cardScale = (cardScalePercent / 100f).coerceIn(0.4f, 1.6f)
+            val cardOffsetX = (cardOffsetXPercent / 100f) * 200f
+            val cardOffsetY = (cardOffsetYPercent / 100f) * 150f
+            val cardAlpha = (cardAlphaPercent / 100f).coerceIn(0f, 1f)
 
             val config = LyricVideoEncoder.EncodeConfig(
                 audioFile = audioFile,
@@ -650,7 +662,11 @@ object LyricVideoShareUtils {
                 cardStyle = effectiveCardStyle,
                 lyricsScale = lyricsScale,
                 lyricsOffsetX = lyricsOffsetX,
-                lyricsOffsetY = lyricsOffsetY
+                lyricsOffsetY = lyricsOffsetY,
+                cardScale = cardScale,
+                cardOffsetX = cardOffsetX,
+                cardOffsetY = cardOffsetY,
+                cardAlpha = cardAlpha
             )
 
             LyricVideoEncoder.encodeLyricVideo(config, onProgress)

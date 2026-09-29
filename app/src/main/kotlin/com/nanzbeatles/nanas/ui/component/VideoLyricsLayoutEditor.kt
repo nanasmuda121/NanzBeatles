@@ -9,16 +9,21 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,6 +35,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,21 +45,19 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -62,18 +66,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.view.WindowCompat
@@ -81,6 +81,10 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.datastore.preferences.core.edit
 import com.nanzbeatles.nanas.R
+import com.nanzbeatles.nanas.constants.VideoLyricsCardAlphaPercentKey
+import com.nanzbeatles.nanas.constants.VideoLyricsCardOffsetXPercentKey
+import com.nanzbeatles.nanas.constants.VideoLyricsCardOffsetYPercentKey
+import com.nanzbeatles.nanas.constants.VideoLyricsCardScalePercentKey
 import com.nanzbeatles.nanas.constants.VideoLyricsCardStyle
 import com.nanzbeatles.nanas.constants.VideoLyricsCardStyleKey
 import com.nanzbeatles.nanas.constants.VideoLyricsOffsetXPercentKey
@@ -106,11 +110,11 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
 
 /**
  * Fullscreen Landscape Layout Editor for VideoLyrics.
- * - Automatically enters immersive landscape mode upon opening
- * - Allows real-time adjustment of lyrics scale (1% - 100%)
- * - Allows dragging / slider positioning of layout (Offset X & Y)
- * - Toggles between NORMAL card (clean cover + song title + artist) and KASET (spinning disc + jewel case)
- * - Provides Restore (Reset) and Save buttons
+ * - Fullscreen 16:9 Live Canvas preview in the background
+ * - Centered semi-transparent floating control card (adjustable Lirik, Sampul, and Gaya)
+ * - Dynamic line-spacing for lyrics that automatically scales with text size
+ * - Cover size, position, and opacity controls
+ * - Toggleable control panel to view full unobstructed preview
  */
 @Composable
 fun VideoLyricsLayoutEditor(
@@ -150,7 +154,13 @@ fun VideoLyricsLayoutEditor(
     var scalePercent by remember { mutableIntStateOf(80) }
     var offsetXPercent by remember { mutableIntStateOf(0) }
     var offsetYPercent by remember { mutableIntStateOf(0) }
-    var isLoaded by remember { mutableStateOf(false) }
+    var cardScalePercent by remember { mutableIntStateOf(100) }
+    var cardOffsetXPercent by remember { mutableIntStateOf(0) }
+    var cardOffsetYPercent by remember { mutableIntStateOf(0) }
+    var cardAlphaPercent by remember { mutableIntStateOf(100) }
+
+    var selectedTab by remember { mutableIntStateOf(0) } // 0 = Lirik, 1 = Sampul, 2 = Gaya
+    var showControls by remember { mutableStateOf(true) }
 
     // Load initial saved preferences
     LaunchedEffect(Unit) {
@@ -160,7 +170,10 @@ fun VideoLyricsLayoutEditor(
         scalePercent = prefs[VideoLyricsScalePercentKey] ?: 80
         offsetXPercent = prefs[VideoLyricsOffsetXPercentKey] ?: 0
         offsetYPercent = prefs[VideoLyricsOffsetYPercentKey] ?: 0
-        isLoaded = true
+        cardScalePercent = prefs[VideoLyricsCardScalePercentKey] ?: 100
+        cardOffsetXPercent = prefs[VideoLyricsCardOffsetXPercentKey] ?: 0
+        cardOffsetYPercent = prefs[VideoLyricsCardOffsetYPercentKey] ?: 0
+        cardAlphaPercent = prefs[VideoLyricsCardAlphaPercentKey] ?: 100
     }
 
     // Cover art bitmap for preview
@@ -179,15 +192,6 @@ fun VideoLyricsLayoutEditor(
             brandText = "NanzBeatles",
             artistHandle = "@" + (mediaMetadata?.artists?.firstOrNull()?.name ?: "NanzBeatles")
         )
-    }
-
-    // Sync renderer properties
-    LaunchedEffect(cardStyle, scalePercent, offsetXPercent, offsetYPercent, coverBitmap) {
-        renderer.cardStyle = cardStyle
-        renderer.lyricsScale = (scalePercent / 80f).coerceIn(0.4f, 1.5f)
-        renderer.lyricsOffsetX = (offsetXPercent / 100f) * 200f
-        renderer.lyricsOffsetY = (offsetYPercent / 100f) * 150f
-        renderer.setCoverBitmap(coverBitmap)
     }
 
     // Live frame ticker for animated preview
@@ -227,30 +231,43 @@ fun VideoLyricsLayoutEditor(
             modifier = Modifier.fillMaxSize(),
             color = Color.Black
         ) {
-            Row(modifier = Modifier.fillMaxSize()) {
-                // LEFT SIDE: Interactive 16:9 Canvas Preview
+            Box(modifier = Modifier.fillMaxSize()) {
+                // LAYER 1: Fullscreen 16:9 Live Canvas Preview
                 Box(
                     modifier = Modifier
-                        .weight(1.5f)
-                        .fillMaxHeight()
-                        .background(Color.Black)
-                        .pointerInput(Unit) {
+                        .fillMaxSize()
+                        .pointerInput(selectedTab) {
                             detectDragGestures { change, dragAmount ->
                                 change.consume()
-                                // Drag gesture directly adjusts position
-                                val newX = (offsetXPercent + (dragAmount.x * 0.25f)).roundToInt().coerceIn(-100, 100)
-                                val newY = (offsetYPercent + (dragAmount.y * 0.25f)).roundToInt().coerceIn(-100, 100)
-                                offsetXPercent = newX
-                                offsetYPercent = newY
+                                if (selectedTab == 0) {
+                                    // Adjust Lirik
+                                    val newX = (offsetXPercent + (dragAmount.x * 0.25f)).roundToInt().coerceIn(-100, 100)
+                                    val newY = (offsetYPercent + (dragAmount.y * 0.25f)).roundToInt().coerceIn(-100, 100)
+                                    offsetXPercent = newX
+                                    offsetYPercent = newY
+                                } else {
+                                    // Adjust Sampul
+                                    val newX = (cardOffsetXPercent + (dragAmount.x * 0.25f)).roundToInt().coerceIn(-100, 100)
+                                    val newY = (cardOffsetYPercent + (dragAmount.y * 0.25f)).roundToInt().coerceIn(-100, 100)
+                                    cardOffsetXPercent = newX
+                                    cardOffsetYPercent = newY
+                                }
+                            }
+                        }
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            if (!showControls) {
+                                showControls = true
                             }
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    androidx.compose.foundation.Canvas(
+                    Canvas(
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .fillMaxSize()
                             .aspectRatio(16f / 9f)
-                            .clip(RoundedCornerShape(8.dp))
                     ) {
                         val curTime = previewTimeMs % 12000L
                         val curAmp = animatedAmp
@@ -258,11 +275,19 @@ fun VideoLyricsLayoutEditor(
                         val currentScale = (scalePercent / 80f).coerceIn(0.4f, 1.5f)
                         val currentOffsetX = (offsetXPercent / 100f) * 200f
                         val currentOffsetY = (offsetYPercent / 100f) * 150f
+                        val currentCardScale = (cardScalePercent / 100f).coerceIn(0.4f, 1.6f)
+                        val currentCardOffsetX = (cardOffsetXPercent / 100f) * 200f
+                        val currentCardOffsetY = (cardOffsetYPercent / 100f) * 150f
+                        val currentCardAlpha = (cardAlphaPercent / 100f).coerceIn(0f, 1f)
 
                         renderer.cardStyle = currentCardStyle
                         renderer.lyricsScale = currentScale
                         renderer.lyricsOffsetX = currentOffsetX
                         renderer.lyricsOffsetY = currentOffsetY
+                        renderer.cardScale = currentCardScale
+                        renderer.cardOffsetX = currentCardOffsetX
+                        renderer.cardOffsetY = currentCardOffsetY
+                        renderer.cardAlpha = currentCardAlpha
                         if (coverBitmap != null) {
                             renderer.setCoverBitmap(coverBitmap)
                         }
@@ -282,272 +307,450 @@ fun VideoLyricsLayoutEditor(
                             nativeCanvas.restore()
                         }
                     }
+                }
 
-                    // Touch gesture guidance overlay
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(12.dp)
-                            .background(Color.Black.copy(alpha = 0.60f), RoundedCornerShape(8.dp))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                // LAYER 2: Floating Pill Button if panel is hidden
+                AnimatedVisibility(
+                    visible = !showControls,
+                    enter = fadeIn() + slideInVertically { it },
+                    exit = fadeOut() + slideOutVertically { it },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 20.dp)
+                ) {
+                    FilledTonalButton(
+                        onClick = { showControls = true },
+                        shape = CircleShape
                     ) {
-                        Text(
-                            text = "💡 Geser layar untuk memindahkan letak lirik",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White.copy(alpha = 0.85f)
+                        Icon(
+                            painter = painterResource(R.drawable.tune),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
                         )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Buka Pengaturan Tata Letak")
                     }
                 }
 
-                // RIGHT SIDE: Control Panel & Settings
-                Card(
-                    modifier = Modifier
-                        .weight(1.0f)
-                        .fillMaxHeight()
-                        .padding(12.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    elevation = CardDefaults.cardElevation(8.dp)
+                // LAYER 3: Centered Semi-Transparent Floating Control Card
+                AnimatedVisibility(
+                    visible = showControls,
+                    enter = fadeIn() + scaleIn(initialScale = 0.92f),
+                    exit = fadeOut() + scaleOut(targetScale = 0.92f),
+                    modifier = Modifier.align(Alignment.Center)
                 ) {
-                    Column(
+                    Card(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp)
-                            .verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.SpaceBetween
+                            .widthIn(max = 520.dp)
+                            .fillMaxWidth(0.88f)
+                            .fillMaxHeight(0.92f)
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f)
+                        ),
+                        border = BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        ),
+                        elevation = CardDefaults.cardElevation(12.dp)
                     ) {
-                        Column {
-                            // Top Bar Header
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
-                                        Icon(
-                                            painter = painterResource(R.drawable.arrow_back),
-                                            contentDescription = "Kembali",
-                                            tint = MaterialTheme.colorScheme.onSurface
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                // Header Row
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        IconButton(
+                                            onClick = { showControls = false },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.close),
+                                                contentDescription = "Sembunyikan Panel",
+                                                tint = MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            text = "Tata Letak Video",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
                                         )
                                     }
-                                    Spacer(Modifier.width(8.dp))
-                                    Text(
-                                        text = "Tata Letak Video",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
+
+                                    AssistChip(
+                                        onClick = {
+                                            cardStyle = VideoLyricsCardStyle.NORMAL
+                                            scalePercent = 80
+                                            offsetXPercent = 0
+                                            offsetYPercent = 0
+                                            cardScalePercent = 100
+                                            cardOffsetXPercent = 0
+                                            cardOffsetYPercent = 0
+                                            cardAlphaPercent = 100
+                                            onStyleChanged?.invoke(VideoLyricsCardStyle.NORMAL)
+                                            Toast.makeText(context, "Tata letak di-reset ke default", Toast.LENGTH_SHORT).show()
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                painter = painterResource(R.drawable.restore),
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        },
+                                        label = { Text("Reset") },
+                                        modifier = Modifier.height(32.dp)
                                     )
                                 }
 
-                                // Tombol Restore (Reset)
-                                AssistChip(
-                                    onClick = {
-                                        cardStyle = VideoLyricsCardStyle.NORMAL
-                                        scalePercent = 80
-                                        offsetXPercent = 0
-                                        offsetYPercent = 0
-                                        onStyleChanged?.invoke(VideoLyricsCardStyle.NORMAL)
-                                        Toast.makeText(context, "Tata letak di-reset ke default", Toast.LENGTH_SHORT).show()
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            painter = painterResource(R.drawable.restore),
-                                            contentDescription = null,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    },
-                                    label = { Text("Reset") }
-                                )
-                            }
+                                Spacer(Modifier.height(8.dp))
 
-                            Spacer(Modifier.height(14.dp))
+                                // Category Selector Chips: [Lirik] [Sampul] [Gaya]
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    FilterChip(
+                                        selected = selectedTab == 0,
+                                        onClick = { selectedTab = 0 },
+                                        label = { Text("Lirik") },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    FilterChip(
+                                        selected = selectedTab == 1,
+                                        onClick = { selectedTab = 1 },
+                                        label = { Text("Sampul") },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    FilterChip(
+                                        selected = selectedTab == 2,
+                                        onClick = { selectedTab = 2 },
+                                        label = { Text("Gaya") },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
 
-                            // 1. Pilihan Gaya Card (Normal vs Kaset)
-                            Text(
-                                text = "Gaya Tampilan Card / CD:",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(Modifier.height(6.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                FilterChip(
-                                    selected = cardStyle == VideoLyricsCardStyle.NORMAL,
-                                    onClick = {
-                                        cardStyle = VideoLyricsCardStyle.NORMAL
-                                        onStyleChanged?.invoke(VideoLyricsCardStyle.NORMAL)
-                                    },
-                                    label = { Text("Normal (Gambar)") },
-                                    leadingIcon = {
-                                        Icon(
-                                            painter = painterResource(R.drawable.music_note),
-                                            contentDescription = null,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    },
-                                    modifier = Modifier.weight(1f)
-                                )
-                                FilterChip(
-                                    selected = cardStyle == VideoLyricsCardStyle.KASET,
-                                    onClick = {
-                                        cardStyle = VideoLyricsCardStyle.KASET
-                                        onStyleChanged?.invoke(VideoLyricsCardStyle.KASET)
-                                    },
-                                    label = { Text("Kaset (CD)") },
-                                    leadingIcon = {
-                                        Icon(
-                                            painter = painterResource(R.drawable.album),
-                                            contentDescription = null,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
+                                Spacer(Modifier.height(8.dp))
 
-                            Spacer(Modifier.height(14.dp))
+                                // Tab Content inside scrollable container
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f, fill = false)
+                                        .verticalScroll(rememberScrollState())
+                                ) {
+                                    when (selectedTab) {
+                                        0 -> {
+                                            // TAB LIRIK
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = "Ukuran Lirik:",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Text(
+                                                    text = "$scalePercent%",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                            Slider(
+                                                value = scalePercent.toFloat(),
+                                                onValueChange = { scalePercent = it.roundToInt() },
+                                                valueRange = 1f..100f,
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
 
-                            // 2. Perbesar Ukuran (geser 1% - 100%)
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Ukuran Lirik:",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = "$scalePercent%",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            Slider(
-                                value = scalePercent.toFloat(),
-                                onValueChange = { scalePercent = it.roundToInt() },
-                                valueRange = 1f..100f,
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                                            Spacer(Modifier.height(6.dp))
 
-                            Spacer(Modifier.height(10.dp))
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = "Posisi Horizontal Lirik (X):",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Text(
+                                                    text = "${if (offsetXPercent > 0) "+$offsetXPercent" else offsetXPercent}%",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                            Slider(
+                                                value = offsetXPercent.toFloat(),
+                                                onValueChange = { offsetXPercent = it.roundToInt() },
+                                                valueRange = -100f..100f,
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
 
-                            // 3. Geser Tata Letak (Horizontal X & Vertikal Y)
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Posisi Horizontal (X):",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = "${if (offsetXPercent > 0) "+$offsetXPercent" else offsetXPercent}%",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            Slider(
-                                value = offsetXPercent.toFloat(),
-                                onValueChange = { offsetXPercent = it.roundToInt() },
-                                valueRange = -100f..100f,
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = "Posisi Vertikal Lirik (Y):",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Text(
+                                                    text = "${if (offsetYPercent > 0) "+$offsetYPercent" else offsetYPercent}%",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                            Slider(
+                                                value = offsetYPercent.toFloat(),
+                                                onValueChange = { offsetYPercent = it.roundToInt() },
+                                                valueRange = -100f..100f,
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
 
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Posisi Vertikal (Y):",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = "${if (offsetYPercent > 0) "+$offsetYPercent" else offsetYPercent}%",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            Slider(
-                                value = offsetYPercent.toFloat(),
-                                onValueChange = { offsetYPercent = it.roundToInt() },
-                                valueRange = -100f..100f,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-
-                            // Quick center position helper
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End
-                            ) {
-                                AssistChip(
-                                    onClick = {
-                                        offsetXPercent = 0
-                                        offsetYPercent = 0
-                                    },
-                                    label = { Text("Pusatkan Posisi") },
-                                    modifier = Modifier.height(28.dp)
-                                )
-                            }
-                        }
-
-                        // Bottom Actions (Batal & Simpan)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedButton(
-                                onClick = onDismiss,
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Text("Batal")
-                            }
-
-                            // Tombol Save
-                            Button(
-                                onClick = {
-                                    scope.launch {
-                                        context.dataStore.edit { prefs ->
-                                            prefs[VideoLyricsCardStyleKey] = cardStyle.name
-                                            prefs[VideoLyricsScalePercentKey] = scalePercent
-                                            prefs[VideoLyricsOffsetXPercentKey] = offsetXPercent
-                                            prefs[VideoLyricsOffsetYPercentKey] = offsetYPercent
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.End
+                                            ) {
+                                                AssistChip(
+                                                    onClick = {
+                                                        offsetXPercent = 0
+                                                        offsetYPercent = 0
+                                                    },
+                                                    label = { Text("Pusatkan Lirik") },
+                                                    modifier = Modifier.height(28.dp)
+                                                )
+                                            }
                                         }
-                                        withContext(Dispatchers.Main) {
-                                            onStyleChanged?.invoke(cardStyle)
-                                            Toast.makeText(context, "Tata letak VideoLyrics berhasil disimpan!", Toast.LENGTH_SHORT).show()
-                                            onDismiss()
+                                        1 -> {
+                                            // TAB SAMPUL / COVER
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = "Ukuran Sampul:",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Text(
+                                                    text = "$cardScalePercent%",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                            Slider(
+                                                value = cardScalePercent.toFloat(),
+                                                onValueChange = { cardScalePercent = it.roundToInt() },
+                                                valueRange = 40f..160f,
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
+
+                                            Spacer(Modifier.height(6.dp))
+
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = "Posisi Horizontal Sampul (X):",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Text(
+                                                    text = "${if (cardOffsetXPercent > 0) "+$cardOffsetXPercent" else cardOffsetXPercent}%",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                            Slider(
+                                                value = cardOffsetXPercent.toFloat(),
+                                                onValueChange = { cardOffsetXPercent = it.roundToInt() },
+                                                valueRange = -100f..100f,
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
+
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = "Posisi Vertikal Sampul (Y):",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Text(
+                                                    text = "${if (cardOffsetYPercent > 0) "+$cardOffsetYPercent" else cardOffsetYPercent}%",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                            Slider(
+                                                value = cardOffsetYPercent.toFloat(),
+                                                onValueChange = { cardOffsetYPercent = it.roundToInt() },
+                                                valueRange = -100f..100f,
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
+
+                                            Spacer(Modifier.height(6.dp))
+
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = "Opasitas Sampul:",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Text(
+                                                    text = "$cardAlphaPercent%",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                            Slider(
+                                                value = cardAlphaPercent.toFloat(),
+                                                onValueChange = { cardAlphaPercent = it.roundToInt() },
+                                                valueRange = 0f..100f,
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
+
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.End
+                                            ) {
+                                                AssistChip(
+                                                    onClick = {
+                                                        cardOffsetXPercent = 0
+                                                        cardOffsetYPercent = 0
+                                                    },
+                                                    label = { Text("Pusatkan Sampul") },
+                                                    modifier = Modifier.height(28.dp)
+                                                )
+                                            }
+                                        }
+                                        2 -> {
+                                            // TAB GAYA
+                                            Text(
+                                                text = "Pilih Gaya Tampilan:",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            Spacer(Modifier.height(8.dp))
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                FilterChip(
+                                                    selected = cardStyle == VideoLyricsCardStyle.NORMAL,
+                                                    onClick = {
+                                                        cardStyle = VideoLyricsCardStyle.NORMAL
+                                                        onStyleChanged?.invoke(VideoLyricsCardStyle.NORMAL)
+                                                    },
+                                                    label = { Text("Normal (Sampul)") },
+                                                    leadingIcon = {
+                                                        Icon(
+                                                            painter = painterResource(R.drawable.music_note),
+                                                            contentDescription = null,
+                                                            modifier = Modifier.size(16.dp)
+                                                        )
+                                                    },
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                FilterChip(
+                                                    selected = cardStyle == VideoLyricsCardStyle.KASET,
+                                                    onClick = {
+                                                        cardStyle = VideoLyricsCardStyle.KASET
+                                                        onStyleChanged?.invoke(VideoLyricsCardStyle.KASET)
+                                                    },
+                                                    label = { Text("Kaset (CD)") },
+                                                    leadingIcon = {
+                                                        Icon(
+                                                            painter = painterResource(R.drawable.album),
+                                                            contentDescription = null,
+                                                            modifier = Modifier.size(16.dp)
+                                                        )
+                                                    },
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                            }
                                         }
                                     }
-                                },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary
-                                )
+                                }
+                            }
+
+                            // Bottom Actions (Batal & Simpan)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.check),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(Modifier.width(6.dp))
-                                Text("Simpan", fontWeight = FontWeight.Bold)
+                                OutlinedButton(
+                                    onClick = onDismiss,
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text("Batal")
+                                }
+
+                                Button(
+                                    onClick = {
+                                        scope.launch {
+                                            context.dataStore.edit { prefs ->
+                                                prefs[VideoLyricsCardStyleKey] = cardStyle.name
+                                                prefs[VideoLyricsScalePercentKey] = scalePercent
+                                                prefs[VideoLyricsOffsetXPercentKey] = offsetXPercent
+                                                prefs[VideoLyricsOffsetYPercentKey] = offsetYPercent
+                                                prefs[VideoLyricsCardScalePercentKey] = cardScalePercent
+                                                prefs[VideoLyricsCardOffsetXPercentKey] = cardOffsetXPercent
+                                                prefs[VideoLyricsCardOffsetYPercentKey] = cardOffsetYPercent
+                                                prefs[VideoLyricsCardAlphaPercentKey] = cardAlphaPercent
+                                            }
+                                            withContext(Dispatchers.Main) {
+                                                onStyleChanged?.invoke(cardStyle)
+                                                Toast.makeText(context, "Tata letak VideoLyrics berhasil disimpan!", Toast.LENGTH_SHORT).show()
+                                                onDismiss()
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary
+                                    )
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.check),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(Modifier.width(6.dp))
+                                    Text("Simpan", fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
                     }

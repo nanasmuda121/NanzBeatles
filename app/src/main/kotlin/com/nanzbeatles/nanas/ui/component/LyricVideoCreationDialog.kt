@@ -12,6 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,10 +31,12 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -61,6 +64,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -384,248 +388,279 @@ fun LyricVideoCreationDialog(
                             return "%02d:%02d".format(totalSec / 60, totalSec % 60)
                         }
 
+                        // 1. Header with Song Details & Dismiss Button
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                painter = painterResource(R.drawable.movie),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(28.dp)
-                            )
-                            Spacer(Modifier.width(10.dp))
-                            Column {
+                            Box(
+                                modifier = Modifier
+                                    .size(46.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.movie),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = "Buat Video Lirik",
-                                    style = MaterialTheme.typography.titleLarge,
+                                    style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
+                                val artistNames = mediaMetadata.artists.joinToString { it.name }
                                 Text(
-                                    text = "Pilih bagian lagu yang ingin dijadikan video",
+                                    text = "${mediaMetadata.title} • $artistNames",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            IconButton(
+                                onClick = onDismiss,
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.close),
+                                    contentDescription = "Tutup",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(Modifier.height(16.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                        Spacer(Modifier.height(16.dp))
+
+                        // 2. Model Desain & Tata Letak
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Model Tampilan:",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                FilterChip(
+                                    selected = cardStyle == VideoLyricsCardStyle.NORMAL,
+                                    onClick = { cardStyle = VideoLyricsCardStyle.NORMAL },
+                                    label = { Text("Normal (Sampul)") },
+                                    leadingIcon = {
+                                        Icon(
+                                            painter = painterResource(R.drawable.music_note),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                )
+                                FilterChip(
+                                    selected = cardStyle == VideoLyricsCardStyle.KASET,
+                                    onClick = { cardStyle = VideoLyricsCardStyle.KASET },
+                                    label = { Text("Kaset (CD)") },
+                                    leadingIcon = {
+                                        Icon(
+                                            painter = painterResource(R.drawable.album),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                            OutlinedButton(
+                                onClick = { showLayoutEditor = true },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.tune),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text("Ubah Tata Letak & Ukuran (Layar Penuh)")
+                            }
+                        }
+
+                        Spacer(Modifier.height(16.dp))
+
+                        // 3. Durasi Video & Timeline
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Durasi Video:",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            // Quick Presets Row
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                val curDuration = (endTimeSec - startTimeSec).toInt()
+                                val presets = listOf(
+                                    15 to "15s",
+                                    30 to "30s",
+                                    60 to "60s",
+                                    -1 to "Penuh"
+                                )
+                                presets.forEach { (dur, label) ->
+                                    val isSelected = if (dur == -1) {
+                                        startTimeSec <= 1f && endTimeSec >= songDurationSec.toFloat() - 1f
+                                    } else {
+                                        curDuration == dur
+                                    }
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = {
+                                            if (dur == -1) {
+                                                startTimeSec = 0f
+                                                endTimeSec = songDurationSec.toFloat()
+                                            } else {
+                                                val targetEnd = startTimeSec + dur.toFloat()
+                                                if (targetEnd <= songDurationSec.toFloat()) {
+                                                    endTimeSec = targetEnd
+                                                } else {
+                                                    startTimeSec = maxOf(0f, songDurationSec.toFloat() - dur.toFloat())
+                                                    endTimeSec = songDurationSec.toFloat()
+                                                }
+                                            }
+                                        },
+                                        label = {
+                                            Text(
+                                                text = label,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                            )
+                                        },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+
+                            Spacer(Modifier.height(4.dp))
+
+                            // Time Interval Summary Card
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(horizontalAlignment = Alignment.Start) {
+                                        Text(
+                                            text = "Mulai",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            text = formatTime(startTimeSec),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        val selDurationSec = (endTimeSec - startTimeSec).toInt().coerceAtLeast(1)
+                                        Icon(
+                                            painter = painterResource(R.drawable.arrow_forward),
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Text(
+                                            text = "$selDurationSec detik",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text(
+                                            text = "Selesai",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            text = formatTime(endTimeSec),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            }
+
+                            // RangeSlider for Full Timeline Dragging
+                            RangeSlider(
+                                value = startTimeSec..endTimeSec,
+                                onValueChange = { range ->
+                                    if (range.endInclusive - range.start >= 3f) {
+                                        startTimeSec = range.start
+                                        endTimeSec = range.endInclusive
+                                    }
+                                },
+                                valueRange = 0f..songDurationSec.toFloat(),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            // Current Position button if playing (NO -5s or +5s chips!)
+                            if (currentPlaybackPositionMs > 3000L) {
+                                val curSec = currentPlaybackPositionMs / 1000f
+                                AssistChip(
+                                    onClick = {
+                                        val selDur = (endTimeSec - startTimeSec).coerceAtLeast(10f)
+                                        startTimeSec = curSec.coerceIn(0f, maxOf(0f, songDurationSec.toFloat() - 3f))
+                                        endTimeSec = minOf(songDurationSec.toFloat(), startTimeSec + selDur)
+                                    },
+                                    label = {
+                                        Text("Mulai dari posisi saat ini (${formatTime(curSec)})")
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            painter = painterResource(R.drawable.ic_play),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
                                 )
                             }
                         }
 
                         Spacer(Modifier.height(16.dp))
 
-                        // Quick Presets Row
-                        Text(
-                            text = "Preset Durasi Cepat:",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(Modifier.height(6.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            val curDuration = (endTimeSec - startTimeSec).toInt()
-                            val presets = listOf(
-                                15 to "15s",
-                                30 to "30s",
-                                60 to "60s",
-                                -1 to "Penuh"
-                            )
-                            presets.forEach { (dur, label) ->
-                                val isSelected = if (dur == -1) {
-                                    startTimeSec <= 1f && endTimeSec >= songDurationSec.toFloat() - 1f
-                                } else {
-                                    curDuration == dur
-                                }
-                                FilterChip(
-                                    selected = isSelected,
-                                    onClick = {
-                                        if (dur == -1) {
-                                            startTimeSec = 0f
-                                            endTimeSec = songDurationSec.toFloat()
-                                        } else {
-                                            val targetEnd = startTimeSec + dur.toFloat()
-                                            if (targetEnd <= songDurationSec.toFloat()) {
-                                                endTimeSec = targetEnd
-                                            } else {
-                                                startTimeSec = maxOf(0f, songDurationSec.toFloat() - dur.toFloat())
-                                                endTimeSec = songDurationSec.toFloat()
-                                            }
-                                        }
-                                    },
-                                    label = {
-                                        Text(
-                                            text = label,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                        )
-                                    },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                        }
-
-                        Spacer(Modifier.height(14.dp))
-
-                        // Selected Time Interval Card (Mulai & Selesai)
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-                            )
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(horizontalAlignment = Alignment.Start) {
-                                    Text(
-                                        text = "Mulai Dari",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = formatTime(startTimeSec),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    val selDurationSec = (endTimeSec - startTimeSec).toInt().coerceAtLeast(1)
-                                    Icon(
-                                        painter = painterResource(R.drawable.arrow_forward),
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Text(
-                                        text = "$selDurationSec detik",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-
-                                Column(horizontalAlignment = Alignment.End) {
-                                    Text(
-                                        text = "Selesai Pada",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = formatTime(endTimeSec),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(Modifier.height(10.dp))
-
-                        // RangeSlider for Full Timeline Dragging
-                        RangeSlider(
-                            value = startTimeSec..endTimeSec,
-                            onValueChange = { range ->
-                                if (range.endInclusive - range.start >= 3f) {
-                                    startTimeSec = range.start
-                                    endTimeSec = range.endInclusive
-                                }
-                            },
-                            valueRange = 0f..songDurationSec.toFloat(),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        // Stepper fine-tuning controls
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "Mulai: ",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                AssistChip(
-                                    onClick = {
-                                        startTimeSec = (startTimeSec - 5f).coerceAtLeast(0f)
-                                        if (endTimeSec - startTimeSec < 3f) {
-                                            endTimeSec = minOf(songDurationSec.toFloat(), startTimeSec + 3f)
-                                        }
-                                    },
-                                    label = { Text("-5s") },
-                                    modifier = Modifier.height(28.dp)
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                AssistChip(
-                                    onClick = {
-                                        startTimeSec = (startTimeSec + 5f).coerceAtMost(maxOf(0f, endTimeSec - 3f))
-                                    },
-                                    label = { Text("+5s") },
-                                    modifier = Modifier.height(28.dp)
-                                )
-                            }
-
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "Selesai: ",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                AssistChip(
-                                    onClick = {
-                                        endTimeSec = (endTimeSec - 5f).coerceAtLeast(startTimeSec + 3f)
-                                    },
-                                    label = { Text("-5s") },
-                                    modifier = Modifier.height(28.dp)
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                AssistChip(
-                                    onClick = {
-                                        endTimeSec = (endTimeSec + 5f).coerceAtMost(songDurationSec.toFloat())
-                                    },
-                                    label = { Text("+5s") },
-                                    modifier = Modifier.height(28.dp)
-                                )
-                            }
-                        }
-
-                        // Current Position button if playing
-                        if (currentPlaybackPositionMs > 3000L) {
-                            Spacer(Modifier.height(8.dp))
-                            val curSec = currentPlaybackPositionMs / 1000f
-                            AssistChip(
-                                onClick = {
-                                    val selDur = (endTimeSec - startTimeSec).coerceAtLeast(10f)
-                                    startTimeSec = curSec.coerceIn(0f, maxOf(0f, songDurationSec.toFloat() - 3f))
-                                    endTimeSec = minOf(songDurationSec.toFloat(), startTimeSec + selDur)
-                                },
-                                label = {
-                                    Text("Mulai dari posisi saat ini (${formatTime(curSec)})")
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_play),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-
-                        Spacer(Modifier.height(14.dp))
-
-                        // Audio & Lyrics Start/End Preview Card
+                        // 4. Pratinjau Audio & Lirik
                         val startLyricText = remember(lyrics, startTimeSec) {
                             val startMs = (startTimeSec * 1000L).toLong()
                             lyrics?.findLast { it.time <= startMs }?.text
@@ -641,16 +676,16 @@ fun LyricVideoCreationDialog(
 
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp),
+                            shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
                             )
                         ) {
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(14.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -667,12 +702,12 @@ fun LyricVideoCreationDialog(
                                         Spacer(Modifier.width(6.dp))
                                         Text(
                                             text = "Pratinjau Lirik & Audio",
-                                            style = MaterialTheme.typography.labelLarge,
+                                            style = MaterialTheme.typography.titleSmall,
                                             fontWeight = FontWeight.Bold
                                         )
                                     }
 
-                                    AssistChip(
+                                    FilledTonalButton(
                                         onClick = {
                                             val player = playerConnection?.player
                                             if (player != null) {
@@ -694,32 +729,39 @@ fun LyricVideoCreationDialog(
                                                 }
                                             }
                                         },
-                                        label = {
-                                            Text(if (isAudioPreviewPlaying) "Berhenti" else "Dengar Audio")
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                painter = painterResource(if (isAudioPreviewPlaying) R.drawable.pause else R.drawable.ic_play),
-                                                contentDescription = null,
-                                                modifier = Modifier.size(14.dp)
-                                            )
-                                        }
-                                    )
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                        shape = RoundedCornerShape(10.dp)
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(if (isAudioPreviewPlaying) R.drawable.pause else R.drawable.ic_play),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            text = if (isAudioPreviewPlaying) "Berhenti" else "Putar Audio",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
                                 }
 
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .background(
-                                            MaterialTheme.colorScheme.surface.copy(alpha = 0.65f),
+                                            MaterialTheme.colorScheme.surface.copy(alpha = 0.75f),
                                             RoundedCornerShape(10.dp)
                                         )
-                                        .padding(10.dp),
-                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                        .padding(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Row(verticalAlignment = Alignment.Top) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.Top
+                                    ) {
                                         Text(
-                                            text = "Lirik Mulai (${formatTime(startTimeSec)}): ",
+                                            text = "Mulai (${formatTime(startTimeSec)}): ",
                                             style = MaterialTheme.typography.labelSmall,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.primary
@@ -728,12 +770,17 @@ fun LyricVideoCreationDialog(
                                             text = startLyricText,
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurface,
-                                            maxLines = 2
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
-                                    Row(verticalAlignment = Alignment.Top) {
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.Top
+                                    ) {
                                         Text(
-                                            text = "Lirik Berhenti (${formatTime(endTimeSec)}): ",
+                                            text = "Selesai (${formatTime(endTimeSec)}): ",
                                             style = MaterialTheme.typography.labelSmall,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.secondary
@@ -742,78 +789,61 @@ fun LyricVideoCreationDialog(
                                             text = endLyricText,
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurface,
-                                            maxLines = 2
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
                                 }
                             }
                         }
 
-                        Spacer(Modifier.height(14.dp))
+                        Spacer(Modifier.height(18.dp))
 
-                        // Card Model Selection (NORMAL vs KASET)
-                        Text(
-                            text = "Model Desain:",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(Modifier.height(6.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            FilterChip(
-                                selected = cardStyle == VideoLyricsCardStyle.NORMAL,
-                                onClick = { cardStyle = VideoLyricsCardStyle.NORMAL },
-                                label = { Text("Normal (Sampul & Info)") },
-                                modifier = Modifier.weight(1f)
-                            )
-                            FilterChip(
-                                selected = cardStyle == VideoLyricsCardStyle.KASET,
-                                onClick = { cardStyle = VideoLyricsCardStyle.KASET },
-                                label = { Text("Kaset (Piringan CD)") },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-
-                        Spacer(Modifier.height(10.dp))
-
-                        // Fullscreen Landscape Layout Editor Button
-                        OutlinedButton(
-                            onClick = { showLayoutEditor = true },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.tune),
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text("Edit Tata Letak & Ukuran (Layar Penuh)")
-                        }
-
-                        Spacer(Modifier.height(14.dp))
-
+                        // 5. Error message (if any)
                         if (errorMessage != null) {
-                            Text(
-                                text = errorMessage ?: "",
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 12.dp),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.errorContainer
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.close),
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        text = errorMessage ?: "",
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
                         }
 
+                        // 6. Bottom Actions
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            TextButton(onClick = onDismiss) {
+                            OutlinedButton(
+                                onClick = onDismiss,
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
                                 Text("Batal")
                             }
-                            Spacer(Modifier.width(8.dp))
+
                             Button(
                                 onClick = {
                                     if (isAudioPreviewPlaying) {
@@ -849,9 +879,16 @@ fun LyricVideoCreationDialog(
                                         }
                                     }
                                 },
+                                modifier = Modifier.weight(1.5f),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
-                                Text("Mulai Render")
+                                Icon(
+                                    painter = painterResource(R.drawable.movie),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text("Mulai Render", fontWeight = FontWeight.Bold)
                             }
                         }
                     }

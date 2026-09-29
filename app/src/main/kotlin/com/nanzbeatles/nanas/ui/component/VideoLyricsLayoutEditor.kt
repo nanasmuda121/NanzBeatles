@@ -5,6 +5,8 @@
 package com.nanzbeatles.nanas.ui.component
 
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -94,6 +96,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
 /**
  * Fullscreen Landscape Layout Editor for VideoLyrics.
  * - Automatically enters immersive landscape mode upon opening
@@ -110,21 +118,27 @@ fun VideoLyricsLayoutEditor(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val activity = context as? Activity
+    val activity = remember(context) { context.findActivity() }
 
     // Force Landscape & Immersive Mode while editor is visible
-    DisposableEffect(Unit) {
+    DisposableEffect(activity) {
         val originalOrientation = activity?.requestedOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        try {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        } catch (_: Exception) {}
 
         val window = activity?.window
         val insetsController = window?.let { WindowCompat.getInsetsController(it, it.decorView) }
-        insetsController?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        insetsController?.hide(WindowInsetsCompat.Type.systemBars())
+        try {
+            insetsController?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            insetsController?.hide(WindowInsetsCompat.Type.systemBars())
+        } catch (_: Exception) {}
 
         onDispose {
-            activity?.requestedOrientation = originalOrientation
-            insetsController?.show(WindowInsetsCompat.Type.systemBars())
+            try {
+                activity?.requestedOrientation = originalOrientation
+                insetsController?.show(WindowInsetsCompat.Type.systemBars())
+            } catch (_: Exception) {}
         }
     }
 

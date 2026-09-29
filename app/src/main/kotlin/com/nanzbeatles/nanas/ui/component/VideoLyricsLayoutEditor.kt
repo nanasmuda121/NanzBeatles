@@ -65,6 +65,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -114,6 +116,8 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
 fun VideoLyricsLayoutEditor(
     mediaMetadata: MediaMetadata?,
     lyrics: List<LyricsEntry>?,
+    initialCardStyle: VideoLyricsCardStyle = VideoLyricsCardStyle.NORMAL,
+    onStyleChanged: ((VideoLyricsCardStyle) -> Unit)? = null,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -142,7 +146,7 @@ fun VideoLyricsLayoutEditor(
         }
     }
 
-    var cardStyle by remember { mutableStateOf(VideoLyricsCardStyle.KASET) }
+    var cardStyle by remember { mutableStateOf(initialCardStyle) }
     var scalePercent by remember { mutableIntStateOf(80) }
     var offsetXPercent by remember { mutableIntStateOf(0) }
     var offsetYPercent by remember { mutableIntStateOf(0) }
@@ -151,8 +155,8 @@ fun VideoLyricsLayoutEditor(
     // Load initial saved preferences
     LaunchedEffect(Unit) {
         val prefs = context.dataStore.data.first()
-        val styleStr = prefs[VideoLyricsCardStyleKey] ?: VideoLyricsCardStyle.KASET.name
-        cardStyle = try { VideoLyricsCardStyle.valueOf(styleStr) } catch (e: Exception) { VideoLyricsCardStyle.KASET }
+        val styleStr = prefs[VideoLyricsCardStyleKey] ?: initialCardStyle.name
+        cardStyle = try { VideoLyricsCardStyle.valueOf(styleStr) } catch (e: Exception) { initialCardStyle }
         scalePercent = prefs[VideoLyricsScalePercentKey] ?: 80
         offsetXPercent = prefs[VideoLyricsOffsetXPercentKey] ?: 0
         offsetYPercent = prefs[VideoLyricsOffsetYPercentKey] ?: 0
@@ -206,24 +210,9 @@ fun VideoLyricsLayoutEditor(
         )
     }
 
-    // Pre-allocated Bitmap for preview rendering
-    val previewBitmap = remember {
-        Bitmap.createBitmap(1280, 720, Bitmap.Config.ARGB_8888)
-    }
-    val previewCanvas = remember { Canvas(previewBitmap) }
-
-    // Render preview frame
     val animatedAmp = remember(previewTimeMs) {
         0.45f + 0.35f * kotlin.math.sin(previewTimeMs * 0.008f).toFloat()
     }
-    renderer.renderFrame(
-        canvas = previewCanvas,
-        currentTimeMs = (previewTimeMs % 12000L),
-        amplitude = animatedAmp,
-        lyrics = sampleLyrics,
-        songTitle = mediaMetadata?.title ?: "NanzBeatles Music",
-        songArtist = mediaMetadata?.artists?.joinToString { it.name } ?: "Beatles Audio"
-    )
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -257,14 +246,42 @@ fun VideoLyricsLayoutEditor(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    Image(
-                        bitmap = previewBitmap.asImageBitmap(),
-                        contentDescription = "Pratinjau Tata Letak",
+                    androidx.compose.foundation.Canvas(
                         modifier = Modifier
                             .fillMaxWidth()
                             .aspectRatio(16f / 9f)
                             .clip(RoundedCornerShape(8.dp))
-                    )
+                    ) {
+                        val curTime = previewTimeMs % 12000L
+                        val curAmp = animatedAmp
+                        val currentCardStyle = cardStyle
+                        val currentScale = (scalePercent / 80f).coerceIn(0.4f, 1.5f)
+                        val currentOffsetX = (offsetXPercent / 100f) * 200f
+                        val currentOffsetY = (offsetYPercent / 100f) * 150f
+
+                        renderer.cardStyle = currentCardStyle
+                        renderer.lyricsScale = currentScale
+                        renderer.lyricsOffsetX = currentOffsetX
+                        renderer.lyricsOffsetY = currentOffsetY
+                        if (coverBitmap != null) {
+                            renderer.setCoverBitmap(coverBitmap)
+                        }
+
+                        drawIntoCanvas { composeCanvas ->
+                            val nativeCanvas = composeCanvas.nativeCanvas
+                            nativeCanvas.save()
+                            nativeCanvas.scale(size.width / 1280f, size.height / 720f)
+                            renderer.renderFrame(
+                                canvas = nativeCanvas,
+                                currentTimeMs = curTime,
+                                amplitude = curAmp,
+                                lyrics = sampleLyrics,
+                                songTitle = mediaMetadata?.title ?: "NanzBeatles Music",
+                                songArtist = mediaMetadata?.artists?.joinToString { it.name } ?: "Beatles Audio"
+                            )
+                            nativeCanvas.restore()
+                        }
+                    }
 
                     // Touch gesture guidance overlay
                     Box(
@@ -327,10 +344,11 @@ fun VideoLyricsLayoutEditor(
                                 // Tombol Restore (Reset)
                                 AssistChip(
                                     onClick = {
-                                        cardStyle = VideoLyricsCardStyle.KASET
+                                        cardStyle = VideoLyricsCardStyle.NORMAL
                                         scalePercent = 80
                                         offsetXPercent = 0
                                         offsetYPercent = 0
+                                        onStyleChanged?.invoke(VideoLyricsCardStyle.NORMAL)
                                         Toast.makeText(context, "Tata letak di-reset ke default", Toast.LENGTH_SHORT).show()
                                     },
                                     leadingIcon = {
@@ -360,7 +378,10 @@ fun VideoLyricsLayoutEditor(
                             ) {
                                 FilterChip(
                                     selected = cardStyle == VideoLyricsCardStyle.NORMAL,
-                                    onClick = { cardStyle = VideoLyricsCardStyle.NORMAL },
+                                    onClick = {
+                                        cardStyle = VideoLyricsCardStyle.NORMAL
+                                        onStyleChanged?.invoke(VideoLyricsCardStyle.NORMAL)
+                                    },
                                     label = { Text("Normal (Gambar)") },
                                     leadingIcon = {
                                         Icon(
@@ -373,7 +394,10 @@ fun VideoLyricsLayoutEditor(
                                 )
                                 FilterChip(
                                     selected = cardStyle == VideoLyricsCardStyle.KASET,
-                                    onClick = { cardStyle = VideoLyricsCardStyle.KASET },
+                                    onClick = {
+                                        cardStyle = VideoLyricsCardStyle.KASET
+                                        onStyleChanged?.invoke(VideoLyricsCardStyle.KASET)
+                                    },
                                     label = { Text("Kaset (CD)") },
                                     leadingIcon = {
                                         Icon(
@@ -505,6 +529,7 @@ fun VideoLyricsLayoutEditor(
                                             prefs[VideoLyricsOffsetYPercentKey] = offsetYPercent
                                         }
                                         withContext(Dispatchers.Main) {
+                                            onStyleChanged?.invoke(cardStyle)
                                             Toast.makeText(context, "Tata letak VideoLyrics berhasil disimpan!", Toast.LENGTH_SHORT).show()
                                             onDismiss()
                                         }

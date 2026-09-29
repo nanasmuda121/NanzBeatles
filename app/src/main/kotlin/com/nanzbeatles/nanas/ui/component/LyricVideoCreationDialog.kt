@@ -166,6 +166,8 @@ fun LyricVideoCreationDialog(
         VideoLyricsLayoutEditor(
             mediaMetadata = mediaMetadata,
             lyrics = lyrics,
+            initialCardStyle = cardStyle,
+            onStyleChanged = { newStyle -> cardStyle = newStyle },
             onDismiss = { showLayoutEditor = false }
         )
     }
@@ -446,7 +448,7 @@ fun LyricVideoCreationDialog(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
-                                text = "Model Tampilan:",
+                                text = "Model Tampilan Desain:",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -458,7 +460,12 @@ fun LyricVideoCreationDialog(
                             ) {
                                 FilterChip(
                                     selected = cardStyle == VideoLyricsCardStyle.NORMAL,
-                                    onClick = { cardStyle = VideoLyricsCardStyle.NORMAL },
+                                    onClick = {
+                                        cardStyle = VideoLyricsCardStyle.NORMAL
+                                        scope.launch {
+                                            context.dataStore.edit { it[VideoLyricsCardStyleKey] = VideoLyricsCardStyle.NORMAL.name }
+                                        }
+                                    },
                                     label = { Text("Normal (Sampul)") },
                                     leadingIcon = {
                                         Icon(
@@ -471,8 +478,13 @@ fun LyricVideoCreationDialog(
                                 )
                                 FilterChip(
                                     selected = cardStyle == VideoLyricsCardStyle.KASET,
-                                    onClick = { cardStyle = VideoLyricsCardStyle.KASET },
-                                    label = { Text("Kaset (CD)") },
+                                    onClick = {
+                                        cardStyle = VideoLyricsCardStyle.KASET
+                                        scope.launch {
+                                            context.dataStore.edit { it[VideoLyricsCardStyleKey] = VideoLyricsCardStyle.KASET.name }
+                                        }
+                                    },
+                                    label = { Text("Kaset (Piringan CD)") },
                                     leadingIcon = {
                                         Icon(
                                             painter = painterResource(R.drawable.album),
@@ -481,6 +493,27 @@ fun LyricVideoCreationDialog(
                                         )
                                     },
                                     modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                            // Dynamic Helper/Badge explaining the selected model
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.40f),
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = if (cardStyle == VideoLyricsCardStyle.NORMAL) {
+                                        "ℹ️ Normal: Sampul album persegi modern dengan nama musik & artis di bawahnya."
+                                    } else {
+                                        "ℹ️ Kaset: Piringan CD album berputar dalam casing akrilik kaset vintage."
+                                    },
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
 
@@ -856,13 +889,18 @@ fun LyricVideoCreationDialog(
                                     val startPosMs = (startTimeSec * 1000L).toLong()
                                     val durationMs = ((endTimeSec - startTimeSec) * 1000L).toLong().coerceAtLeast(1000L)
 
+                                    val currentCardStyle = cardStyle
                                     scope.launch {
+                                        context.dataStore.edit { prefs ->
+                                            prefs[VideoLyricsCardStyleKey] = currentCardStyle.name
+                                        }
                                         val result = LyricVideoShareUtils.generateLyricVideo(
                                             context = context,
                                             mediaMetadata = mediaMetadata,
                                             lyrics = lyrics,
                                             startTimeMs = startPosMs,
                                             durationMs = durationMs,
+                                            cardStyle = currentCardStyle,
                                             downloadCache = downloadCache,
                                             playerCache = playerCache,
                                             onProgress = { stage, prog ->

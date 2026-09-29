@@ -584,6 +584,7 @@ object LyricVideoShareUtils {
         lyrics: List<LyricsEntry>?,
         startTimeMs: Long,
         durationMs: Long,
+        cardStyle: VideoLyricsCardStyle? = null,
         downloadCache: SimpleCache? = null,
         playerCache: SimpleCache? = null,
         onProgress: (stage: String, progress: Float) -> Unit
@@ -621,8 +622,12 @@ object LyricVideoShareUtils {
             val outputFile = File(outputDir, "NanzBeatles_${mediaMetadata.id}_${System.currentTimeMillis()}.mp4")
 
             val prefs = context.dataStore.data.first()
-            val styleStr = prefs[VideoLyricsCardStyleKey] ?: VideoLyricsCardStyle.KASET.name
-            val cardStyle = try { VideoLyricsCardStyle.valueOf(styleStr) } catch (e: Exception) { VideoLyricsCardStyle.KASET }
+            val styleStr = prefs[VideoLyricsCardStyleKey] ?: VideoLyricsCardStyle.NORMAL.name
+            val effectiveCardStyle = cardStyle ?: try {
+                VideoLyricsCardStyle.valueOf(styleStr)
+            } catch (e: Exception) {
+                VideoLyricsCardStyle.NORMAL
+            }
             val scalePercent = prefs[VideoLyricsScalePercentKey] ?: 80
             val offsetXPercent = prefs[VideoLyricsOffsetXPercentKey] ?: 0
             val offsetYPercent = prefs[VideoLyricsOffsetYPercentKey] ?: 0
@@ -642,7 +647,7 @@ object LyricVideoShareUtils {
                 durationMs = durationMs,
                 amplitudes = amplitudes,
                 caseBitmap = caseBitmap,
-                cardStyle = cardStyle,
+                cardStyle = effectiveCardStyle,
                 lyricsScale = lyricsScale,
                 lyricsOffsetX = lyricsOffsetX,
                 lyricsOffsetY = lyricsOffsetY

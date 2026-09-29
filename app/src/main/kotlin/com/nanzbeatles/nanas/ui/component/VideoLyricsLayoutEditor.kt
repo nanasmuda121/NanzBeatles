@@ -4,10 +4,6 @@
 
 package com.nanzbeatles.nanas.ui.component
 
-import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
-import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
@@ -24,6 +20,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -55,7 +52,6 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -63,6 +59,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -76,9 +73,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.datastore.preferences.core.edit
 import com.nanzbeatles.nanas.R
 import com.nanzbeatles.nanas.constants.VideoLyricsCardAlphaPercentKey
@@ -102,15 +96,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
-private tailrec fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
-}
-
 /**
- * Fullscreen Landscape Layout Editor for VideoLyrics.
- * - Fullscreen 16:9 Live Canvas preview in the background
+ * Responsive Layout Editor for VideoLyrics.
+ * - Dynamic 16:9 Live Canvas preview in the background (fits both portrait & landscape)
  * - Centered semi-transparent floating control card (adjustable Lirik, Sampul, and Gaya)
  * - Dynamic line-spacing for lyrics that automatically scales with text size
  * - Cover size, position, and opacity controls
@@ -126,41 +114,18 @@ fun VideoLyricsLayoutEditor(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val activity = remember(context) { context.findActivity() }
 
-    // Force Landscape & Immersive Mode while editor is visible
-    DisposableEffect(activity) {
-        val originalOrientation = activity?.requestedOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-        try {
-            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        } catch (_: Exception) {}
+    var cardStyle by rememberSaveable { mutableStateOf(initialCardStyle) }
+    var scalePercent by rememberSaveable { mutableIntStateOf(80) }
+    var offsetXPercent by rememberSaveable { mutableIntStateOf(0) }
+    var offsetYPercent by rememberSaveable { mutableIntStateOf(0) }
+    var cardScalePercent by rememberSaveable { mutableIntStateOf(100) }
+    var cardOffsetXPercent by rememberSaveable { mutableIntStateOf(0) }
+    var cardOffsetYPercent by rememberSaveable { mutableIntStateOf(0) }
+    var cardAlphaPercent by rememberSaveable { mutableIntStateOf(100) }
 
-        val window = activity?.window
-        val insetsController = window?.let { WindowCompat.getInsetsController(it, it.decorView) }
-        try {
-            insetsController?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            insetsController?.hide(WindowInsetsCompat.Type.systemBars())
-        } catch (_: Exception) {}
-
-        onDispose {
-            try {
-                activity?.requestedOrientation = originalOrientation
-                insetsController?.show(WindowInsetsCompat.Type.systemBars())
-            } catch (_: Exception) {}
-        }
-    }
-
-    var cardStyle by remember { mutableStateOf(initialCardStyle) }
-    var scalePercent by remember { mutableIntStateOf(80) }
-    var offsetXPercent by remember { mutableIntStateOf(0) }
-    var offsetYPercent by remember { mutableIntStateOf(0) }
-    var cardScalePercent by remember { mutableIntStateOf(100) }
-    var cardOffsetXPercent by remember { mutableIntStateOf(0) }
-    var cardOffsetYPercent by remember { mutableIntStateOf(0) }
-    var cardAlphaPercent by remember { mutableIntStateOf(100) }
-
-    var selectedTab by remember { mutableIntStateOf(0) } // 0 = Lirik, 1 = Sampul, 2 = Gaya
-    var showControls by remember { mutableStateOf(true) }
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) } // 0 = Lirik, 1 = Sampul, 2 = Gaya
+    var showControls by rememberSaveable { mutableStateOf(true) }
 
     // Load initial saved preferences
     LaunchedEffect(Unit) {
@@ -233,7 +198,7 @@ fun VideoLyricsLayoutEditor(
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 // LAYER 1: Fullscreen 16:9 Live Canvas Preview
-                Box(
+                BoxWithConstraints(
                     modifier = Modifier
                         .fillMaxSize()
                         .pointerInput(selectedTab) {
@@ -264,11 +229,17 @@ fun VideoLyricsLayoutEditor(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    Canvas(
-                        modifier = Modifier
-                            .fillMaxSize()
+                    val canvasModifier = if (maxWidth * 9f > maxHeight * 16f) {
+                        Modifier
+                            .fillMaxHeight()
                             .aspectRatio(16f / 9f)
-                    ) {
+                    } else {
+                        Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(16f / 9f)
+                    }
+
+                    Canvas(modifier = canvasModifier) {
                         val curTime = previewTimeMs % 12000L
                         val curAmp = animatedAmp
                         val currentCardStyle = cardStyle
@@ -358,11 +329,9 @@ fun VideoLyricsLayoutEditor(
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.SpaceBetween
+                                .padding(16.dp)
                         ) {
-                            Column {
-                                // Header Row
+                            // Header Row
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -444,7 +413,8 @@ fun VideoLyricsLayoutEditor(
                                 // Tab Content inside scrollable container
                                 Column(
                                     modifier = Modifier
-                                        .weight(1f, fill = false)
+                                        .fillMaxWidth()
+                                        .weight(1f)
                                         .verticalScroll(rememberScrollState())
                                 ) {
                                     when (selectedTab) {
@@ -700,7 +670,8 @@ fun VideoLyricsLayoutEditor(
                                         }
                                     }
                                 }
-                            }
+
+                            Spacer(Modifier.height(8.dp))
 
                             // Bottom Actions (Batal & Simpan)
                             Row(

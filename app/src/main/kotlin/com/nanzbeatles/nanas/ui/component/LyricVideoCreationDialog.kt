@@ -53,6 +53,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -123,7 +124,7 @@ fun LyricVideoCreationDialog(
     var generatedVideoFile by remember { mutableStateOf<File?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    var showLayoutEditor by remember { mutableStateOf(false) }
+    var showLayoutEditor by rememberSaveable { mutableStateOf(false) }
     var isAudioPreviewPlaying by remember { mutableStateOf(false) }
     var cardStyle by rememberEnumPreference(VideoLyricsCardStyleKey, VideoLyricsCardStyle.NORMAL)
 
@@ -172,9 +173,8 @@ fun LyricVideoCreationDialog(
             onStyleChanged = { newStyle -> cardStyle = newStyle },
             onDismiss = { showLayoutEditor = false }
         )
-    }
-
-    Dialog(
+    } else {
+        Dialog(
         onDismissRequest = {
             if (!isGenerating) onDismiss()
         },
@@ -935,6 +935,7 @@ fun LyricVideoCreationDialog(
                 }
             }
         }
+    }
     }
 }
 

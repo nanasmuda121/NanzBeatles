@@ -32,12 +32,16 @@ import com.nanzbeatles.nanas.constants.AudioQualityKey
 import com.nanzbeatles.nanas.constants.VideoLyricsCardAlphaPercentKey
 import com.nanzbeatles.nanas.constants.VideoLyricsCardOffsetXPercentKey
 import com.nanzbeatles.nanas.constants.VideoLyricsCardOffsetYPercentKey
+import com.nanzbeatles.nanas.constants.VideoLyricsCardRotationKey
 import com.nanzbeatles.nanas.constants.VideoLyricsCardScalePercentKey
 import com.nanzbeatles.nanas.constants.VideoLyricsCardStyle
 import com.nanzbeatles.nanas.constants.VideoLyricsCardStyleKey
+import com.nanzbeatles.nanas.constants.VideoLyricsLineSpacingPercentKey
+import com.nanzbeatles.nanas.constants.VideoLyricsLyricsRotationKey
 import com.nanzbeatles.nanas.constants.VideoLyricsOffsetXPercentKey
 import com.nanzbeatles.nanas.constants.VideoLyricsOffsetYPercentKey
 import com.nanzbeatles.nanas.constants.VideoLyricsScalePercentKey
+import com.nanzbeatles.nanas.constants.VideoLyricsShowUpcomingKey
 import com.nanzbeatles.nanas.lyrics.LyricsEntry
 import com.nanzbeatles.nanas.models.MediaMetadata
 import com.nanzbeatles.nanas.utils.ShareUtils
@@ -639,14 +643,19 @@ object LyricVideoShareUtils {
             val cardOffsetXPercent = prefs[VideoLyricsCardOffsetXPercentKey] ?: 0
             val cardOffsetYPercent = prefs[VideoLyricsCardOffsetYPercentKey] ?: 0
             val cardAlphaPercent = prefs[VideoLyricsCardAlphaPercentKey] ?: 100
+            val spacingPercent = prefs[VideoLyricsLineSpacingPercentKey] ?: 100
+            val showUpcoming = prefs[VideoLyricsShowUpcomingKey] ?: true
+            val lyricsRotation = (prefs[VideoLyricsLyricsRotationKey] ?: 0).toFloat()
+            val cardRotation = (prefs[VideoLyricsCardRotationKey] ?: 0).toFloat()
 
-            val lyricsScale = (scalePercent / 80f).coerceIn(0.4f, 1.5f)
-            val lyricsOffsetX = (offsetXPercent / 100f) * 200f
-            val lyricsOffsetY = (offsetYPercent / 100f) * 150f
-            val cardScale = (cardScalePercent / 100f).coerceIn(0.4f, 1.6f)
-            val cardOffsetX = (cardOffsetXPercent / 100f) * 200f
-            val cardOffsetY = (cardOffsetYPercent / 100f) * 150f
+            val lyricsScale = (scalePercent / 80f).coerceIn(0.2f, 2.5f)
+            val lyricsOffsetX = (offsetXPercent / 100f) * 600f
+            val lyricsOffsetY = (offsetYPercent / 100f) * 340f
+            val cardScale = (cardScalePercent / 100f).coerceIn(0.2f, 2.5f)
+            val cardOffsetX = (cardOffsetXPercent / 100f) * 600f
+            val cardOffsetY = (cardOffsetYPercent / 100f) * 340f
             val cardAlpha = (cardAlphaPercent / 100f).coerceIn(0f, 1f)
+            val lyricsSpacingScale = (spacingPercent / 100f).coerceIn(0.4f, 2.5f)
 
             val config = LyricVideoEncoder.EncodeConfig(
                 audioFile = audioFile,
@@ -666,7 +675,11 @@ object LyricVideoShareUtils {
                 cardScale = cardScale,
                 cardOffsetX = cardOffsetX,
                 cardOffsetY = cardOffsetY,
-                cardAlpha = cardAlpha
+                cardAlpha = cardAlpha,
+                lyricsSpacingScale = lyricsSpacingScale,
+                showUpcomingLyrics = showUpcoming,
+                lyricsRotation = lyricsRotation,
+                cardRotation = cardRotation
             )
 
             LyricVideoEncoder.encodeLyricVideo(config, onProgress)

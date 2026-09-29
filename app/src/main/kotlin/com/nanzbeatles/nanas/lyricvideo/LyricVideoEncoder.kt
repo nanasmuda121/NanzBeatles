@@ -56,7 +56,11 @@ object LyricVideoEncoder {
         val cardScale: Float = 1.0f,
         val cardOffsetX: Float = 0f,
         val cardOffsetY: Float = 0f,
-        val cardAlpha: Float = 1.0f
+        val cardAlpha: Float = 1.0f,
+        val lyricsSpacingScale: Float = 1.0f,
+        val showUpcomingLyrics: Boolean = true,
+        val lyricsRotation: Float = 0f,
+        val cardRotation: Float = 0f
     )
 
     /**
@@ -104,7 +108,11 @@ object LyricVideoEncoder {
                 cardScale = config.cardScale,
                 cardOffsetX = config.cardOffsetX,
                 cardOffsetY = config.cardOffsetY,
-                cardAlpha = config.cardAlpha
+                cardAlpha = config.cardAlpha,
+                lyricsSpacingScale = config.lyricsSpacingScale,
+                showUpcomingLyrics = config.showUpcomingLyrics,
+                lyricsRotation = config.lyricsRotation,
+                cardRotation = config.cardRotation
             ).apply {
                 setCoverBitmap(config.coverBitmap)
             }

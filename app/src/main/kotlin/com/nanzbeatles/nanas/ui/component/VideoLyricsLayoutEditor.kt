@@ -16,7 +16,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -78,12 +78,16 @@ import com.nanzbeatles.nanas.R
 import com.nanzbeatles.nanas.constants.VideoLyricsCardAlphaPercentKey
 import com.nanzbeatles.nanas.constants.VideoLyricsCardOffsetXPercentKey
 import com.nanzbeatles.nanas.constants.VideoLyricsCardOffsetYPercentKey
+import com.nanzbeatles.nanas.constants.VideoLyricsCardRotationKey
 import com.nanzbeatles.nanas.constants.VideoLyricsCardScalePercentKey
 import com.nanzbeatles.nanas.constants.VideoLyricsCardStyle
 import com.nanzbeatles.nanas.constants.VideoLyricsCardStyleKey
+import com.nanzbeatles.nanas.constants.VideoLyricsLineSpacingPercentKey
+import com.nanzbeatles.nanas.constants.VideoLyricsLyricsRotationKey
 import com.nanzbeatles.nanas.constants.VideoLyricsOffsetXPercentKey
 import com.nanzbeatles.nanas.constants.VideoLyricsOffsetYPercentKey
 import com.nanzbeatles.nanas.constants.VideoLyricsScalePercentKey
+import com.nanzbeatles.nanas.constants.VideoLyricsShowUpcomingKey
 import com.nanzbeatles.nanas.lyrics.LyricsEntry
 import com.nanzbeatles.nanas.lyricvideo.LyricVideoRenderer
 import com.nanzbeatles.nanas.lyricvideo.LyricVideoShareUtils
@@ -123,6 +127,10 @@ fun VideoLyricsLayoutEditor(
     var cardOffsetXPercent by rememberSaveable { mutableIntStateOf(0) }
     var cardOffsetYPercent by rememberSaveable { mutableIntStateOf(0) }
     var cardAlphaPercent by rememberSaveable { mutableIntStateOf(100) }
+    var lineSpacingPercent by rememberSaveable { mutableIntStateOf(100) }
+    var showUpcomingLyrics by rememberSaveable { mutableStateOf(true) }
+    var lyricsRotation by rememberSaveable { mutableIntStateOf(0) }
+    var cardRotation by rememberSaveable { mutableIntStateOf(0) }
 
     var selectedTab by rememberSaveable { mutableIntStateOf(0) } // 0 = Lirik, 1 = Sampul, 2 = Gaya
     var showControls by rememberSaveable { mutableStateOf(true) }
@@ -139,6 +147,10 @@ fun VideoLyricsLayoutEditor(
         cardOffsetXPercent = prefs[VideoLyricsCardOffsetXPercentKey] ?: 0
         cardOffsetYPercent = prefs[VideoLyricsCardOffsetYPercentKey] ?: 0
         cardAlphaPercent = prefs[VideoLyricsCardAlphaPercentKey] ?: 100
+        lineSpacingPercent = prefs[VideoLyricsLineSpacingPercentKey] ?: 100
+        showUpcomingLyrics = prefs[VideoLyricsShowUpcomingKey] ?: true
+        lyricsRotation = prefs[VideoLyricsLyricsRotationKey] ?: 0
+        cardRotation = prefs[VideoLyricsCardRotationKey] ?: 0
     }
 
     // Cover art bitmap for preview
@@ -202,29 +214,52 @@ fun VideoLyricsLayoutEditor(
                     modifier = Modifier
                         .fillMaxSize()
                         .pointerInput(selectedTab) {
-                            detectDragGestures { change, dragAmount ->
-                                change.consume()
+                            detectTransformGestures { _, pan, zoom, rotation ->
                                 if (selectedTab == 0) {
                                     // Adjust Lirik
-                                    val newX = (offsetXPercent + (dragAmount.x * 0.25f)).roundToInt().coerceIn(-100, 100)
-                                    val newY = (offsetYPercent + (dragAmount.y * 0.25f)).roundToInt().coerceIn(-100, 100)
-                                    offsetXPercent = newX
-                                    offsetYPercent = newY
+                                    // 1. Pan (geser bebas ke mana saja)
+                                    val deltaX = pan.x * 0.25f
+                                    val deltaY = pan.y * 0.25f
+                                    offsetXPercent = (offsetXPercent + deltaX.roundToInt()).coerceIn(-100, 100)
+                                    offsetYPercent = (offsetYPercent + deltaY.roundToInt()).coerceIn(-100, 100)
+
+                                    // 2. Zoom in / Zoom out pakai 2 jari
+                                    if (zoom != 1.0f) {
+                                        scalePercent = (scalePercent * zoom).roundToInt().coerceIn(20, 200)
+                                    }
+
+                                    // 3. Rotasi pakai 2 jari
+                                    if (rotation != 0.0f) {
+                                        val newRot = (lyricsRotation + rotation.roundToInt())
+                                        lyricsRotation = when {
+                                            newRot > 180 -> newRot - 360
+                                            newRot < -180 -> newRot + 360
+                                            else -> newRot
+                                        }
+                                    }
                                 } else {
                                     // Adjust Sampul
-                                    val newX = (cardOffsetXPercent + (dragAmount.x * 0.25f)).roundToInt().coerceIn(-100, 100)
-                                    val newY = (cardOffsetYPercent + (dragAmount.y * 0.25f)).roundToInt().coerceIn(-100, 100)
-                                    cardOffsetXPercent = newX
-                                    cardOffsetYPercent = newY
+                                    // 1. Pan (geser bebas ke mana saja)
+                                    val deltaX = pan.x * 0.25f
+                                    val deltaY = pan.y * 0.25f
+                                    cardOffsetXPercent = (cardOffsetXPercent + deltaX.roundToInt()).coerceIn(-100, 100)
+                                    cardOffsetYPercent = (cardOffsetYPercent + deltaY.roundToInt()).coerceIn(-100, 100)
+
+                                    // 2. Zoom in / Zoom out pakai 2 jari
+                                    if (zoom != 1.0f) {
+                                        cardScalePercent = (cardScalePercent * zoom).roundToInt().coerceIn(20, 200)
+                                    }
+
+                                    // 3. Rotasi pakai 2 jari
+                                    if (rotation != 0.0f) {
+                                        val newRot = (cardRotation + rotation.roundToInt())
+                                        cardRotation = when {
+                                            newRot > 180 -> newRot - 360
+                                            newRot < -180 -> newRot + 360
+                                            else -> newRot
+                                        }
+                                    }
                                 }
-                            }
-                        }
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {
-                            if (!showControls) {
-                                showControls = true
                             }
                         },
                     contentAlignment = Alignment.Center
@@ -243,13 +278,14 @@ fun VideoLyricsLayoutEditor(
                         val curTime = previewTimeMs % 12000L
                         val curAmp = animatedAmp
                         val currentCardStyle = cardStyle
-                        val currentScale = (scalePercent / 80f).coerceIn(0.4f, 1.5f)
-                        val currentOffsetX = (offsetXPercent / 100f) * 200f
-                        val currentOffsetY = (offsetYPercent / 100f) * 150f
-                        val currentCardScale = (cardScalePercent / 100f).coerceIn(0.4f, 1.6f)
-                        val currentCardOffsetX = (cardOffsetXPercent / 100f) * 200f
-                        val currentCardOffsetY = (cardOffsetYPercent / 100f) * 150f
+                        val currentScale = (scalePercent / 80f).coerceIn(0.2f, 2.5f)
+                        val currentOffsetX = (offsetXPercent / 100f) * 600f
+                        val currentOffsetY = (offsetYPercent / 100f) * 340f
+                        val currentCardScale = (cardScalePercent / 100f).coerceIn(0.2f, 2.5f)
+                        val currentCardOffsetX = (cardOffsetXPercent / 100f) * 600f
+                        val currentCardOffsetY = (cardOffsetYPercent / 100f) * 340f
                         val currentCardAlpha = (cardAlphaPercent / 100f).coerceIn(0f, 1f)
+                        val currentSpacing = (lineSpacingPercent / 100f).coerceIn(0.4f, 2.5f)
 
                         renderer.cardStyle = currentCardStyle
                         renderer.lyricsScale = currentScale
@@ -259,6 +295,10 @@ fun VideoLyricsLayoutEditor(
                         renderer.cardOffsetX = currentCardOffsetX
                         renderer.cardOffsetY = currentCardOffsetY
                         renderer.cardAlpha = currentCardAlpha
+                        renderer.lyricsSpacingScale = currentSpacing
+                        renderer.showUpcomingLyrics = showUpcomingLyrics
+                        renderer.lyricsRotation = lyricsRotation.toFloat()
+                        renderer.cardRotation = cardRotation.toFloat()
                         if (coverBitmap != null) {
                             renderer.setCoverBitmap(coverBitmap)
                         }
@@ -280,26 +320,49 @@ fun VideoLyricsLayoutEditor(
                     }
                 }
 
-                // LAYER 2: Floating Pill Button if panel is hidden
+                // LAYER 2: Floating Pill Button & Mode Toggle if panel is hidden
                 AnimatedVisibility(
                     visible = !showControls,
                     enter = fadeIn() + slideInVertically { it },
                     exit = fadeOut() + slideOutVertically { it },
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 20.dp)
+                        .padding(bottom = 24.dp)
                 ) {
-                    FilledTonalButton(
-                        onClick = { showControls = true },
-                        shape = CircleShape
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f),
+                        tonalElevation = 6.dp,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     ) {
-                        Icon(
-                            painter = painterResource(R.drawable.tune),
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text("Buka Pengaturan Tata Letak")
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            FilterChip(
+                                selected = selectedTab == 0,
+                                onClick = { selectedTab = 0 },
+                                label = { Text("Lirik") }
+                            )
+                            FilterChip(
+                                selected = selectedTab == 1,
+                                onClick = { selectedTab = 1 },
+                                label = { Text("Sampul") }
+                            )
+                            FilledTonalButton(
+                                onClick = { showControls = true },
+                                shape = CircleShape
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.tune),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text("Pengaturan")
+                            }
+                        }
                     }
                 }
 
@@ -332,29 +395,33 @@ fun VideoLyricsLayoutEditor(
                                 .padding(16.dp)
                         ) {
                             // Header Row
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Tata Letak Video",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        IconButton(
-                                            onClick = { showControls = false },
-                                            modifier = Modifier.size(32.dp)
-                                        ) {
+                                    AssistChip(
+                                        onClick = { showControls = false },
+                                        leadingIcon = {
                                             Icon(
                                                 painter = painterResource(R.drawable.close),
-                                                contentDescription = "Sembunyikan Panel",
-                                                tint = MaterialTheme.colorScheme.onSurface
+                                                contentDescription = null,
+                                                modifier = Modifier.size(14.dp)
                                             )
-                                        }
-                                        Spacer(Modifier.width(6.dp))
-                                        Text(
-                                            text = "Tata Letak Video",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
+                                        },
+                                        label = { Text("Sembunyikan") },
+                                        modifier = Modifier.height(32.dp)
+                                    )
 
                                     AssistChip(
                                         onClick = {
@@ -362,10 +429,14 @@ fun VideoLyricsLayoutEditor(
                                             scalePercent = 80
                                             offsetXPercent = 0
                                             offsetYPercent = 0
+                                            lineSpacingPercent = 100
+                                            showUpcomingLyrics = true
+                                            lyricsRotation = 0
                                             cardScalePercent = 100
                                             cardOffsetXPercent = 0
                                             cardOffsetYPercent = 0
                                             cardAlphaPercent = 100
+                                            cardRotation = 0
                                             onStyleChanged?.invoke(VideoLyricsCardStyle.NORMAL)
                                             Toast.makeText(context, "Tata letak di-reset ke default", Toast.LENGTH_SHORT).show()
                                         },
@@ -373,13 +444,14 @@ fun VideoLyricsLayoutEditor(
                                             Icon(
                                                 painter = painterResource(R.drawable.restore),
                                                 contentDescription = null,
-                                                modifier = Modifier.size(16.dp)
+                                                modifier = Modifier.size(14.dp)
                                             )
                                         },
                                         label = { Text("Reset") },
                                         modifier = Modifier.height(32.dp)
                                     )
                                 }
+                            }
 
                                 Spacer(Modifier.height(8.dp))
 
@@ -441,7 +513,86 @@ fun VideoLyricsLayoutEditor(
                                             Slider(
                                                 value = scalePercent.toFloat(),
                                                 onValueChange = { scalePercent = it.roundToInt() },
-                                                valueRange = 1f..100f,
+                                                valueRange = 20f..200f,
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
+
+                                            Spacer(Modifier.height(6.dp))
+
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = "Jarak Antar Lirik:",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Text(
+                                                    text = "$lineSpacingPercent%",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                            Slider(
+                                                value = lineSpacingPercent.toFloat(),
+                                                onValueChange = { lineSpacingPercent = it.roundToInt() },
+                                                valueRange = 50f..250f,
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
+
+                                            Spacer(Modifier.height(6.dp))
+
+                                            Text(
+                                                text = "Jenis Tampilan Lirik:",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            Spacer(Modifier.height(4.dp))
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                FilterChip(
+                                                    selected = showUpcomingLyrics,
+                                                    onClick = { showUpcomingLyrics = true },
+                                                    label = { Text("Ada Preview Bawah") },
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                FilterChip(
+                                                    selected = !showUpcomingLyrics,
+                                                    onClick = { showUpcomingLyrics = false },
+                                                    label = { Text("Tanpa Preview Bawah") },
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                            }
+
+                                            Spacer(Modifier.height(6.dp))
+
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = "Rotasi Lirik:",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Text(
+                                                    text = "${if (lyricsRotation > 0) "+$lyricsRotation" else "$lyricsRotation"}°",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                            Slider(
+                                                value = lyricsRotation.toFloat(),
+                                                onValueChange = { lyricsRotation = it.roundToInt() },
+                                                valueRange = -180f..180f,
                                                 modifier = Modifier.fillMaxWidth()
                                             )
 
@@ -495,14 +646,24 @@ fun VideoLyricsLayoutEditor(
 
                                             Row(
                                                 modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.End
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.End)
                                             ) {
                                                 AssistChip(
                                                     onClick = {
                                                         offsetXPercent = 0
                                                         offsetYPercent = 0
                                                     },
-                                                    label = { Text("Pusatkan Lirik") },
+                                                    label = { Text("Pusatkan") },
+                                                    modifier = Modifier.height(28.dp)
+                                                )
+                                                AssistChip(
+                                                    onClick = { lyricsRotation = 0 },
+                                                    label = { Text("Reset Rotasi") },
+                                                    modifier = Modifier.height(28.dp)
+                                                )
+                                                AssistChip(
+                                                    onClick = { lineSpacingPercent = 100 },
+                                                    label = { Text("Reset Jarak") },
                                                     modifier = Modifier.height(28.dp)
                                                 )
                                             }
@@ -530,7 +691,32 @@ fun VideoLyricsLayoutEditor(
                                             Slider(
                                                 value = cardScalePercent.toFloat(),
                                                 onValueChange = { cardScalePercent = it.roundToInt() },
-                                                valueRange = 40f..160f,
+                                                valueRange = 30f..200f,
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
+
+                                            Spacer(Modifier.height(6.dp))
+
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = "Rotasi Sampul:",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Text(
+                                                    text = "${if (cardRotation > 0) "+$cardRotation" else "$cardRotation"}°",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                            Slider(
+                                                value = cardRotation.toFloat(),
+                                                onValueChange = { cardRotation = it.roundToInt() },
+                                                valueRange = -180f..180f,
                                                 modifier = Modifier.fillMaxWidth()
                                             )
 
@@ -609,14 +795,19 @@ fun VideoLyricsLayoutEditor(
 
                                             Row(
                                                 modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.End
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.End)
                                             ) {
                                                 AssistChip(
                                                     onClick = {
                                                         cardOffsetXPercent = 0
                                                         cardOffsetYPercent = 0
                                                     },
-                                                    label = { Text("Pusatkan Sampul") },
+                                                    label = { Text("Pusatkan") },
+                                                    modifier = Modifier.height(28.dp)
+                                                )
+                                                AssistChip(
+                                                    onClick = { cardRotation = 0 },
+                                                    label = { Text("Reset Rotasi") },
                                                     modifier = Modifier.height(28.dp)
                                                 )
                                             }
@@ -700,6 +891,10 @@ fun VideoLyricsLayoutEditor(
                                                 prefs[VideoLyricsCardOffsetXPercentKey] = cardOffsetXPercent
                                                 prefs[VideoLyricsCardOffsetYPercentKey] = cardOffsetYPercent
                                                 prefs[VideoLyricsCardAlphaPercentKey] = cardAlphaPercent
+                                                prefs[VideoLyricsLineSpacingPercentKey] = lineSpacingPercent
+                                                prefs[VideoLyricsShowUpcomingKey] = showUpcomingLyrics
+                                                prefs[VideoLyricsLyricsRotationKey] = lyricsRotation
+                                                prefs[VideoLyricsCardRotationKey] = cardRotation
                                             }
                                             withContext(Dispatchers.Main) {
                                                 onStyleChanged?.invoke(cardStyle)

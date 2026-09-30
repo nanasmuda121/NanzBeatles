@@ -29,20 +29,10 @@ import coil3.request.allowHardware
 import coil3.toBitmap
 import com.nanzbeatles.nanas.constants.AudioQuality
 import com.nanzbeatles.nanas.constants.AudioQualityKey
-import com.nanzbeatles.nanas.constants.VideoLyricsCardAlphaPercentKey
-import com.nanzbeatles.nanas.constants.VideoLyricsCardOffsetXPercentKey
-import com.nanzbeatles.nanas.constants.VideoLyricsCardOffsetYPercentKey
-import com.nanzbeatles.nanas.constants.VideoLyricsCardRotationKey
-import com.nanzbeatles.nanas.constants.VideoLyricsCardScalePercentKey
 import com.nanzbeatles.nanas.constants.VideoLyricsCardStyle
 import com.nanzbeatles.nanas.constants.VideoLyricsCardStyleKey
-import com.nanzbeatles.nanas.constants.VideoLyricsLineSpacingPercentKey
-import com.nanzbeatles.nanas.constants.VideoLyricsLyricsRotationKey
-import com.nanzbeatles.nanas.constants.VideoLyricsOffsetXPercentKey
-import com.nanzbeatles.nanas.constants.VideoLyricsOffsetYPercentKey
-import com.nanzbeatles.nanas.constants.VideoLyricsScalePercentKey
-import com.nanzbeatles.nanas.constants.VideoLyricsShowUpcomingKey
 import com.nanzbeatles.nanas.constants.VideoLyricsHideInactiveKey
+import com.nanzbeatles.nanas.constants.VideoLyricsShowUpcomingKey
 import com.nanzbeatles.nanas.lyrics.LyricsEntry
 import com.nanzbeatles.nanas.models.MediaMetadata
 import com.nanzbeatles.nanas.utils.ShareUtils
@@ -637,27 +627,8 @@ object LyricVideoShareUtils {
             } catch (e: Exception) {
                 VideoLyricsCardStyle.NORMAL
             }
-            val scalePercent = prefs[VideoLyricsScalePercentKey] ?: 80
-            val offsetXPercent = prefs[VideoLyricsOffsetXPercentKey] ?: 0
-            val offsetYPercent = prefs[VideoLyricsOffsetYPercentKey] ?: 0
-            val cardScalePercent = prefs[VideoLyricsCardScalePercentKey] ?: 100
-            val cardOffsetXPercent = prefs[VideoLyricsCardOffsetXPercentKey] ?: 0
-            val cardOffsetYPercent = prefs[VideoLyricsCardOffsetYPercentKey] ?: 0
-            val cardAlphaPercent = prefs[VideoLyricsCardAlphaPercentKey] ?: 100
-            val spacingPercent = prefs[VideoLyricsLineSpacingPercentKey] ?: 100
             val showUpcoming = prefs[VideoLyricsShowUpcomingKey] ?: true
             val hideInactive = prefs[VideoLyricsHideInactiveKey] ?: (!showUpcoming)
-            val lyricsRotation = (prefs[VideoLyricsLyricsRotationKey] ?: 0).toFloat()
-            val cardRotation = (prefs[VideoLyricsCardRotationKey] ?: 0).toFloat()
-
-            val lyricsScale = (scalePercent / 80f).coerceIn(0.2f, 2.5f)
-            val lyricsOffsetX = (offsetXPercent / 100f) * 600f
-            val lyricsOffsetY = (offsetYPercent / 100f) * 340f
-            val cardScale = (cardScalePercent / 100f).coerceIn(0.2f, 2.5f)
-            val cardOffsetX = (cardOffsetXPercent / 100f) * 600f
-            val cardOffsetY = (cardOffsetYPercent / 100f) * 340f
-            val cardAlpha = (cardAlphaPercent / 100f).coerceIn(0f, 1f)
-            val lyricsSpacingScale = (spacingPercent / 100f).coerceIn(0.4f, 2.5f)
 
             val config = LyricVideoEncoder.EncodeConfig(
                 audioFile = audioFile,
@@ -671,18 +642,18 @@ object LyricVideoShareUtils {
                 amplitudes = amplitudes,
                 caseBitmap = caseBitmap,
                 cardStyle = effectiveCardStyle,
-                lyricsScale = lyricsScale,
-                lyricsOffsetX = lyricsOffsetX,
-                lyricsOffsetY = lyricsOffsetY,
-                cardScale = cardScale,
-                cardOffsetX = cardOffsetX,
-                cardOffsetY = cardOffsetY,
-                cardAlpha = cardAlpha,
-                lyricsSpacingScale = lyricsSpacingScale,
+                lyricsScale = 1.0f,
+                lyricsOffsetX = 0f,
+                lyricsOffsetY = 0f,
+                cardScale = 1.0f,
+                cardOffsetX = 0f,
+                cardOffsetY = 0f,
+                cardAlpha = 1.0f,
+                lyricsSpacingScale = 1.0f,
                 showUpcomingLyrics = !hideInactive && showUpcoming,
                 hideInactiveLyrics = hideInactive,
-                lyricsRotation = lyricsRotation,
-                cardRotation = cardRotation
+                lyricsRotation = 0f,
+                cardRotation = 0f
             )
 
             LyricVideoEncoder.encodeLyricVideo(config, onProgress)

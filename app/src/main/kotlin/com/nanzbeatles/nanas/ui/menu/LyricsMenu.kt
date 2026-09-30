@@ -141,22 +141,6 @@ fun LyricsMenu(
         )
     }
 
-    var showLayoutEditor by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    if (showLayoutEditor) {
-        val rawLyrics = lyricsProvider()?.lyrics.orEmpty()
-        val parsedEntries = remember(rawLyrics) {
-            if (rawLyrics.isNotBlank()) LyricsUtils.parseLyrics(rawLyrics) else emptyList()
-        }
-        com.nanzbeatles.nanas.ui.component.VideoLyricsLayoutEditor(
-            mediaMetadata = mediaMetadataProvider(),
-            lyrics = parsedEntries,
-            onDismiss = { showLayoutEditor = false }
-        )
-    }
-
     var showSearchDialog by rememberSaveable {
         mutableStateOf(false)
     }
@@ -471,22 +455,6 @@ fun LyricsMenu(
                             }
                         )
                     )
-
-                    add(
-                        Material3MenuItemData(
-                            title = { Text("Tata Letak Video Lirik") },
-                            icon = {
-                                Icon(
-                                    painter = painterResource(R.drawable.tune),
-                                    contentDescription = null,
-                                )
-                            },
-                            onClick = {
-                                showLayoutEditor = true
-                            }
-                        )
-                    )
-
 
                     // Add "Translate with AI" option if auto-translate is disabled
                     if (!autoTranslateLyrics && openRouterApiKey.isNotBlank()) {

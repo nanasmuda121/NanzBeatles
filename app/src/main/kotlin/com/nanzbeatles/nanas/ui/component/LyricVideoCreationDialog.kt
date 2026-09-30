@@ -128,7 +128,6 @@ fun LyricVideoCreationDialog(
     var generatedVideoFile by remember { mutableStateOf<File?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    var showLayoutEditor by rememberSaveable { mutableStateOf(false) }
     var isAudioPreviewPlaying by remember { mutableStateOf(false) }
     var cardStyle by rememberEnumPreference(VideoLyricsCardStyleKey, VideoLyricsCardStyle.NORMAL)
     var hideInactiveLyrics by rememberPreference(VideoLyricsHideInactiveKey, defaultValue = false)
@@ -170,16 +169,7 @@ fun LyricVideoCreationDialog(
         }
     }
 
-    if (showLayoutEditor) {
-        VideoLyricsLayoutEditor(
-            mediaMetadata = mediaMetadata,
-            lyrics = lyrics,
-            initialCardStyle = cardStyle,
-            onStyleChanged = { newStyle -> cardStyle = newStyle },
-            onDismiss = { showLayoutEditor = false }
-        )
-    } else {
-        Dialog(
+    Dialog(
         onDismissRequest = {
             if (!isGenerating) onDismiss()
         },
@@ -449,7 +439,7 @@ fun LyricVideoCreationDialog(
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                         Spacer(Modifier.height(16.dp))
 
-                        // 2. Model Desain & Tata Letak
+                        // 2. Model Desain & Tampilan Lirik
                         Column(
                             modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -562,20 +552,6 @@ fun LyricVideoCreationDialog(
                                         onCheckedChange = { hideInactiveLyrics = it }
                                     )
                                 }
-                            }
-
-                            OutlinedButton(
-                                onClick = { showLayoutEditor = true },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.tune),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text("Ubah Tata Letak & Ukuran (Layar Penuh)")
                             }
                         }
 
@@ -983,7 +959,6 @@ fun LyricVideoCreationDialog(
                 }
             }
         }
-    }
     }
 }
 

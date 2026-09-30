@@ -284,8 +284,53 @@ class LyricVideoRenderer(
         // 1. Solid Pure Black Background
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
 
+        // Clip the entire canvas strictly to 1280x720 video boundaries
+        val frameSaveCount = canvas.save()
+        canvas.clipRect(0f, 0f, width.toFloat(), height.toFloat())
+
         // 2. Render Card / Cover Art / CD Jewel Case if visible
         if (cardAlpha > 0.005f) {
+            val margin = 16f
+            val baseTop: Float
+            val baseBottom: Float
+            val baseLeft: Float
+            val baseRight: Float
+
+            if (cardStyle == VideoLyricsCardStyle.NORMAL) {
+                val cardSize = discRadius * 1.82f
+                baseTop = discCenterY - (cardSize * 0.62f)
+                baseBottom = baseTop + cardSize
+                baseLeft = discCenterX - (cardSize / 2f)
+                baseRight = discCenterX + (cardSize / 2f)
+            } else {
+                baseTop = brandTextY - 12f
+                baseBottom = waveformBaseY + 16f
+                baseLeft = caseRect.left
+                baseRight = caseRect.right
+            }
+
+            // Calculate scaled bounds around (discCenterX, discCenterY)
+            val scaledTop = discCenterY + (baseTop - discCenterY) * cardScale
+            val scaledBottom = discCenterY + (baseBottom - discCenterY) * cardScale
+            val scaledLeft = discCenterX + (baseLeft - discCenterX) * cardScale
+            val scaledRight = discCenterX + (baseRight - discCenterX) * cardScale
+
+            val minOffsetY = margin - scaledTop
+            val maxOffsetY = (height - margin) - scaledBottom
+            val clampedOffsetY = if (minOffsetY <= maxOffsetY) {
+                cardOffsetY.coerceIn(minOffsetY, maxOffsetY)
+            } else {
+                cardOffsetY.coerceAtLeast(minOffsetY)
+            }
+
+            val minOffsetX = margin - scaledLeft
+            val maxOffsetX = (width - margin) - scaledRight
+            val clampedOffsetX = if (minOffsetX <= maxOffsetX) {
+                cardOffsetX.coerceIn(minOffsetX, maxOffsetX)
+            } else {
+                cardOffsetX.coerceIn(maxOffsetX, minOffsetX)
+            }
+
             val cardLayerAlpha = (cardAlpha.coerceIn(0f, 1f) * 255).toInt()
             val saveCount = if (cardLayerAlpha < 255) {
                 canvas.saveLayerAlpha(0f, 0f, width.toFloat(), height.toFloat(), cardLayerAlpha)
@@ -293,7 +338,7 @@ class LyricVideoRenderer(
                 canvas.save()
             }
 
-            canvas.translate(cardOffsetX, cardOffsetY)
+            canvas.translate(clampedOffsetX, clampedOffsetY)
             if (cardRotation != 0f) {
                 canvas.rotate(cardRotation, discCenterX, discCenterY)
             }
@@ -319,6 +364,8 @@ class LyricVideoRenderer(
 
         // 3. Large White Left-Aligned Lyrics
         renderLyrics(canvas, currentTimeMs, lyrics, songTitle, songArtist)
+
+        canvas.restoreToCount(frameSaveCount)
     }
 
     private fun renderNormalCard(
@@ -658,7 +705,9 @@ class LyricVideoRenderer(
 
         // Dynamic slot distance scaling proportionally with lyricsScale and user line spacing:
         val scaledStepDistance = stepDistance * lyricsScale * lyricsSpacingScale
-        val curSlotActiveY = slotActiveY + lyricsOffsetY
+        val minSlotY = 24f + scaledActiveTextSize
+        val maxSlotY = height - 24f - scaledActiveTextSize
+        val curSlotActiveY = (slotActiveY + lyricsOffsetY).coerceIn(minSlotY, maxSlotY)
         val curSlotPrevY = curSlotActiveY - scaledStepDistance
         val curSlotNextY = curSlotActiveY + scaledStepDistance
 

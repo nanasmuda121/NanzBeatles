@@ -15,6 +15,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -261,7 +262,7 @@ fun VideoLyricsLayoutEditor(
     ) {
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = Color.Black
+            color = Color(0xFF0C0D11)
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 // LAYER 1: Fullscreen 16:9 Live Canvas Preview
@@ -329,49 +330,73 @@ fun VideoLyricsLayoutEditor(
                             .aspectRatio(16f / 9f)
                     }
 
-                    Canvas(modifier = canvasModifier) {
-                        val curTime = previewTimeMs % 14000L
-                        val curAmp = animatedAmp
-                        val currentCardStyle = cardStyle
-                        val currentScale = (scalePercent / 80f).coerceIn(0.2f, 2.5f)
-                        val currentOffsetX = (offsetXPercent / 100f) * 600f
-                        val currentOffsetY = (offsetYPercent / 100f) * 340f
-                        val currentCardScale = (cardScalePercent / 100f).coerceIn(0.2f, 2.5f)
-                        val currentCardOffsetX = (cardOffsetXPercent / 100f) * 600f
-                        val currentCardOffsetY = (cardOffsetYPercent / 100f) * 340f
-                        val currentCardAlpha = (cardAlphaPercent / 100f).coerceIn(0f, 1f)
-                        val currentSpacing = (lineSpacingPercent / 100f).coerceIn(0.4f, 2.5f)
+                    Box(
+                        modifier = canvasModifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .border(
+                                width = 1.5.dp,
+                                color = Color.White.copy(alpha = 0.35f),
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                    ) {
+                        Canvas(modifier = Modifier.fillMaxSize()) {
+                            val curTime = previewTimeMs % 14000L
+                            val curAmp = animatedAmp
+                            val currentCardStyle = cardStyle
+                            val currentScale = (scalePercent / 80f).coerceIn(0.2f, 2.5f)
+                            val currentOffsetX = (offsetXPercent / 100f) * 600f
+                            val currentOffsetY = (offsetYPercent / 100f) * 340f
+                            val currentCardScale = (cardScalePercent / 100f).coerceIn(0.2f, 2.5f)
+                            val currentCardOffsetX = (cardOffsetXPercent / 100f) * 600f
+                            val currentCardOffsetY = (cardOffsetYPercent / 100f) * 340f
+                            val currentCardAlpha = (cardAlphaPercent / 100f).coerceIn(0f, 1f)
+                            val currentSpacing = (lineSpacingPercent / 100f).coerceIn(0.4f, 2.5f)
 
-                        renderer.cardStyle = currentCardStyle
-                        renderer.lyricsScale = currentScale
-                        renderer.lyricsOffsetX = currentOffsetX
-                        renderer.lyricsOffsetY = currentOffsetY
-                        renderer.cardScale = currentCardScale
-                        renderer.cardOffsetX = currentCardOffsetX
-                        renderer.cardOffsetY = currentCardOffsetY
-                        renderer.cardAlpha = currentCardAlpha
-                        renderer.lyricsSpacingScale = currentSpacing
-                        renderer.showUpcomingLyrics = !hideInactiveLyrics
-                        renderer.hideInactiveLyrics = hideInactiveLyrics
-                        renderer.lyricsRotation = lyricsRotation.toFloat()
-                        renderer.cardRotation = cardRotation.toFloat()
-                        if (coverBitmap != null) {
-                            renderer.setCoverBitmap(coverBitmap)
+                            renderer.cardStyle = currentCardStyle
+                            renderer.lyricsScale = currentScale
+                            renderer.lyricsOffsetX = currentOffsetX
+                            renderer.lyricsOffsetY = currentOffsetY
+                            renderer.cardScale = currentCardScale
+                            renderer.cardOffsetX = currentCardOffsetX
+                            renderer.cardOffsetY = currentCardOffsetY
+                            renderer.cardAlpha = currentCardAlpha
+                            renderer.lyricsSpacingScale = currentSpacing
+                            renderer.showUpcomingLyrics = !hideInactiveLyrics
+                            renderer.hideInactiveLyrics = hideInactiveLyrics
+                            renderer.lyricsRotation = lyricsRotation.toFloat()
+                            renderer.cardRotation = cardRotation.toFloat()
+                            if (coverBitmap != null) {
+                                renderer.setCoverBitmap(coverBitmap)
+                            }
+
+                            drawIntoCanvas { composeCanvas ->
+                                val nativeCanvas = composeCanvas.nativeCanvas
+                                nativeCanvas.save()
+                                nativeCanvas.scale(size.width / 1280f, size.height / 720f)
+                                renderer.renderFrame(
+                                    canvas = nativeCanvas,
+                                    currentTimeMs = curTime,
+                                    amplitude = curAmp,
+                                    lyrics = previewLyrics,
+                                    songTitle = mediaMetadata?.title ?: "NanzBeatles Music",
+                                    songArtist = mediaMetadata?.artists?.joinToString { it.name } ?: "Beatles Audio"
+                                )
+                                nativeCanvas.restore()
+                            }
                         }
 
-                        drawIntoCanvas { composeCanvas ->
-                            val nativeCanvas = composeCanvas.nativeCanvas
-                            nativeCanvas.save()
-                            nativeCanvas.scale(size.width / 1280f, size.height / 720f)
-                            renderer.renderFrame(
-                                canvas = nativeCanvas,
-                                currentTimeMs = curTime,
-                                amplitude = curAmp,
-                                lyrics = previewLyrics,
-                                songTitle = mediaMetadata?.title ?: "NanzBeatles Music",
-                                songArtist = mediaMetadata?.artists?.joinToString { it.name } ?: "Beatles Audio"
+                        // Subtle boundary tag at top-start
+                        Surface(
+                            shape = RoundedCornerShape(bottomEnd = 8.dp),
+                            color = Color.Black.copy(alpha = 0.65f),
+                            modifier = Modifier.align(Alignment.TopStart)
+                        ) {
+                            Text(
+                                text = "Frame 16:9",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White.copy(alpha = 0.65f),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                             )
-                            nativeCanvas.restore()
                         }
                     }
                 }

@@ -129,9 +129,9 @@ class LyricVideoRenderer(
     }
 
     // Proportional lyrics typography
-    private val activeTextSize = height * 0.076f // ~54.7px on 720p (Large, modern & readable)
-    private val secTextSize = height * 0.054f    // ~38.8px on 720p (Upcoming preview, ~1.4x zoom into active)
-    private val prevTextSize = height * 0.046f   // ~33.1px on 720p (Previous line context)
+    private val activeTextSize = height * 0.070f // ~50.4px on 720p (Large, modern & readable)
+    private val secTextSize = height * 0.052f    // ~37.4px on 720p (Upcoming preview, ~74% of active, clearly legible)
+    private val prevTextSize = height * 0.048f   // ~34.5px on 720p (Previous line context, not too small)
 
     private val lyricsActivePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE
@@ -218,13 +218,10 @@ class LyricVideoRenderer(
     private val brandTextY = caseRect.top - (height * 0.035f)
     private val handleX = width * 0.952f
     private val lyricsX = width * 0.065f // ~83px on 1280 (Clear left margin)
-    private val lyricsMaxWidth = width * 0.460f // ~588px (Generous width for multi-line lyrics)
+    private val lyricsMaxWidth = width * 0.435f // ~556px on 1280 (Strictly in left half with safety gutter before cover)
 
-    // Symmetrical vertical slots for 100% continuous, zero-teleport lyrics scrolling
+    // Vertical focal center for active lyrics
     private val slotActiveY = height * 0.460f // ~331px on 720p (Optical focal center)
-    private val stepDistance = height * 0.185f // ~133px on 720p (Uniform slot distance)
-    private val slotPrevY = slotActiveY - stepDistance // ~198px on 720p
-    private val slotNextY = slotActiveY + stepDistance // ~464px on 720p
 
     // Pre-allocated circular disc bitmap
     private var circularCoverBitmap: Bitmap? = null
@@ -690,6 +687,13 @@ class LyricVideoRenderer(
         }
     }
 
+    private fun computeBlockHeight(lines: List<List<TimedWord>>?, textSize: Float): Float {
+        val count = lines?.size ?: 0
+        if (count <= 0) return 0f
+        val lineHeight = textSize * 1.28f * lyricsSpacingScale
+        return (count - 1) * lineHeight + (textSize * 0.70f)
+    }
+
     private fun renderLyrics(
         canvas: Canvas,
         currentTimeMs: Long,
@@ -703,15 +707,15 @@ class LyricVideoRenderer(
         val scaledSecTextSize = secTextSize * lyricsScale
         val scaledPrevTextSize = prevTextSize * lyricsScale
 
-        // Dynamic slot distance scaling proportionally with lyricsScale and user line spacing:
-        val scaledStepDistance = stepDistance * lyricsScale * lyricsSpacingScale
-        val minSlotY = 24f + scaledActiveTextSize
-        val maxSlotY = height - 24f - scaledActiveTextSize
-        val curSlotActiveY = (slotActiveY + lyricsOffsetY).coerceIn(minSlotY, maxSlotY)
-        val curSlotPrevY = curSlotActiveY - scaledStepDistance
-        val curSlotNextY = curSlotActiveY + scaledStepDistance
+        val minSlotY = 32f + scaledActiveTextSize
+        val maxSlotY = height - 32f - scaledActiveTextSize
+        val baseActiveY = if (hideInactiveLyrics) height * 0.485f else slotActiveY
+        val curSlotActiveY = (baseActiveY + lyricsOffsetY).coerceIn(minSlotY, maxSlotY)
 
-        canvas.save()
+        val lyricsClipRight = caseRect.left - 24f
+        val clipSave = canvas.save()
+        canvas.clipRect(0f, 0f, lyricsClipRight, height.toFloat())
+
         if (lyricsRotation != 0f) {
             val lyricPivotX = lyricsX + lyricsOffsetX + (lyricsMaxWidth / 2f)
             val lyricPivotY = curSlotActiveY
@@ -725,7 +729,7 @@ class LyricVideoRenderer(
             }
 
             val activeIndex = validLyrics.indexOfLast { it.time <= currentTimeMs }
-            val transitionDurationMs = 440f
+            val transitionDurationMs = 400f
 
             if (activeIndex == -1) {
                 val firstEntry = validLyrics.first()
@@ -733,25 +737,31 @@ class LyricVideoRenderer(
                 val firstLines = getWrappedLines(firstEntry, nextAfterFirst)
                 val timeUntilFirstMs = firstEntry.time - currentTimeMs
 
-                if (timeUntilFirstMs in 0L..440L) {
+                val titleH = (scaledActiveTextSize * 1.28f) + (if (songArtist.isNotBlank()) scaledSecTextSize * 1.28f else 0f)
+                val firstH = computeBlockHeight(firstLines, scaledSecTextSize)
+                val verticalGap = (height * 0.050f) * lyricsSpacingScale
+                val firstDistance = (titleH / 2f) + verticalGap + (firstH / 2f)
+
+                if (timeUntilFirstMs in 0L..400L) {
                     val p = 1f - (timeUntilFirstMs.toFloat() / transitionDurationMs).coerceIn(0f, 1f)
                     val ease = 1f - (1f - p) * (1f - p) * (1f - p)
-                    val scrollOffset = if (hideInactiveLyrics) 0f else (1f - ease) * scaledStepDistance
 
                     if (!hideInactiveLyrics) {
-                        renderTitleCard(canvas, songTitle, songArtist, curSlotPrevY + scrollOffset, (1f - ease).coerceIn(0f, 1f))
+                        val titleCenterY = curSlotActiveY - (firstDistance * ease)
+                        renderTitleCard(canvas, songTitle, songArtist, titleCenterY, (1f - ease).coerceIn(0f, 1f))
                     } else {
                         renderTitleCard(canvas, songTitle, songArtist, curSlotActiveY - ease * 25f, (1f - ease).coerceIn(0f, 1f))
                     }
 
-                    val activeCenterY = if (hideInactiveLyrics) curSlotActiveY + (1f - ease) * 25f else curSlotActiveY + scrollOffset
+                    val activeCenterY = if (hideInactiveLyrics) curSlotActiveY + (1f - ease) * 20f else curSlotActiveY + (firstDistance * (1f - ease))
                     val curTextSize = if (hideInactiveLyrics) scaledActiveTextSize else scaledSecTextSize + (scaledActiveTextSize - scaledSecTextSize) * ease
-                    val activeAlpha = (0.45f + 0.55f * ease).coerceIn(0f, 1f)
+                    val activeAlpha = (0.50f + 0.50f * ease).coerceIn(0f, 1f)
                     renderEntry(canvas, firstLines, currentTimeMs, activeCenterY, curTextSize, activeAlpha, EntryRenderStyle.ACTIVE)
                 } else {
                     renderTitleCard(canvas, songTitle, songArtist, curSlotActiveY, 1.0f)
                     if (!hideInactiveLyrics && showUpcomingLyrics) {
-                        renderEntry(canvas, firstLines, currentTimeMs, curSlotNextY, scaledSecTextSize, 0.45f, EntryRenderStyle.UPCOMING)
+                        val firstCenterY = curSlotActiveY + firstDistance
+                        renderEntry(canvas, firstLines, currentTimeMs, firstCenterY, scaledSecTextSize, 0.45f, EntryRenderStyle.UPCOMING)
                     }
                 }
                 return
@@ -771,56 +781,69 @@ class LyricVideoRenderer(
             val timeSinceLineStartMs = (currentTimeMs - activeEntry.time).coerceAtLeast(0L)
             val transProgress = (timeSinceLineStartMs / transitionDurationMs).coerceIn(0f, 1f)
             val ease = 1f - (1f - transProgress) * (1f - transProgress) * (1f - transProgress)
-            val scrollOffset = (1f - ease) * scaledStepDistance
+
+            val curActiveTextSize = if (hideInactiveLyrics) {
+                scaledActiveTextSize
+            } else {
+                scaledSecTextSize + (scaledActiveTextSize - scaledSecTextSize) * ease
+            }
+            val curPrevTextSize = scaledActiveTextSize - (scaledActiveTextSize - scaledPrevTextSize) * ease
+
+            val activeH = computeBlockHeight(activeLines, curActiveTextSize)
+            val prevH = computeBlockHeight(prevLines, curPrevTextSize)
+            val nextH = computeBlockHeight(nextLines, scaledSecTextSize)
+
+            val verticalGap = (height * 0.050f) * lyricsSpacingScale
+            val prevDistance = (activeH / 2f) + verticalGap + (prevH / 2f)
+            val nextDistance = (activeH / 2f) + verticalGap + (nextH / 2f)
 
             if (!hideInactiveLyrics) {
                 // 1. Older previous line exiting upward
                 if (olderEntry != null && olderLines != null && ease < 1.0f) {
-                    val olderAlpha = (0.35f * (1f - ease)).coerceIn(0f, 1f)
-                    val olderCenterY = (curSlotPrevY - scaledStepDistance) + scrollOffset
+                    val olderAlpha = (0.32f * (1f - ease)).coerceIn(0f, 1f)
+                    val olderH = computeBlockHeight(olderLines, scaledPrevTextSize)
+                    val olderDist = (prevH / 2f) + verticalGap + (olderH / 2f)
+                    val olderCenterY = (curSlotActiveY - prevDistance) - (olderDist * ease)
                     renderEntry(canvas, olderLines, currentTimeMs, olderCenterY, scaledPrevTextSize, olderAlpha, EntryRenderStyle.PREVIOUS)
                 }
 
-                // 2. Previous line gliding from slotActiveY to slotPrevY
-                val prevCenterY = curSlotPrevY + scrollOffset
-                val curPrevTextSize = scaledActiveTextSize - (scaledActiveTextSize - scaledPrevTextSize) * ease
-                val prevAlpha = (1.0f - (0.62f * ease)).coerceIn(0f, 1f)
+                // 2. Previous line gliding up
+                val prevCenterY = curSlotActiveY - (prevDistance * ease)
+                val prevAlpha = (1.0f - (0.55f * ease)).coerceIn(0f, 1f)
                 if (prevEntry != null && prevLines != null) {
                     renderEntry(canvas, prevLines, currentTimeMs, prevCenterY, curPrevTextSize, prevAlpha, EntryRenderStyle.PREVIOUS)
                 } else if (activeIndex == 0 && prevAlpha > 0.05f) {
-                    renderTitleCard(canvas, songTitle, songArtist, prevCenterY, prevAlpha)
+                    val titleH = (scaledActiveTextSize * 1.28f) + (if (songArtist.isNotBlank()) scaledSecTextSize * 1.28f else 0f)
+                    val titleDistance = (activeH / 2f) + verticalGap + (titleH / 2f)
+                    val titleCenterY = curSlotActiveY - (titleDistance * ease)
+                    renderTitleCard(canvas, songTitle, songArtist, titleCenterY, prevAlpha)
                 }
             } else {
                 // When hiding inactive lyrics: previous line gently fades out during transition window
                 if (prevEntry != null && prevLines != null && ease < 1.0f) {
                     val prevAlpha = ((1.0f - ease) * 0.40f).coerceIn(0f, 1f)
-                    val prevCenterY = curSlotActiveY - (ease * 25f)
+                    val prevCenterY = curSlotActiveY - (ease * 20f)
                     renderEntry(canvas, prevLines, currentTimeMs, prevCenterY, scaledActiveTextSize, prevAlpha, EntryRenderStyle.PREVIOUS)
                 }
             }
 
             // 3. Active line
             val activeCenterY = if (hideInactiveLyrics) {
-                curSlotActiveY + (1f - ease) * 25f
+                curSlotActiveY + (1f - ease) * 20f
             } else {
-                curSlotActiveY + scrollOffset
+                curSlotActiveY + (nextDistance * (1f - ease))
             }
-            val curActiveTextSize = if (hideInactiveLyrics) {
-                scaledActiveTextSize
-            } else {
-                scaledSecTextSize + (scaledActiveTextSize - scaledSecTextSize) * ease
-            }
-            val activeAlpha = (0.45f + 0.55f * ease).coerceIn(0f, 1f)
+            val activeAlpha = (0.50f + 0.50f * ease).coerceIn(0f, 1f)
             renderEntry(canvas, activeLines, currentTimeMs, activeCenterY, curActiveTextSize, activeAlpha, EntryRenderStyle.ACTIVE)
 
-            // 4. Next line appearing at slotNextY (only if inactive lyrics are not hidden)
+            // 4. Next line appearing below (only if inactive lyrics are not hidden)
             if (!hideInactiveLyrics && showUpcomingLyrics && nextEntry != null && nextLines != null) {
-                val nextCenterY = curSlotNextY + scrollOffset
+                val nextCenterY = curSlotActiveY + nextDistance + (nextDistance * (1f - ease))
                 val nextAlpha = if (ease >= 1.0f) 0.45f else (0.45f * ease).coerceIn(0f, 1f)
                 renderEntry(canvas, nextLines, currentTimeMs, nextCenterY, scaledSecTextSize, nextAlpha, EntryRenderStyle.UPCOMING)
             }
         } finally {
-            canvas.restore()
+            canvas.restoreToCount(clipSave)
         }
     }
 
@@ -844,11 +867,11 @@ class LyricVideoRenderer(
         } ?: 0f
 
         val autoscale = if (maxLineWidth > lyricsMaxWidth) {
-            (lyricsMaxWidth / maxLineWidth).coerceIn(0.78f, 1.0f)
+            (lyricsMaxWidth / maxLineWidth).coerceIn(0.85f, 1.0f)
         } else 1.0f
 
         val effectiveTextSize = targetTextSize * autoscale
-        val lineHeight = effectiveTextSize * 1.25f * lyricsSpacingScale
+        val lineHeight = effectiveTextSize * 1.28f * lyricsSpacingScale
         val lineCount = lines.size
         val totalBlockHeight = (lineCount - 1) * lineHeight
         var currentY = centerY - (totalBlockHeight / 2f) + (effectiveTextSize * 0.35f)
@@ -973,6 +996,7 @@ class LyricVideoRenderer(
         paint: Paint,
         maxLines: Int = 3
     ): List<List<TimedWord>> {
+        if (words.isEmpty()) return emptyList()
         val lines = mutableListOf<MutableList<TimedWord>>()
         var currentLine = mutableListOf<TimedWord>()
         var currentLineWidth = 0f
@@ -988,12 +1012,14 @@ class LyricVideoRenderer(
                 currentLineWidth += addedWidth
             } else {
                 lines.add(currentLine)
-                if (lines.size >= maxLines - 1) {
-                    val lastLine = mutableListOf<TimedWord>()
-                    for (j in i until words.size) {
-                        lastLine.add(words[j])
+                if (lines.size >= maxLines) {
+                    val lastLine = lines.last()
+                    if (lastLine.isNotEmpty()) {
+                        val lastWord = lastLine.last()
+                        if (!lastWord.text.endsWith("…") && !lastWord.text.endsWith("...")) {
+                            lastLine[lastLine.lastIndex] = lastWord.copy(text = lastWord.text.trimEnd() + "…")
+                        }
                     }
-                    lines.add(lastLine)
                     return lines
                 }
                 currentLine = mutableListOf(word)

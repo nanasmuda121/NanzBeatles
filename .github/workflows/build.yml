@@ -98,13 +98,6 @@ jobs:
           test -n "$apk"
           cp "$apk" "release-artifact/${{ matrix.asset }}"
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.ui }}-${{ matrix.variant }}-${{ matrix.arch }}-release
-          path: release-artifact/${{ matrix.asset }}
-          if-no-files-found: error
-
       - name: Create or update GitHub Release
         if: github.ref == 'refs/heads/main'
         env:
@@ -115,3 +108,11 @@ jobs:
 
           gh release upload v2.0.0 "release-artifact/${{ matrix.asset }}" --clobber --repo nanasmuda121/update-NanzBeatles || \
           gh release create v2.0.0 "release-artifact/${{ matrix.asset }}" --title "NanzBeatles v2.0.0" --notes "### NanzBeatles v2.0.0 (Beatles)" --repo nanasmuda121/update-NanzBeatles || true
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: ${{ matrix.ui }}-${{ matrix.variant }}-${{ matrix.arch }}-release
+          path: release-artifact/${{ matrix.asset }}
+          if-no-files-found: error
